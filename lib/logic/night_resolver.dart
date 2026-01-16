@@ -16,14 +16,33 @@
 /// ```dart
 /// final resolver = NightResolver();
 /// final actions = [
-///   NightAction(roleId: 'medic', targetId: 'player1', actionType: 'protect'),
-///   NightAction(roleId: 'dealer', targetId: 'player2', actionType: 'kill'),
+///   NightAction(roleId: RoleIds.medic, targetId: 'player1', actionType: 'protect'),
+///   NightAction(roleId: RoleIds.dealer, targetId: 'player2', actionType: 'kill'),
 /// ];
 /// final result = resolver.resolve(players, actions);
 /// ```
 library;
 
 import '../models/player.dart';
+
+/// Role ID constants to avoid hard-coded strings.
+class RoleIds {
+  static const String dealer = 'dealer';
+  static const String medic = 'medic';
+  static const String bouncer = 'bouncer';
+  static const String sober = 'sober';
+  static const String roofi = 'roofi';
+  static const String minor = 'minor';
+  static const String seasonedDrinker = 'seasoned_drinker';
+  static const String allyCat = 'ally_cat';
+}
+
+/// Alliance constants to avoid hard-coded strings.
+class Alliances {
+  static const String dealers = 'The Dealers';
+  static const String partyAnimals = 'The Party Animals';
+}
+
 
 /// Represents a single night action by a role.
 class NightAction {
@@ -78,11 +97,11 @@ class NightResolver {
     final messages = <String, String>{};
 
     // Find all active actions by type
-    final soberActions = actions.where((a) => a.roleId == 'sober').toList();
-    final roofiActions = actions.where((a) => a.roleId == 'roofi').toList();
-    final medicActions = actions.where((a) => a.roleId == 'medic').toList();
-    final bouncerActions = actions.where((a) => a.roleId == 'bouncer').toList();
-    final dealerActions = actions.where((a) => a.roleId == 'dealer').toList();
+    final soberActions = actions.where((a) => a.roleId == RoleIds.sober).toList();
+    final roofiActions = actions.where((a) => a.roleId == RoleIds.roofi).toList();
+    final medicActions = actions.where((a) => a.roleId == RoleIds.medic).toList();
+    final bouncerActions = actions.where((a) => a.roleId == RoleIds.bouncer).toList();
+    final dealerActions = actions.where((a) => a.roleId == RoleIds.dealer).toList();
 
     // Track which players are sent home (protected and blocked)
     final sentHomeIds = <String>{};
@@ -125,7 +144,7 @@ class NightResolver {
         final targetId = action.targetId!;
         
         // Check if any dealer was sent home by Sober
-        final dealersInGame = players.where((p) => p.role.id == 'dealer' && p.isActive);
+        final dealersInGame = players.where((p) => p.role.id == RoleIds.dealer && p.isActive);
         final anyDealerSentHome = dealersInGame.any((d) => sentHomeIds.contains(d.id));
         
         if (anyDealerSentHome) {
@@ -141,32 +160,24 @@ class NightResolver {
         }
 
         // Check for special immunities
-        final target = players.firstWhere(
-          (p) => p.id == targetId,
-          orElse: () => Player(
-            id: '',
-            name: '',
-            role: players.first.role,
-          ),
-        );
-
-        if (target.id.isEmpty) continue;
+        final target = _findPlayer(players, targetId);
+        if (target == null) continue;
 
         // Check Minor immunity (if not ID'd by bouncer)
-        if (target.role.id == 'minor' && !target.minorHasBeenIDd) {
+        if (target.role.id == RoleIds.minor && !target.minorHasBeenIDd) {
           messages[targetId] = 'Kill blocked (Minor immunity)';
           continue;
         }
 
         // Check Seasoned Drinker lives
-        if (target.role.id == 'seasoned_drinker' && target.lives > 1) {
+        if (target.role.id == RoleIds.seasonedDrinker && target.lives > 1) {
           messages[targetId] = 'Life lost (Seasoned Drinker)';
           // Target loses a life but doesn't die (handled by caller)
           continue;
         }
 
         // Check Ally Cat lives
-        if (target.role.id == 'ally_cat' && target.lives > 1) {
+        if (target.role.id == RoleIds.allyCat && target.lives > 1) {
           messages[targetId] = 'Life lost (Ally Cat)';
           // Target loses a life but doesn't die (handled by caller)
           continue;
@@ -192,8 +203,8 @@ class NightResolver {
   bool checkDealerVictory(List<Player> players) {
     final alivePlayers = players.where((p) => p.isAlive && p.isEnabled).toList();
     
-    final dealerCount = alivePlayers.where((p) => p.alliance == 'The Dealers').length;
-    final partyAnimalCount = alivePlayers.where((p) => p.alliance == 'The Party Animals').length;
+    final dealerCount = alivePlayers.where((p) => p.alliance == Alliances.dealers).length;
+    final partyAnimalCount = alivePlayers.where((p) => p.alliance == Alliances.partyAnimals).length;
     
     // Dealers win if they reach parity or majority
     return dealerCount > 0 && dealerCount >= partyAnimalCount;
@@ -205,10 +216,21 @@ class NightResolver {
   bool checkPartyAnimalVictory(List<Player> players) {
     final alivePlayers = players.where((p) => p.isAlive && p.isEnabled).toList();
     
-    final dealerCount = alivePlayers.where((p) => p.alliance == 'The Dealers').length;
-    final partyAnimalCount = alivePlayers.where((p) => p.alliance == 'The Party Animals').length;
+    final dealerCount = alivePlayers.where((p) => p.alliance == Alliances.dealers).length;
+    final partyAnimalCount = alivePlayers.where((p) => p.alliance == Alliances.partyAnimals).length;
     
     // Party Animals win if all dealers are dead and at least one party animal is alive
     return dealerCount == 0 && partyAnimalCount > 0;
+  }
+
+  /// Helper to safely find a player by ID.
+  ///
+  /// Returns null if player not found.
+  Player? _findPlayer(List<Player> players, String playerId) {
+    try {
+      return players.firstWhere((p) => p.id == playerId);
+    } catch (e) {
+      return null;
+    }
   }
 }
