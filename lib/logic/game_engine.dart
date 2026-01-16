@@ -1,5 +1,6 @@
 ﻿// ignore_for_file: unreachable_switch_case
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
@@ -79,6 +80,8 @@ class GameEngine extends ChangeNotifier {
   final List<Map<String, String>> _clingerDoubleDeaths =
       []; // Track clinger+obsession deaths for dramatic announcements
 
+  Timer? _saveHistoryDebounceTimer;
+
   // Ability & Reaction Systems
   final AbilityResolver abilityResolver = AbilityResolver();
   final ReactionSystem reactionSystem = ReactionSystem();
@@ -112,8 +115,7 @@ class GameEngine extends ChangeNotifier {
       nameHistory = nameHistory.sublist(nameHistory.length - maxHistory);
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('player_name_history', nameHistory);
+    _scheduleHistorySave();
     notifyListeners();
   }
 
@@ -121,9 +123,39 @@ class GameEngine extends ChangeNotifier {
   Future<void> removeNamesFromHistory(List<String> names) async {
     if (names.isEmpty) return;
     nameHistory.removeWhere((n) => names.contains(n));
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('player_name_history', nameHistory);
+    _scheduleHistorySave();
     notifyListeners();
+  }
+
+  void _scheduleHistorySave() {
+    _saveHistoryDebounceTimer?.cancel();
+    _saveHistoryDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _persistHistory();
+      _saveHistoryDebounceTimer = null;
+    });
+  }
+
+  Future<void> _persistHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('player_name_history', nameHistory);
+    } catch (e) {
+      GameLogger.error(
+        'Failed to save name history',
+        context: 'GameEngine',
+        error: e,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_saveHistoryDebounceTimer != null &&
+        _saveHistoryDebounceTimer!.isActive) {
+      _saveHistoryDebounceTimer!.cancel();
+      _persistHistory();
+    }
+    super.dispose();
   }
 
   GamePhase get currentPhase => _currentPhase;
