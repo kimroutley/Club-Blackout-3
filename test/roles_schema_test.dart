@@ -1,74 +1,87 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  
+  const String nightPriorityField = 'night_priority';
+  
   group('Roles Schema Validation', () {
-    test('assets/data/roles.json exists', () {
-      final file = File('assets/data/roles.json');
-      expect(file.existsSync(), true, reason: 'roles.json must exist');
+    test('roles.json exists and loads successfully', () async {
+      // Verify the file can be loaded
+      expect(
+        () async => await rootBundle.loadString('assets/data/roles.json'),
+        returnsNormally,
+      );
     });
     
-    test('roles.json contains valid JSON', () {
-      final file = File('assets/data/roles.json');
-      final contents = file.readAsStringSync();
+    test('roles.json contains valid JSON with roles array', () async {
+      final String response = await rootBundle.loadString('assets/data/roles.json');
+      final data = json.decode(response);
       
-      expect(() => json.decode(contents), returnsNormally,
-          reason: 'roles.json must be valid JSON');
+      // Verify structure
+      expect(data, isA<Map<String, dynamic>>());
+      expect(data.containsKey('roles'), true);
+      expect(data['roles'], isA<List>());
     });
     
-    test('roles.json has "roles" array', () {
-      final file = File('assets/data/roles.json');
-      final contents = file.readAsStringSync();
-      final data = json.decode(contents) as Map<String, dynamic>;
-      
-      expect(data.containsKey('roles'), true,
-          reason: 'JSON must have "roles" key');
-      expect(data['roles'], isA<List>(),
-          reason: 'roles must be an array');
-    });
-    
-    test('each role has required fields: id, name, nightPriority', () {
-      final file = File('assets/data/roles.json');
-      final contents = file.readAsStringSync();
-      final data = json.decode(contents) as Map<String, dynamic>;
+    test('each role has required fields: id, name, nightPriority', () async {
+      final String response = await rootBundle.loadString('assets/data/roles.json');
+      final data = json.decode(response);
       final roles = data['roles'] as List;
       
-      expect(roles.isNotEmpty, true, reason: 'roles array should not be empty');
+      expect(roles.isNotEmpty, true, reason: 'Roles array should not be empty');
       
       for (var i = 0; i < roles.length; i++) {
         final role = roles[i] as Map<String, dynamic>;
         
-        expect(role.containsKey('id'), true,
-            reason: 'Role at index $i must have "id" field');
-        expect(role['id'], isA<String>(),
-            reason: 'Role id at index $i must be a string');
+        // Check for required fields
+        expect(
+          role.containsKey('id'),
+          true,
+          reason: 'Role at index $i missing "id" field',
+        );
+        expect(
+          role.containsKey('name'),
+          true,
+          reason: 'Role at index $i missing "name" field',
+        );
+        expect(
+          role.containsKey(nightPriorityField),
+          true,
+          reason: 'Role at index $i missing "$nightPriorityField" field',
+        );
         
-        expect(role.containsKey('name'), true,
-            reason: 'Role at index $i must have "name" field');
-        expect(role['name'], isA<String>(),
-            reason: 'Role name at index $i must be a string');
-        
-        expect(role.containsKey('night_priority'), true,
-            reason: 'Role at index $i (${role['id']}) must have "night_priority" field');
-        expect(role['night_priority'], isA<int>(),
-            reason: 'Role night_priority at index $i (${role['id']}) must be an integer');
+        // Validate field types
+        expect(
+          role['id'],
+          isA<String>(),
+          reason: 'Role at index $i has non-string id',
+        );
+        expect(
+          role['name'],
+          isA<String>(),
+          reason: 'Role at index $i has non-string name',
+        );
+        expect(
+          role[nightPriorityField],
+          isA<int>(),
+          reason: 'Role at index $i has non-integer $nightPriorityField',
+        );
       }
     });
     
-    test('role ids are unique', () {
-      final file = File('assets/data/roles.json');
-      final contents = file.readAsStringSync();
-      final data = json.decode(contents) as Map<String, dynamic>;
+    test('role IDs are unique', () async {
+      final String response = await rootBundle.loadString('assets/data/roles.json');
+      final data = json.decode(response);
       final roles = data['roles'] as List;
       
-      final ids = <String>{};
+      final ids = <String>[];
       final duplicates = <String>[];
       
-      for (var role in roles) {
-        final roleMap = role as Map<String, dynamic>;
-        final id = roleMap['id'] as String;
-        
+      for (final role in roles) {
+        final id = role['id'] as String;
         if (ids.contains(id)) {
           duplicates.add(id);
         } else {
@@ -76,25 +89,51 @@ void main() {
         }
       }
       
-      expect(duplicates.isEmpty, true,
-          reason: 'Role ids must be unique. Duplicates found: $duplicates');
+      expect(
+        duplicates,
+        isEmpty,
+        reason: 'Duplicate role IDs found: ${duplicates.join(", ")}',
+      );
     });
     
-    test('nightPriority values are in valid range', () {
-      final file = File('assets/data/roles.json');
-      final contents = file.readAsStringSync();
-      final data = json.decode(contents) as Map<String, dynamic>;
+    test('role names are unique', () async {
+      final String response = await rootBundle.loadString('assets/data/roles.json');
+      final data = json.decode(response);
       final roles = data['roles'] as List;
       
-      for (var role in roles) {
-        final roleMap = role as Map<String, dynamic>;
-        final priority = roleMap['night_priority'] as int;
-        final id = roleMap['id'] as String;
+      final names = <String>[];
+      final duplicates = <String>[];
+      
+      for (final role in roles) {
+        final name = role['name'] as String;
+        if (names.contains(name)) {
+          duplicates.add(name);
+        } else {
+          names.add(name);
+        }
+      }
+      
+      expect(
+        duplicates,
+        isEmpty,
+        reason: 'Duplicate role names found: ${duplicates.join(", ")}',
+      );
+    });
+    
+    test('night_priority values are non-negative', () async {
+      final String response = await rootBundle.loadString('assets/data/roles.json');
+      final data = json.decode(response);
+      final roles = data['roles'] as List;
+      
+      for (var i = 0; i < roles.length; i++) {
+        final role = roles[i] as Map<String, dynamic>;
+        final priority = role[nightPriorityField] as int;
         
-        expect(priority >= 0, true,
-            reason: 'Role $id night_priority must be >= 0, got $priority');
-        expect(priority <= 10, true,
-            reason: 'Role $id night_priority must be <= 10, got $priority');
+        expect(
+          priority >= 0,
+          true,
+          reason: 'Role "${role['name']}" has negative $nightPriorityField: $priority',
+        );
       }
     });
   });

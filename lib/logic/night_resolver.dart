@@ -1,153 +1,121 @@
 import '../models/player.dart';
 
-/// Represents a night action submitted by a role
+/// Represents a night action taken by a player
 class NightAction {
-  final String actorId;
-  final String roleId;
-  final String actionType; // 'protect', 'send_home', 'kill', 'silence', etc.
+  final String playerId;
+  final String actionType; // 'kill', 'protect', 'send_home', 'silence'
   final String? targetId;
-  final int priority;
-
-  NightAction({
-    required this.actorId,
-    required this.roleId,
+  
+  const NightAction({
+    required this.playerId,
     required this.actionType,
     this.targetId,
-    required this.priority,
   });
 }
 
-/// Deterministic night resolution system
-/// 
-/// Phases (in order):
-/// 1. send_home (Sober) - priority 1
-/// 2. roofi - priority 3
-/// 3. medic - priority 1-2
-/// 4. bouncer - priority 2
-/// 5. dealers - priority 5
-/// 6. finalize - apply all deaths
-///
-/// Dealer kill selection: most-targeted; tie-breaker: lexicographic order of target id
-/// If Sober sends a Dealer home, cancel dealer kills for that night
+/// Deterministic night resolver that processes night actions in a specific order
+/// and returns the set of deaths while mutating Player.isAlive
 class NightResolver {
-  /// Resolve night actions and determine who dies
+  /// Process night actions in deterministic phase order:
+  /// send_home → roofi → medic → bouncer → dealers → finalize
   /// 
-  /// Mutates Player.isAlive appropriately and returns Set<String> of death ids.
-  /// GameEngine should run reaction systems after calling this resolver.
+  /// Returns a set of player IDs who died this night
+  /// Mutates Player.isAlive for killed players
   Set<String> resolve(List<Player> players, List<NightAction> actions) {
-    final Set<String> deaths = {};
-    final Set<String> protected = {};
-    final Set<String> sentHome = {};
+    final deaths = <String>{};
+    final protections = <String>{};
+    final sentHome = <String>{};
+    final silenced = <String>{};
     
-    // Sort actions by priority (lower priority number = earlier execution)
-    final sortedActions = List<NightAction>.from(actions)
-      ..sort((a, b) => a.priority.compareTo(b.priority));
-    
-    // Phase 1: Sober send_home (priority 1)
-    for (var action in sortedActions) {
-      if (action.actionType == 'send_home' && action.targetId != null) {
+    // Phase 1: Send Home (Sober) - priority 1
+    final sendHomeActions = actions.where((a) => a.actionType == 'send_home').toList();
+    for (final action in sendHomeActions) {
+      if (action.targetId != null) {
         sentHome.add(action.targetId!);
-        protected.add(action.targetId!); // Sent home = protected from death
       }
     }
     
-    // Phase 2: Roofi silence (priority 3) - no death impact, just tracking
-    // (silencing is handled separately in game state)
-    
-    // Phase 3: Medic protection (priority 1-2)
-    for (var action in sortedActions) {
-      if (action.actionType == 'protect' && action.targetId != null) {
-        protected.add(action.targetId!);
+    // Phase 2: Roofi (silence) - priority 3
+    final silenceActions = actions.where((a) => a.actionType == 'silence').toList();
+    for (final action in silenceActions) {
+      if (action.targetId != null) {
+        silenced.add(action.targetId!);
       }
     }
     
-    // Phase 4: Bouncer ID check (priority 2) - no death impact
-    // (ID checking is handled separately in game state)
+    // Phase 3: Medic (protect) - priority 2 (runs after send_home in code but priority 2)
+    final protectActions = actions.where((a) => a.actionType == 'protect').toList();
+    for (final action in protectActions) {
+      if (action.targetId != null) {
+        protections.add(action.targetId!);
+      }
+    }
     
-    // Phase 5: Dealer kills (priority 5)
+    // Phase 4: Bouncer (investigative, no death impact) - priority 2
+    // Bouncer actions don't affect deaths
+    
+    // Phase 5: Dealers (kill) - priority 5
+    // Determine dealer kills by vote count, with lexicographic tie-breaking
+    final killActions = actions.where((a) => a.actionType == 'kill').toList();
+    
     // Check if any Dealer was sent home - if so, cancel all dealer kills
-    final dealersSentHome = players.where((p) => 
-      p.role.id == 'dealer' && sentHome.contains(p.id)
-    ).isNotEmpty;
+    final dealersSentHome = sentHome.any((targetId) {
+      try {
+        final player = players.firstWhere((p) => p.id == targetId);
+        return player.role.alliance == 'The Dealers';
+      } catch (e) {
+        return false;
+      }
+    });
     
-    if (!dealersSentHome) {
-      // Collect all dealer kill actions
-      final dealerKills = sortedActions.where((a) => 
-        a.actionType == 'kill' && a.roleId == 'dealer' && a.targetId != null
-      ).toList();
+    if (!dealersSentHome && killActions.isNotEmpty) {
+      // Count votes for each target
+      final voteCounts = <String, int>{};
+      for (final action in killActions) {
+        if (action.targetId != null) {
+          voteCounts[action.targetId!] = (voteCounts[action.targetId!] ?? 0) + 1;
+        }
+      }
       
-      if (dealerKills.isNotEmpty) {
-        // Count targets
-        final Map<String, int> targetCounts = {};
-        for (var kill in dealerKills) {
-          targetCounts[kill.targetId!] = (targetCounts[kill.targetId!] ?? 0) + 1;
+      if (voteCounts.isNotEmpty) {
+        // Find maximum vote count
+        final maxVotes = voteCounts.values.reduce((a, b) => a > b ? a : b);
+        
+        // Get all targets with max votes
+        final topTargets = voteCounts.entries
+            .where((e) => e.value == maxVotes)
+            .map((e) => e.key)
+            .toList();
+        
+        // If tie, use lexicographic order (alphabetical by player name)
+        if (topTargets.length > 1) {
+          // Sort by player name lexicographically
+          topTargets.sort((a, b) {
+            try {
+              final playerA = players.firstWhere((p) => p.id == a);
+              final playerB = players.firstWhere((p) => p.id == b);
+              return playerA.name.compareTo(playerB.name);
+            } catch (e) {
+              return 0;
+            }
+          });
         }
         
-        // Find most-targeted
-        int maxCount = 0;
-        for (var count in targetCounts.values) {
-          if (count > maxCount) maxCount = count;
-        }
+        final targetId = topTargets.first;
         
-        // Get all targets with max count
-        final mostTargeted = targetCounts.entries
-          .where((e) => e.value == maxCount)
-          .map((e) => e.key)
-          .toList();
-        
-        // Tie-breaker: lexicographic order
-        mostTargeted.sort();
-        final chosenTarget = mostTargeted.first;
-        
-        // Apply kill if not protected
-        if (!protected.contains(chosenTarget)) {
-          final victim = players.firstWhere((p) => p.id == chosenTarget);
-          
-          // Check Minor protection
-          if (victim.role.id == 'minor' && !victim.minorHasBeenIDd) {
-            victim.minorHasBeenIDd = true;
-            // Kill fails, but Minor is now vulnerable
-          } else {
-            victim.isAlive = false;
-            deaths.add(chosenTarget);
-          }
+        // Check if target is protected or sent home
+        if (!protections.contains(targetId) && !sentHome.contains(targetId)) {
+          deaths.add(targetId);
         }
       }
     }
     
-    // Phase 6: Other kills (non-dealer)
-    for (var action in sortedActions) {
-      if (action.actionType == 'kill' && action.roleId != 'dealer' && action.targetId != null) {
-        if (!protected.contains(action.targetId!)) {
-          final victim = players.firstWhere((p) => p.id == action.targetId!);
-          victim.isAlive = false;
-          deaths.add(action.targetId!);
-        }
-      }
+    // Phase 6: Finalize - mutate Player.isAlive
+    for (final playerId in deaths) {
+      final player = players.firstWhere((p) => p.id == playerId);
+      player.isAlive = false;
     }
     
     return deaths;
-  }
-  
-  /// Check victory conditions
-  /// Returns 'dealers' if dealers reach parity, 'party_animals' if no dealers left, null otherwise
-  String? checkVictory(List<Player> players) {
-    final alivePlayers = players.where((p) => p.isAlive).toList();
-    final aliveDealers = alivePlayers.where((p) => 
-      p.role.id == 'dealer' || (p.role.id == 'whore' && p.isAlive)
-    ).length;
-    final aliveNonDealers = alivePlayers.length - aliveDealers;
-    
-    // Dealers win at parity
-    if (aliveDealers > 0 && aliveDealers >= aliveNonDealers) {
-      return 'dealers';
-    }
-    
-    // Party Animals win if no dealers left
-    if (aliveDealers == 0) {
-      return 'party_animals';
-    }
-    
-    return null;
   }
 }

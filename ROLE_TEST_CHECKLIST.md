@@ -1,219 +1,101 @@
 # ROLE TEST CHECKLIST - Club Blackout Android Game
 
-**Purpose:** Prioritized test checklist for Club Blackout roles, based on implementation audit and current gaps.
+This document provides a prioritized list of roles and suggested test cases based on the ROLE_IMPLEMENTATION_AUDIT.md findings.
 
-**Status Legend:**
-- ✅ Fully Implemented & Testable
-- ⚠️ Partially Implemented (has gaps)
-- ❌ Not Implemented
-- 🧪 Test Exists
-- 📋 Test Needed
-
----
-
-## HIGH PRIORITY - CRITICAL GAPS (Test When Implemented)
-
-### ❌ THE LIGHTWEIGHT
-**Status:** Not Implemented  
-**Test Priority:** HIGH  
-**Suggested Tests:**
-- [ ] 📋 Taboo name is assigned after each night
-- [ ] 📋 Speaking a taboo name causes instant death
-- [ ] 📋 Multiple taboo names accumulate over nights
-- [ ] 📋 Other players can speak taboo names without dying
-- [ ] 📋 Lightweight survives when avoiding all taboo names
-
-### ❌ THE WHORE (Vote Deflection)
-**Status:** Critical Gap - Ability Missing  
-**Test Priority:** HIGH  
-**Suggested Tests:**
-- [ ] 🧪 Whore deflection saves a Dealer from being voted out (exists in whore_test.dart)
-- [ ] 🧪 Whore deflection saves the Whore from being voted out (exists in whore_test.dart)
-- [ ] 📋 Whore cannot deflect if not targeting a Dealer/self
-- [ ] 📋 Deflection target dies instead of original target
-- [ ] 📋 Deflection logs appear in game log
+## Priority Legend
+- 🔴 **CRITICAL**: Role is non-functional or core ability is missing
+- 🟠 **MAJOR**: Multiple abilities missing; role playable but incomplete
+- 🟡 **MINOR**: Mechanic probably works but needs testing/verification
+- ✅ **COMPLETE**: Fully implemented
 
 ---
 
-## MEDIUM PRIORITY - MAJOR GAPS
+## HIGH PRIORITY (Critical Gaps) 🔴
 
-### ⚠️ THE CLINGER (Vote Sync & Attack Dog)
-**Status:** Partially Implemented  
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 Clinger must vote exactly as obsession partner does
-- [ ] 📋 Clinger dies when obsession partner dies
-- [ ] 📋 "Controller" keyword spoken by obsession frees Clinger
-- [ ] 📋 Freed Clinger gains Attack Dog ability
-- [ ] 📋 Attack Dog kill ability works once and only once
-- [ ] 📋 Clinger cannot use Attack Dog if never freed
+### 1. THE WHORE 🔴
+**Status**: Critical gap - core deflection ability missing
 
-### ⚠️ THE SECOND WIND (Dealer Conversion)
-**Status:** Partially Implemented  
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 Second Wind triggers conversion option when killed
-- [ ] 📋 Dealers can accept conversion (Second Wind revives as Dealer)
-- [ ] 📋 Dealers can reject conversion (Second Wind stays dead)
-- [ ] 📋 No other deaths occur on night of successful conversion
-- [ ] 📋 Converted Second Wind has Dealer abilities and alliance
-- [ ] 📋 Rejection allows normal murder to proceed
-
-### ⚠️ THE BOUNCER (Roofi Power Steal)
-**Status:** ID Check Works, Power Steal Missing  
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 Bouncer can challenge Roofi
-- [ ] 📋 Correct challenge: Bouncer gains Roofi's silence ability, Roofi loses it
-- [ ] 📋 Incorrect challenge: Bouncer loses ID check ability forever
-- [ ] 📋 Bouncer retains both abilities if challenge succeeds
-- [ ] 📋 Challenge can only happen once
-
-### ⚠️ THE ALLY CAT (Meow Communication)
-**Status:** Nine Lives Works, Meow Missing  
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 Ally Cat wakes when Bouncer checks IDs
-- [ ] 📋 Ally Cat can only communicate via "Meow"
-- [ ] 📋 Non-meow communication is blocked/flagged
-- [ ] 📋 Ally Cat survives 9 kill attempts (nine lives)
-- [ ] 📋 Ally Cat dies on 10th kill
+**Suggested Test Cases**:
+- [ ] Whore deflects vote from Dealer to Party Animal
+- [ ] Whore deflects vote from herself to another player
+- [ ] Whore deflection only works once per day/night cycle
+- [ ] Deflection fails if target is invalid or dead
 
 ---
 
-## LOW PRIORITY - MINOR GAPS
+### 2. THE LIGHTWEIGHT 🔴
+**Status**: Not implemented - entire taboo name mechanic missing
 
-### 🟡 THE CREEP (Inheritance Verification)
-**Status:** Likely Works, Needs Testing  
-**Test Priority:** LOW  
-**Suggested Tests:**
-- [ ] 📋 Creep selects target on Night 0
-- [ ] 📋 Creep views target's role card
-- [ ] 📋 Creep alliance matches target alliance
-- [ ] 📋 When target dies, Creep inherits exact role
-- [ ] 📋 Creep abilities change to inherited role's abilities
-- [ ] 📋 Inheritance persists for rest of game
-
-### 🟡 THE DRAMA QUEEN (Swap Timing/Visibility)
-**Status:** Likely Works, Needs Clarification  
-**Test Priority:** LOW  
-**Suggested Tests:**
-- [ ] 📋 Drama Queen triggered when voted out and dies
-- [ ] 📋 Drama Queen selects two players to swap
-- [ ] 📋 Swapped players receive each other's role cards
-- [ ] 📋 Drama Queen can view swapped roles
-- [ ] 📋 Swap persists for remainder of game
-- [ ] 📋 Swap announcement timing is correct
+**Suggested Test Cases**:
+- [ ] Host assigns taboo name to Lightweight at night
+- [ ] Lightweight dies when speaking their taboo name during day
+- [ ] Other players can speak taboo name without penalty
+- [ ] Multiple taboo names accumulate over multiple nights
+- [ ] Lightweight survives if taboo name not spoken
 
 ---
 
-## FULLY IMPLEMENTED ROLES - REGRESSION TESTS
+### 3. THE HOST 🔴
+**Status**: Excluded from game entirely
 
-### ✅ THE DEALER
-**Test Priority:** HIGH (Core Role)  
-**Suggested Tests:**
-- [ ] 📋 Dealers wake together at night
-- [ ] 📋 Dealers agree on kill target (consensus/majority)
-- [ ] 📋 Kill is executed at end of night
-- [ ] 📋 Wallflower can witness murder
-- [ ] 📋 Multiple dealers targeting different players (tie-breaker logic)
-
-### ✅ THE MEDIC
-**Test Priority:** HIGH (Core Protection)  
-**Suggested Tests:**
-- [ ] 📋 Medic chooses PROTECT or REVIVE on Night 0
-- [ ] 📋 PROTECT mode: protects chosen player each night
-- [ ] 📋 REVIVE mode: can resurrect one dead player once per game
-- [ ] 📋 Protected player survives Dealer kill
-- [ ] 📋 Revive token is consumed after use
-- [ ] 📋 Cannot change mode after Night 0
-
-### ✅ THE BOUNCER (ID Check)
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 Bouncer selects player to ID check
-- [ ] 📋 Host nods if Dealer, shakes if not
-- [ ] 📋 Minor loses protection after being IDd by Bouncer
-- [ ] 📋 Ally Cat can witness ID checks
-
-### ✅ THE SOBER
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 Sober can send one player home (once per game)
-- [ ] 📋 Sent-home player is protected from death that night
-- [ ] 📋 If Dealer is sent home, no murders occur that night
-- [ ] 📋 Ability is consumed after use
-- [ ] 📋 Cannot use ability twice
-
-### ✅ THE MINOR
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 Minor cannot die on first kill attempt
-- [ ] 📋 First kill marks Minor as IDd
-- [ ] 📋 Second kill succeeds
-- [ ] 📋 Bouncer ID check also marks Minor as IDd
-
-### ✅ THE SEASONED DRINKER
-**Test Priority:** LOW  
-**Suggested Tests:**
-- [ ] 📋 Lives equal to number of Dealers
-- [ ] 📋 Survives multiple kill attempts
-- [ ] 📋 Dies when lives reach zero
-
-### ✅ THE ROOFI
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 Roofi silences one player each night
-- [ ] 📋 Silenced player cannot speak during day phase
-- [ ] 📋 Silenced Dealer is also paralyzed next night
-- [ ] 📋 Status effect persists for full day
-
-### ✅ THE WALLFLOWER
-**Test Priority:** LOW  
-**Suggested Tests:**
-- [ ] 📋 Wallflower can choose to witness murders
-- [ ] 📋 Sees who Dealers target
-- [ ] 📋 Can provide hints without explicit reveal
-
-### ✅ THE MESSY BITCH
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 Spreads rumour to one player each night
-- [ ] 📋 Win condition: all living players (except self) have rumour
-- [ ] 📋 Special kill ability after win condition met
-- [ ] 📋 Neutral survivor (doesn't affect Dealer/PA parity)
-
-### ✅ THE CLUB MANAGER
-**Test Priority:** LOW  
-**Suggested Tests:**
-- [ ] 📋 Views one player's role each night
-- [ ] 📋 Information is shown to Club Manager only
-- [ ] 📋 Can switch allegiances based on info
-
-### ✅ THE SILVER FOX
-**Test Priority:** LOW  
-**Suggested Tests:**
-- [ ] 📋 Once per game, force player to reveal role
-- [ ] 📋 Entire club sees reveal
-- [ ] 📋 Ability consumed after use
-
-### ✅ THE PREDATOR
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 When voted out, selects one voter to kill
-- [ ] 📋 Retaliation kill happens immediately
-- [ ] 📋 Can only target players who voted for Predator
-
-### ✅ THE TEA SPILLER
-**Test Priority:** LOW  
-**Suggested Tests:**
-- [ ] 📋 When dies, reveals one player's role
-- [ ] 📋 Reveal is Dealer or Not Dealer
-- [ ] 📋 Information shared with all players
+**Suggested Test Cases**:
+- [ ] Host role can be selected/assigned in role selection
+- [ ] Host has appropriate game master permissions
+- [ ] Host can facilitate night actions without participating
+- [ ] Host abilities don't interfere with normal gameplay
 
 ---
 
-## INTEGRATION TESTS
+## MEDIUM PRIORITY (Major Gaps) 🟠
+
+### 4. THE CLINGER 🟠
+**Status**: Partial - death sync works, vote sync and Attack Dog missing
+
+**Suggested Test Cases**:
+- [ ] Clinger dies when obsession partner dies
+- [ ] Clinger must vote exactly as partner votes (vote sync)
+- [ ] Clinger is freed when called "controller" by obsession
+- [ ] Freed Clinger can use Attack Dog ability to kill one player
+- [ ] Attack Dog ability is one-time use only
+- [ ] Clinger cannot use Attack Dog before being freed
+
+---
+
+### 5. THE ALLY CAT 🟠
+**Status**: Partial - nine lives works, meow communication missing
+
+**Suggested Test Cases**:
+- [ ] Ally Cat starts with 9 lives
+- [ ] Ally Cat survives 9 kill attempts
+- [ ] Ally Cat dies on 10th kill attempt
+- [ ] Ally Cat wakes with Bouncer during ID checks
+- [ ] Ally Cat can only communicate via "meow" during certain phases
+- [ ] Non-meow communication from Ally Cat is blocked/invalid
+
+---
+
+### 6. THE SECOND WIND 🟠
+**Status**: Partial - death detection works, conversion mechanic missing
+
+**Suggested Test Cases**:
+- [ ] Second Wind starts as Party Animal alliance
+- [ ] When killed, Dealers are prompted for conversion decision
+- [ ] If Dealers accept: Second Wind revives as Dealer
+- [ ] If Dealers accept: no other murders occur that night
+- [ ] If Dealers reject: Second Wind stays dead
+- [ ] Conversion offer only happens once
+
+---
+
+### 7. THE BOUNCER (Roofi Challenge) 🟠
+**Status**: Partial - ID check works, Roofi power-stealing missing
+
+**Suggested Test Cases**:
+- [ ] Bouncer can ID check players (nod for Dealer, shake for not)
+- [ ] Bouncer can challenge Roofi to steal paralyze ability
+- [ ] Successful challenge: Bouncer gains Roofi's ability, Roofi loses it
+- [ ] Failed challenge: Bouncer loses ID check ability permanently
+- [ ] Minor vulnerability to Bouncer ID check
 
 ### Night Resolution System
 **Test Priority:** CRITICAL  
@@ -246,27 +128,188 @@
 - [x] 🧪 Role IDs are unique (test/roles_schema_test.dart)
 - [x] 🧪 Night priority values in valid range (test/roles_schema_test.dart)
 
----
+## LOW PRIORITY (Minor Gaps) 🟡
 
-## NOTES FOR TEST IMPLEMENTATION
+### 8. THE CREEP 🟡
+**Status**: Mostly implemented - needs test verification
 
-1. **Use Existing Test Infrastructure:** Follow patterns from `test/whore_test.dart` and existing gameplay tests
-2. **Minimal Role Construction:** Tests can use minimal Role objects or load from RoleRepository
-3. **Focus on Determinism:** NightResolver provides deterministic resolution for easier testing
-4. **GameEngine Integration:** Tests should verify GameEngine properly uses NightResolver and reaction systems
-5. **Edge Cases:** Always test tie scenarios, empty lists, and boundary conditions
-6. **Parity Math:** Carefully verify dealer vs non-dealer counting in victory tests
-
----
-
-## TEST COVERAGE GOALS
-
-- **Current Coverage:** ~60% (estimated based on audit)
-- **Target Coverage:** 85%+
-- **Critical Paths:** 100% (Dealer kills, Medic protection, victory conditions)
-- **Edge Cases:** 70%+ (tie-breakers, multi-ability interactions)
+**Suggested Test Cases**:
+- [ ] Creep selects target on Night 0 and views their role
+- [ ] Creep's alliance matches mimicked player's alliance
+- [ ] When mimicked player dies, Creep inherits their role completely
+- [ ] Creep's abilities change to match inherited role
+- [ ] Creep can only mimic one player per game
 
 ---
 
-**Last Updated:** January 16, 2026  
-**Based on:** ROLE_IMPLEMENTATION_AUDIT.md comprehensive assessment
+### 9. THE DRAMA QUEEN 🟡
+**Status**: Partial - swap timing and visibility unclear
+
+**Suggested Test Cases**:
+- [ ] Drama Queen can select two players when voted out
+- [ ] Selected players' roles are swapped
+- [ ] Drama Queen views both swapped role cards
+- [ ] Swapped roles persist for rest of game
+- [ ] Swap timing is clearly defined (before/after morning announcement)
+
+---
+
+### 10. THE MESSY BITCH 🟡
+**Status**: Mostly implemented - win condition needs testing
+
+**Suggested Test Cases**:
+- [ ] Messy Bitch can spread rumour to one player per night
+- [ ] Each player can only receive one rumour (no duplicates)
+- [ ] Messy Bitch wins when all living players (except self) have rumours
+- [ ] Messy Bitch's special kill activates after win condition met
+- [ ] Special kill is one-time use
+
+---
+
+## FULLY IMPLEMENTED ROLES ✅
+
+### 11. THE DEALER ✅
+**Suggested Test Cases**:
+- [x] Dealers wake together and select kill target
+- [x] Dealer kill uses vote count with lexicographic tie-breaking
+- [x] Kill is prevented if Medic protects target
+- [x] Kill is prevented if Sober sends Dealer home
+- [x] Multiple Dealers coordinate kills properly
+
+---
+
+### 12. THE MEDIC ✅
+**Suggested Test Cases**:
+- [x] Medic chooses PROTECT or REVIVE on Night 1 (binary choice)
+- [x] Choice cannot be changed after Night 1
+- [x] PROTECT mode: shields one player per night from death
+- [x] REVIVE mode: resurrects one dead player once per game
+- [x] Medic protection prevents Dealer kill
+
+---
+
+### 13. THE BOUNCER (ID Check Only) ✅
+**Suggested Test Cases**:
+- [x] Bouncer can check one player's ID per night
+- [x] Host nods if target is Dealer
+- [x] Host shakes head if target is Party Animal
+- [x] Minor is vulnerable after being ID'd by Bouncer
+
+---
+
+### 14. THE MINOR ✅
+**Suggested Test Cases**:
+- [x] Minor cannot die until Bouncer has ID'd them
+- [x] First Dealer kill attempt on un-ID'd Minor fails
+- [x] First kill attempt marks Minor as ID'd
+- [x] Minor can be killed after being ID'd
+
+---
+
+### 15. THE SEASONED DRINKER ✅
+**Suggested Test Cases**:
+- [x] Seasoned Drinker has lives equal to number of Dealers
+- [x] Survives multiple kill attempts (one per Dealer)
+- [x] Dies after all lives are depleted
+- [x] Lives update if Dealer count changes
+
+---
+
+### 16. THE SOBER ✅
+**Suggested Test Cases**:
+- [x] Sober can send one player home once per game
+- [x] Sent home player is protected from death that night
+- [x] If Dealer sent home: no murders occur that night
+- [x] Ability can only be used once (tracked via flag)
+
+---
+
+### 17. THE WALLFLOWER ✅
+**Suggested Test Cases**:
+- [x] Wallflower can optionally witness Dealer's murder
+- [x] Wallflower wakes with Dealers to see target selection
+- [x] Witnessing is optional (Wallflower can choose to stay asleep)
+- [x] Information is used for hints during day phase
+
+---
+
+### 18. THE ROOFI ✅
+**Suggested Test Cases**:
+- [x] Roofi can paralyze one player per night
+- [x] Paralyzed player cannot speak or move during next round
+- [x] If Dealer is Roofi'd, they're paralyzed following night too
+- [x] Bouncer can challenge Roofi to steal ability (see Bouncer section)
+
+---
+
+### 19. THE CLUB MANAGER ✅
+**Suggested Test Cases**:
+- [x] Club Manager can view one player's role card per night
+- [x] Information is private to Club Manager
+- [x] Can choose to help either side based on survival strategy
+- [x] Ability works every night (not one-time)
+
+---
+
+### 20. THE SILVER FOX ✅
+**Suggested Test Cases**:
+- [x] Silver Fox can force one player to reveal role (once per game)
+- [x] Reveal happens at night and entire club sees it
+- [x] Ability is one-time use only
+- [x] Cannot be used after first use
+
+---
+
+### 21. THE PREDATOR ✅
+**Suggested Test Cases**:
+- [x] When voted out, Predator selects one voter
+- [x] Selected voter dies with Predator
+- [x] Retaliation only triggers on vote-out (not night kill)
+- [x] Predator must select from actual voters
+
+---
+
+### 22. THE TEA SPILLER ✅
+**Suggested Test Cases**:
+- [x] When Tea Spiller dies, they expose one player
+- [x] Exposure reveals if player is Dealer or Not Dealer
+- [x] Ability triggers on any death (night kill or vote-out)
+- [x] Exposure happens during morning announcement
+
+---
+
+### 23. THE PARTY ANIMAL ✅
+**Suggested Test Cases**:
+- [x] No special abilities (passive role)
+- [x] Participates in voting during day phase
+- [x] Can be killed by Dealers at night
+- [x] Wins when all Dealers are eliminated
+
+---
+
+## Testing Strategy
+
+### Unit Tests
+Focus on testing individual role abilities in isolation:
+- Use minimal Player/Role construction
+- Test single ability at a time
+- Verify state changes and flags
+
+### Integration Tests
+Test role interactions:
+- Dealer kill + Medic protect
+- Bouncer ID + Minor vulnerability
+- Sober send home + Dealer kill cancellation
+- Roofi silence + Dealer paralysis
+
+### Scenario Tests
+Full game scenarios with multiple roles:
+- Victory conditions (parity, elimination)
+- Edge cases (all Party Animals dead, single Dealer)
+- Complex interactions (multiple protective roles)
+
+### Schema Tests
+- Validate roles.json structure
+- Ensure required fields exist
+- Check for duplicate IDs/names
+- Verify night_priority values are valid

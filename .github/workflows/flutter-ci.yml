@@ -10,26 +10,28 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
+    permissions:
+      contents: read
+    
     strategy:
       matrix:
-        flutter-version: ['3.13.0']
+        flutter-version: ['3.10.7', 'stable']
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Flutter
+    - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
         flutter-version: ${{ matrix.flutter-version }}
         channel: 'stable'
     
+    - name: Verify Flutter installation
+      run: flutter --version
+    
     - name: Install dependencies
       run: flutter pub get
-    
-    - name: Verify formatting
-      run: dart format --output=none --set-exit-if-changed .
-      continue-on-error: true
     
     - name: Analyze code
       run: flutter analyze
@@ -37,10 +39,11 @@ jobs:
     - name: Run tests with coverage
       run: flutter test --coverage
     
-    - name: Upload coverage to Codecov
+    - name: Upload coverage to Codecov (optional)
+      if: matrix.flutter-version == 'stable'
       uses: codecov/codecov-action@v4
-      if: success()
       with:
         files: ./coverage/lcov.info
         fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
       continue-on-error: true
