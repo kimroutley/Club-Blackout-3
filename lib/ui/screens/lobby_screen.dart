@@ -457,6 +457,7 @@ class _LobbyScreenState extends State<LobbyScreen>
                   color: Color(0xFFFF9933),
                   size: 36,
                 ),
+                tooltip: 'Add Host',
                 onPressed: _addHost,
               ),
               enabledBorder: UnderlineInputBorder(
@@ -504,6 +505,7 @@ class _LobbyScreenState extends State<LobbyScreen>
                   color: ClubBlackoutTheme.neonBlue,
                   size: 36,
                 ),
+                tooltip: 'Add Guest',
                 onPressed: () => _addPlayer(),
               ),
               border: InputBorder.none,
@@ -1023,6 +1025,7 @@ class _PreviousNamesPanelState extends State<_PreviousNamesPanel> {
               IconButton(
                 onPressed: widget.onClose,
                 icon: const Icon(Icons.close, color: Colors.white54),
+                tooltip: 'Close History',
               ),
             ],
           ),
