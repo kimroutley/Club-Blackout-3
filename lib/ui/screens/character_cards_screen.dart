@@ -369,7 +369,7 @@ class CharacterCardsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         ...sentences.map((sentence) => Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 6),
+          padding: const EdgeInsets.only(left: 8, bottom: 8),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -405,7 +405,7 @@ class CharacterCardsScreen extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),

@@ -452,7 +452,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           ),
           if (clinger != null && clinger.clingerFreedAsAttackDog)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: ClubBlackoutTheme.neonRed.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(6),

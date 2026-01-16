@@ -348,7 +348,7 @@ class PlayerGuideBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 6.0),
+            padding: const EdgeInsets.only(top: 8.0),
             child: Icon(
               Icons.circle,
               size: 6,

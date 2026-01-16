@@ -327,7 +327,7 @@ class _LobbyScreenState extends State<LobbyScreen>
         // Main Interface
         Column(
           children: [
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Expanded(
               child: _isPreviousNamesExpanded
                   ? ClubBlackoutTheme.centeredConstrained(
