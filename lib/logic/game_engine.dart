@@ -1466,11 +1466,12 @@ class GameEngine extends ChangeNotifier {
 
                 // Cancel the kill on them
                 nightActions.remove('kill');
-                // We can't easily un-queue the abilityResolver entry,
-                // but removing nightActions['kill'] helps logic checks.
-                // Also, we can add a 'save' explicitly to be safe?
-                nightActions['protect'] = secondWind
-                    .id; // Hack: Medic protect them to ensure survival in resolver
+
+                // Cancel the queued ability so they don't die
+                abilityResolver.cancelAbility(
+                  'dealer_kill',
+                  targetPlayerId: secondWind.id,
+                );
               }
             } else {
               logAction(step.title, "Dealers chose to KILL Second Wind.");
