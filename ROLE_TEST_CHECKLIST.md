@@ -1,4 +1,4 @@
-# ROLE TEST CHECKLIST
+# ROLE TEST CHECKLIST - Club Blackout Android Game
 
 This document provides a prioritized list of roles and suggested test cases based on the ROLE_IMPLEMENTATION_AUDIT.md findings.
 
@@ -97,7 +97,36 @@ This document provides a prioritized list of roles and suggested test cases base
 - [ ] Failed challenge: Bouncer loses ID check ability permanently
 - [ ] Minor vulnerability to Bouncer ID check
 
----
+### Night Resolution System
+**Test Priority:** CRITICAL  
+**Suggested Tests:**
+- [x] 🧪 Medic protection prevents Dealer kill (test/night_resolver_test.dart)
+- [x] 🧪 Dealer consensus selection (test/night_resolver_test.dart)
+- [x] 🧪 Lexicographic tie-breaker (test/night_resolver_test.dart)
+- [x] 🧪 Sober cancels dealer kills (test/night_resolver_test.dart)
+- [x] 🧪 Minor protection logic (test/night_resolver_test.dart)
+- [ ] 📋 Multiple protections on same target
+- [ ] 📋 Priority order: Sober → Roofi → Medic → Bouncer → Dealers
+- [ ] 📋 Status effects applied correctly
+
+### Victory Conditions
+**Test Priority:** CRITICAL  
+**Suggested Tests:**
+- [x] 🧪 Dealers win at parity (test/night_resolver_victory_test.dart)
+- [x] 🧪 Party Animals win when all Dealers dead (test/night_resolver_victory_test.dart)
+- [x] 🧪 Whore counts toward Dealer parity (test/night_resolver_victory_test.dart)
+- [ ] 📋 Messy Bitch neutral win doesn't trigger parity
+- [ ] 📋 Dead players excluded from parity calculation
+- [ ] 📋 Victory announced at correct time
+
+### Schema Validation
+**Test Priority:** HIGH  
+**Suggested Tests:**
+- [x] 🧪 roles.json exists (test/roles_schema_test.dart)
+- [x] 🧪 Valid JSON structure (test/roles_schema_test.dart)
+- [x] 🧪 All roles have id, name, nightPriority (test/roles_schema_test.dart)
+- [x] 🧪 Role IDs are unique (test/roles_schema_test.dart)
+- [x] 🧪 Night priority values in valid range (test/roles_schema_test.dart)
 
 ## LOW PRIORITY (Minor Gaps) 🟡
 
