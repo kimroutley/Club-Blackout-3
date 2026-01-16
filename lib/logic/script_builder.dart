@@ -497,6 +497,15 @@ class ScriptBuilder {
         actionType: ScriptActionType.selectPlayer,
         roleId: 'sober',
       ));
+    } else if (role.id == 'silver_fox') {
+      steps.add(ScriptStep(
+        id: 'silver_fox_act',
+        title: 'Force Reveal',
+        readAloudText: "Silver Fox$creepText, open your eyes.\n\nOnly once per game, you may ply someone with alcohol to force a reveal. If you wish to use this power now, point to a player.\n\nSilver Fox$creepText, close your eyes.",
+        instructionText: "If they choose a player, that player must reveal their card tomorrow. If not, they shake their head.",
+        actionType: ScriptActionType.selectPlayer,
+        roleId: 'silver_fox',
+      ));
     } else if (role.id == 'messy_bitch') {
       steps.add(ScriptStep(
         id: 'messy_bitch_act',
@@ -534,17 +543,6 @@ class ScriptBuilder {
           instructionText: "This step should ideally be merged with Dealer wake.",
           roleId: 'wallflower',
         ));
-    /* SILVER FOX REMOVED FROM SCRIPT - ABILITY IS MENU ACTIVATED ONLY */    
-    /* else if (role.id == 'silver_fox') {
-      steps.add(ScriptStep(
-        id: 'silver_fox_act',
-        title: 'Force Reveal',
-        readAloudText: "Silver Fox$creepText, open your eyes.\n\nOnly once per game, you may ply someone with alcohol to force a reveal. If you wish to use this power now, point to a player.\n\nSilver Fox$creepText, close your eyes.",
-        instructionText: "If they choose a player, that player must reveal their card tomorrow. If not, they shake their head.",
-        actionType: ScriptActionType.selectPlayer,
-        roleId: 'silver_fox',
-      ));
-    } */
     } else if (role.id == 'tea_spiller') {
       steps.add(ScriptStep(
         id: 'tea_spiller_act',
