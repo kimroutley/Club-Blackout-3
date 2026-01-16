@@ -104,6 +104,17 @@ class AbilityResolver {
     _blocks.clear();
     _redirects.clear();
   }
+
+  /// Remove a queued ability that matches the criteria
+  void cancelAbility(String abilityId, {String? sourcePlayerId, String? targetPlayerId}) {
+    _abilityQueue.removeWhere((ability) {
+      bool matchId = ability.abilityId == abilityId;
+      bool matchSource = sourcePlayerId == null || ability.sourcePlayerId == sourcePlayerId;
+      bool matchTarget = targetPlayerId == null || ability.targetPlayerIds.contains(targetPlayerId);
+
+      return matchId && matchSource && matchTarget;
+    });
+  }
   
   /// Process all queued abilities in priority order
   List<AbilityResult> resolveAllAbilities(List<Player> players) {
@@ -136,7 +147,7 @@ class AbilityResolver {
     // Resolve based on effect type
     switch (ability.effect) {
       case AbilityEffect.protect:
-        return _resolveProtect(ability, actualTargets);
+        return _resolveProtect(ability, actualTargets, players);
         
       case AbilityEffect.kill:
         return _resolveKill(ability, actualTargets, players);
@@ -156,6 +167,12 @@ class AbilityResolver {
       case AbilityEffect.spread:
         return _resolveSpread(ability, actualTargets, players);
         
+      case AbilityEffect.investigate:
+        return _resolveInvestigate(ability, actualTargets, players);
+
+      case AbilityEffect.reveal:
+        return _resolveReveal(ability, actualTargets, players);
+
       default:
         return AbilityResult(
           abilityId: ability.abilityId,
@@ -178,9 +195,24 @@ class AbilityResolver {
     return result;
   }
   
-  AbilityResult _resolveProtect(ActiveAbility ability, List<String> targets) {
-    for (var target in targets) {
-      _protections.putIfAbsent(ability.sourcePlayerId, () => {}).add(target);
+  AbilityResult _resolveProtect(ActiveAbility ability, List<String> targets, List<Player> players) {
+    for (var targetId in targets) {
+      _protections.putIfAbsent(ability.sourcePlayerId, () => {}).add(targetId);
+
+      // Special logic for Sober: If Dealer is sent home, block all murders
+      if (ability.abilityId == 'sober_send_home') {
+        final target = players.firstWhere((p) => p.id == targetId, orElse: () => players.first);
+        if (target.id == targetId && target.role.id == 'dealer') {
+          // Find all dealers and block them
+          final dealers = players.where((p) => p.role.id == 'dealer');
+          for (var dealer in dealers) {
+             // Block the dealer.
+             // _blocks maps Blocker ID -> Set of Blocked IDs.
+             // So we add dealer.id to the set of players blocked by Sober (ability.sourcePlayerId).
+             _blocks.putIfAbsent(ability.sourcePlayerId, () => {}).add(dealer.id);
+          }
+        }
+      }
     }
     return AbilityResult(
       abilityId: ability.abilityId,
@@ -335,6 +367,57 @@ class AbilityResolver {
       abilityId: ability.abilityId,
       success: true,
       message: "Rumour spread",
+      targets: targets,
+    );
+  }
+
+  AbilityResult _resolveInvestigate(ActiveAbility ability, List<String> targets, List<Player> players) {
+    // For abilities like Club Manager viewing a role or Wallflower watching
+    // We return the info in metadata
+    final targetId = targets.firstOrNull;
+
+    // Handle cases like Wallflower which may not require a specific target
+    if (targetId == null) {
+      if (ability.abilityId == 'wallflower_witness') {
+         return AbilityResult(
+           abilityId: ability.abilityId,
+           success: true,
+           message: "Witnessed murder",
+           targets: [],
+           // Wallflower logic is mostly handled in GameEngine logs, but consistent result helps.
+         );
+      }
+
+      return AbilityResult(
+          abilityId: ability.abilityId, success: false, message: "No target");
+    }
+
+    final target = players.firstWhere((p) => p.id == targetId, orElse: () => players.first);
+    if (target.id != targetId) {
+       return AbilityResult(
+          abilityId: ability.abilityId, success: false, message: "Target not found");
+    }
+
+    return AbilityResult(
+      abilityId: ability.abilityId,
+      success: true,
+      message: "Investigated ${target.name}",
+      targets: targets,
+      metadata: {
+        'role': target.role.name,
+        'roleId': target.role.id,
+        'alliance': target.role.alliance,
+      },
+    );
+  }
+
+  AbilityResult _resolveReveal(ActiveAbility ability, List<String> targets, List<Player> players) {
+    // For abilities like Silver Fox or Tea Spiller
+    // The actual revealing logic (UI update) happens elsewhere based on this result
+    return AbilityResult(
+      abilityId: ability.abilityId,
+      success: true,
+      message: "Revealed targets",
       targets: targets,
     );
   }
@@ -500,6 +583,67 @@ class AbilityLibrary {
     priority: 0,
     isPassive: true,
   );
+
+  static const wallflowerWitness = Ability(
+    id: 'wallflower_witness',
+    name: 'Witness Murder',
+    description: 'Can discreetly open eyes during the night to watch the murder',
+    trigger: AbilityTrigger.nightAction,
+    effect: AbilityEffect.investigate,
+    priority: 5,
+    requiresTarget: false, // It's an observation, but in code might not need a target selection if it's "watch everyone"
+    isPassive: true, // Manual action
+  );
+
+  static const clubManagerView = Ability(
+    id: 'club_manager_view',
+    name: 'Sight Card',
+    description: 'Look at a fellow player\'s card without others seeing',
+    trigger: AbilityTrigger.nightAction,
+    effect: AbilityEffect.investigate,
+    priority: 3,
+    requiresTarget: true,
+    maxTargets: 1,
+    minTargets: 1,
+  );
+
+  static const silverFoxReveal = Ability(
+    id: 'silver_fox_reveal',
+    name: 'Expose Secrets',
+    description: 'Force a player to hold up their role card for 5 seconds',
+    trigger: AbilityTrigger.nightAction,
+    effect: AbilityEffect.reveal,
+    priority: 1,
+    requiresTarget: true,
+    maxTargets: 1,
+    minTargets: 1,
+    isOneTime: true,
+  );
+
+  static const soberSendHome = Ability(
+    id: 'sober_send_home',
+    name: 'Drive Home',
+    description: 'Send a player home. If Dealer is sent home, NO murders occur.',
+    trigger: AbilityTrigger.nightAction,
+    effect: AbilityEffect.protect, // Handled specially in resolver logic for Dealers
+    priority: 1,
+    requiresTarget: true,
+    maxTargets: 1,
+    minTargets: 1,
+    isOneTime: true,
+  );
+
+  static const whoreDeflect = Ability(
+    id: 'whore_deflect',
+    name: 'Deflection',
+    description: 'Deflect a vote from a Dealer to another player',
+    trigger: AbilityTrigger.dayAction,
+    effect: AbilityEffect.redirect,
+    priority: 0,
+    requiresTarget: true,
+    maxTargets: 1,
+    minTargets: 1,
+  );
   
   /// Get abilities for a specific role
   static List<Ability> getAbilitiesForRole(String roleId) {
@@ -526,6 +670,16 @@ class AbilityLibrary {
         return [seasonedDrinkerPassive];
       case 'ally_cat':
         return [allyCatPassive];
+      case 'wallflower':
+        return [wallflowerWitness];
+      case 'club_manager':
+        return [clubManagerView];
+      case 'silver_fox':
+        return [silverFoxReveal];
+      case 'sober':
+        return [soberSendHome];
+      case 'whore':
+        return [whoreDeflect];
       default:
         return [];
     }
@@ -539,6 +693,9 @@ class AbilityLibrary {
       bouncerProtect,
       roofiSilence,
       messyBitchSpread,
+      clubManagerView,
+      silverFoxReveal,
+      soberSendHome,
     ];
   }
   
