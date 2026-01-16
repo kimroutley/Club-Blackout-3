@@ -153,13 +153,13 @@ test('Bouncer retains ID check when not challenging Roofi', () {
 });
 ```
 
-### ✅ THE ROOFI
-**Test Priority:** MEDIUM  
-**Suggested Tests:**
-- [ ] 📋 Roofi silences one player each night
-- [ ] 📋 Silenced player cannot speak during day phase
-- [ ] 📋 Silenced Dealer is also paralyzed next night
-- [ ] 📋 Status effect persists for full day
+**Suggested Test Cases**:
+- [ ] Clinger dies when obsession partner dies
+- [ ] Clinger must vote exactly as partner votes (vote sync)
+- [ ] Clinger is freed when called "controller" by obsession
+- [ ] Freed Clinger can use Attack Dog ability to kill one player
+- [ ] Attack Dog ability is one-time use only
+- [ ] Clinger cannot use Attack Dog before being freed
 
 ## 🟡 MEDIUM PRIORITY ROLES
 
@@ -188,12 +188,13 @@ test('Ally Cat loses a life when attacked', () {
 });
 ```
 
-### ✅ THE CLUB MANAGER
-**Test Priority:** LOW  
-**Suggested Tests:**
-- [ ] 📋 Views one player's role each night
-- [ ] 📋 Information is shown to Club Manager only
-- [ ] 📋 Can switch allegiances based on info
+**Suggested Test Cases**:
+- [ ] Ally Cat starts with 9 lives
+- [ ] Ally Cat survives 9 kill attempts
+- [ ] Ally Cat dies on 10th kill attempt
+- [ ] Ally Cat wakes with Bouncer during ID checks
+- [ ] Ally Cat can only communicate via "meow" during certain phases
+- [ ] Non-meow communication from Ally Cat is blocked/invalid
 
 ### 7. THE CREEP - Role Inheritance
 **Status:** MINOR GAP - Likely works; needs verification  

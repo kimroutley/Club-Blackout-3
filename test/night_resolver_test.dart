@@ -14,7 +14,7 @@ void main() {
         type: 'aggressive',
         description: 'Kill players',
         nightPriority: 5,
-        assetPath: '',
+        assetPath: 'test/path',
         colorHex: '#FF00FF',
       );
 
@@ -25,7 +25,7 @@ void main() {
         type: 'passive',
         description: 'Survive',
         nightPriority: 0,
-        assetPath: '',
+        assetPath: 'test/path',
         colorHex: '#FFDAB9',
       );
 
@@ -188,7 +188,7 @@ void main() {
         type: 'passive',
         description: 'Survive',
         nightPriority: 0,
-        assetPath: '',
+        assetPath: 'test/path',
         colorHex: '#FFDAB9',
       );
 
