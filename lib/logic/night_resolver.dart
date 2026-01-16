@@ -4,13 +4,16 @@
 /// encapsulates the ordered night-phase resolution while integrating with
 /// the existing Player model.
 ///
-/// Night Phase Order:
+/// Night Phase Execution Order (by priority level):
 /// 1. Sober (priority 1) - Can send someone home (protect + block)
-/// 2. Roofi (priority 4) - Silences a player
-/// 3. Medic (priority 2) - Protects a player from death (if PROTECT mode)
-/// 4. Bouncer (priority 2) - Checks a player's ID
+/// 2. Medic (priority 2) - Protects a player from death (if PROTECT mode)
+/// 3. Bouncer (priority 2) - Checks a player's ID
+/// 4. Roofi (priority 4) - Silences a player
 /// 5. Dealers (priority 5) - Choose a victim to kill
 /// 6. Finalize - Apply all effects and determine outcomes
+///
+/// Note: Lower priority numbers execute first. Ties are broken by the order
+/// actions are processed in this resolver.
 ///
 /// Usage:
 /// ```dart
@@ -115,15 +118,7 @@ class NightResolver {
       }
     }
 
-    // PHASE 2: Roofi (priority 4) - Silence players
-    for (final action in roofiActions) {
-      if (action.targetId != null && action.actionType == 'silence') {
-        silencedIds.add(action.targetId!);
-        messages[action.targetId!] = 'Silenced by Roofi';
-      }
-    }
-
-    // PHASE 3: Medic (priority 2) - Protect someone
+    // PHASE 2: Medic (priority 2) - Protect someone
     for (final action in medicActions) {
       if (action.targetId != null && action.actionType == 'protect') {
         protectedIds.add(action.targetId!);
@@ -131,13 +126,20 @@ class NightResolver {
       }
     }
 
-    // PHASE 4: Bouncer (priority 2) - Check IDs (informational only)
+    // PHASE 3: Bouncer (priority 2) - Check IDs (informational only)
     for (final action in bouncerActions) {
       if (action.targetId != null && action.actionType == 'check') {
         messages[action.targetId!] = 'ID checked by The Bouncer';
       }
     }
 
+    // PHASE 4: Roofi (priority 4) - Silence players
+    for (final action in roofiActions) {
+      if (action.targetId != null && action.actionType == 'silence') {
+        silencedIds.add(action.targetId!);
+        messages[action.targetId!] = 'Silenced by Roofi';
+      }
+    }
     // PHASE 5: Dealers (priority 5) - Kill someone
     for (final action in dealerActions) {
       if (action.targetId != null && action.actionType == 'kill') {
