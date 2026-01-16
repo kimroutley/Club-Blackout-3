@@ -79,7 +79,7 @@ class PlayerTile extends StatelessWidget {
                 if (voteCount != null) ...[
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
@@ -105,7 +105,7 @@ class PlayerTile extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: isSelected ? color.withOpacity(0.25) : Colors.black.withOpacity(0.8),
@@ -153,7 +153,7 @@ class PlayerTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(6),
@@ -174,7 +174,7 @@ class PlayerTile extends StatelessWidget {
             // Vote Count (if applicable)
             if (voteCount != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),

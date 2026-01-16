@@ -43,11 +43,12 @@ class PlayerGuideBody extends StatelessWidget {
           ),
         ),
       ),
-      child: ClubBlackoutTheme.centeredConstrained(
-        maxWidth: 760,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-          children: [
+      child: SafeArea(
+        child: ClubBlackoutTheme.centeredConstrained(
+          maxWidth: 760,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            children: [
             _buildSectionCard(
               title: "Welcome to Club Blackout",
               children: [
@@ -306,6 +307,7 @@ class PlayerGuideBody extends StatelessWidget {
             ...children,
           ],
         ),
+        ),
       ),
     );
   }
@@ -346,7 +348,7 @@ class PlayerGuideBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 6.0),
+            padding: const EdgeInsets.only(top: 8.0),
             child: Icon(
               Icons.circle,
               size: 6,

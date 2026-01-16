@@ -56,9 +56,10 @@ class _GalleryScreenState extends State<GalleryScreen> {
         ),
 
         // Main Content
-        CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
+        SafeArea(
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
             // Extra spacing for the overhead AppBar in MainScreen
             const SliverToBoxAdapter(child: SizedBox(height: 80)),
 
@@ -118,6 +119,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
             // Bottom spacing
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
           ],
+        ),
         ),
       ],
     );

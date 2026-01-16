@@ -542,7 +542,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
               opacity: 0.9,
               borderColor: ClubBlackoutTheme.neonPink,
             ),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

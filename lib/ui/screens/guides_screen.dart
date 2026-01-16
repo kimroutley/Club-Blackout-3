@@ -26,8 +26,9 @@ class GuidesScreen extends StatelessWidget {
             ),
           ),
 
-          Column(
-            children: [
+          SafeArea(
+            child: Column(
+              children: [
               // TabBar at the top of the content area
               Container(
                 margin: const EdgeInsets.only(
@@ -72,6 +73,7 @@ class GuidesScreen extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         ],
       ),
@@ -499,7 +501,7 @@ class GuidesScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 6.0),
+            padding: const EdgeInsets.only(top: 8.0),
             child: Icon(
               Icons.circle,
               size: 6,
