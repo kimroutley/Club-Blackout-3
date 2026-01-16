@@ -54,12 +54,16 @@ class NightResolver {
         protectedPlayerIds.add(action.targetPlayerId!);
         
         // Find target player and check if dealer
-        final target = players.firstWhere(
-          (p) => p.id == action.targetPlayerId,
-          orElse: () => players.first,
-        );
-        if (target.role.id == 'dealer') {
-          metadata['dealer_sent_home'] = 'true';
+        try {
+          final target = players.firstWhere(
+            (p) => p.id == action.targetPlayerId,
+          );
+          if (target.role.id == 'dealer') {
+            metadata['dealer_sent_home'] = 'true';
+          }
+        } catch (e) {
+          // Target player not found - skip this action
+          metadata['error_send_home_target_not_found'] = action.targetPlayerId!;
         }
       }
     }
@@ -104,36 +108,40 @@ class NightResolver {
           // Check if target is protected
           if (!protectedPlayerIds.contains(targetId)) {
             // Find the target player
-            final target = players.firstWhere(
-              (p) => p.id == targetId,
-              orElse: () => players.first,
-            );
-            
-            // Check for special protections
-            final isDealerAttempt = true;
-            
-            // Minor protection (if not ID'd by bouncer)
-            if (target.role.id == 'minor' && !target.minorHasBeenIDd) {
-              metadata['minor_protected_$targetId'] = 'true';
-            } 
-            // Multi-life roles
-            else if (target.lives > 1) {
-              metadata['life_lost_$targetId'] = 'true';
-              // Lives are decremented by GameEngine after resolution
-            } 
-            // Ally Cat with lives
-            else if (target.role.id == 'ally_cat' && target.lives > 0) {
-              metadata['ally_cat_life_lost_$targetId'] = 'true';
-            }
-            // Second Wind (pending conversion check happens in GameEngine)
-            else if (target.role.id == 'second_wind' && 
-                     !target.secondWindConverted && 
-                     !target.secondWindRefusedConversion) {
-              metadata['second_wind_triggered_$targetId'] = 'true';
-            }
-            // Standard kill
-            else {
-              deadPlayerIds.add(targetId);
+            try {
+              final target = players.firstWhere(
+                (p) => p.id == targetId,
+              );
+              
+              // Check for special protections
+              final isDealerAttempt = true;
+              
+              // Minor protection (if not ID'd by bouncer)
+              if (target.role.id == 'minor' && !target.minorHasBeenIDd) {
+                metadata['minor_protected_$targetId'] = 'true';
+              } 
+              // Multi-life roles
+              else if (target.lives > 1) {
+                metadata['life_lost_$targetId'] = 'true';
+                // Lives are decremented by GameEngine after resolution
+              } 
+              // Ally Cat with lives
+              else if (target.role.id == 'ally_cat' && target.lives > 0) {
+                metadata['ally_cat_life_lost_$targetId'] = 'true';
+              }
+              // Second Wind (pending conversion check happens in GameEngine)
+              else if (target.role.id == 'second_wind' && 
+                       !target.secondWindConverted && 
+                       !target.secondWindRefusedConversion) {
+                metadata['second_wind_triggered_$targetId'] = 'true';
+              }
+              // Standard kill
+              else {
+                deadPlayerIds.add(targetId);
+              }
+            } catch (e) {
+              // Target player not found - record error but don't crash
+              metadata['error_kill_target_not_found'] = targetId;
             }
           } else {
             metadata['protected_$targetId'] = 'true';
