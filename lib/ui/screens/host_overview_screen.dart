@@ -379,7 +379,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
               .take(5)
               .map(
                 (log) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -450,7 +450,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           ),
           if (clinger != null && clinger.clingerFreedAsAttackDog)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: ClubBlackoutTheme.neonRed.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(6),
@@ -601,7 +601,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: 2,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: ClubBlackoutTheme.neonPurple.withOpacity(0.15),
@@ -619,7 +619,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
               ],
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           if (pending)
             Text(
               markedA != null && markedB != null
@@ -761,8 +761,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: player.role.color.withOpacity(0.2),
@@ -784,7 +784,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                           color: ClubBlackoutTheme.neonRed,
                           size: 10,
                         ),
-                        const SizedBox(width: 2),
+                        const SizedBox(width: 4),
                         Text(
                           'x${player.lives}',
                           style: TextStyle(

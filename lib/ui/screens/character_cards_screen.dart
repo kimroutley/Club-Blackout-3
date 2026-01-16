@@ -75,12 +75,12 @@ class CharacterCardsScreen extends StatelessWidget {
             children: [
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 10),
+                  padding: const EdgeInsets.only(top: 12),
                   child: RoleCardWidget(role: role),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(bottom: 20, top: 10),
+                padding: const EdgeInsets.only(bottom: 24, top: 12),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: role.color),
                   onPressed: () => Navigator.pop(context),
@@ -271,7 +271,7 @@ class CharacterCardsScreen extends StatelessWidget {
                  Row(
                    children: [
                      Icon(Icons.transform, color: Colors.white54, size: 14),
-                     const SizedBox(width: 6),
+                     const SizedBox(width: 8),
                      Text(
                        conversion,
                        style: const TextStyle(
@@ -365,7 +365,7 @@ class CharacterCardsScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         ...sentences.map((sentence) => Padding(
           padding: const EdgeInsets.only(left: 8, bottom: 6),
           child: Row(
@@ -499,7 +499,7 @@ class _RoleGalleryTile extends StatelessWidget {
                 : Icon(Icons.person, color: role.color, size: 40),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           SizedBox(
             width: 90,
             child: Text(

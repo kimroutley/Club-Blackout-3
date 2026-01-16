@@ -1393,7 +1393,7 @@ class _GameScreenState extends State<GameScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
-                    vertical: 6,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.red.withOpacity(0.2),
@@ -2386,7 +2386,7 @@ class _GameScreenState extends State<GameScreen>
                   child: SafeArea(
                     child: ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.only(top: 100, bottom: 200),
+                      padding: const EdgeInsets.only(top: 120, bottom: 200),
                       itemCount: visibleCount,
                       itemBuilder: (context, index) {
                         final step = steps[index];
@@ -2670,7 +2670,7 @@ class _GameScreenState extends State<GameScreen>
                   backgroundColor: Colors.red.withOpacity(0.2),
                   foregroundColor: Colors.red,
                   side: const BorderSide(color: Colors.red, width: 2),
-                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                 ),
               ),
             ),
@@ -2694,7 +2694,7 @@ class _GameScreenState extends State<GameScreen>
                   ).withOpacity(0.2), // Second Wind Pink
                   foregroundColor: const Color(0xFFDE3163),
                   side: const BorderSide(color: Color(0xFFDE3163), width: 2),
-                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                 ),
               ),
             ),
@@ -2885,7 +2885,7 @@ class _GameScreenState extends State<GameScreen>
               onPressed: () => setState(() => _rumourMillExpanded = true),
               child: roleIcon('messy_bitch'),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Clinger -> Attack Dog (Manual Activation) - Active when Linked
           if (widget.gameEngine.players.any(
@@ -2900,7 +2900,7 @@ class _GameScreenState extends State<GameScreen>
               onPressed: _showAttackDogConversion,
               child: roleIcon('clinger'),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Second Wind -> Conversion (Manual Activation) - Active Pending
           if (widget.gameEngine.players.any(
@@ -2914,10 +2914,10 @@ class _GameScreenState extends State<GameScreen>
               onPressed: _showSecondWindConversion,
               child: roleIcon('second_wind'),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Silver Fox disabled (host request)
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Lightweight -> Taboo List (Info) - Active when Alive
           if (widget.gameEngine.players.any(
@@ -2928,7 +2928,7 @@ class _GameScreenState extends State<GameScreen>
               onPressed: _showTabooList,
               child: roleIcon('lightweight'),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Tea Spiller -> Reveal (Death Reaction) - ONLY ACTIVE WHEN DEAD
           if (widget.gameEngine.players.any(
@@ -2941,7 +2941,7 @@ class _GameScreenState extends State<GameScreen>
               onPressed: _showTeaSpillerRevealDialog,
               child: roleIcon('tea_spiller'),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Predator -> Retaliation (Death Reaction) - ONLY ACTIVE WHEN DEAD
           if (widget.gameEngine.players.any(
@@ -2954,7 +2954,7 @@ class _GameScreenState extends State<GameScreen>
               onPressed: _showPredatorRetaliationDialog,
               child: roleIcon('predator'),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Drama Queen -> Swap (Death Reaction) - Active while pending
           if (widget.gameEngine.dramaQueenSwapPending)
@@ -2977,7 +2977,7 @@ class _GameScreenState extends State<GameScreen>
                 child: roleIcon('drama_queen'),
               ),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Medic -> Revive (Manual Activation - if Mode Correct) - Active when Alive
           if (widget.gameEngine.players.any(
@@ -2992,7 +2992,7 @@ class _GameScreenState extends State<GameScreen>
               onPressed: _showMedicReviveDialog,
               child: roleIcon('medic'),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Sober -> Send Home (Manual Activation - Day Ability) - Active when Alive
           if (widget.gameEngine.players.any(
@@ -3003,7 +3003,7 @@ class _GameScreenState extends State<GameScreen>
               onPressed: _showSoberAbility,
               child: roleIcon('sober'),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Bouncer -> Confront Roofi (Manual Activation)
           if (widget.gameEngine.players.any(
@@ -3034,7 +3034,7 @@ class _GameScreenState extends State<GameScreen>
 
     return Container(
       color: Colors.black.withOpacity(0.95),
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
       child: Column(
         children: [
           Text(
@@ -3827,7 +3827,7 @@ class _GameLogDialog extends StatelessWidget {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
-                              vertical: 14,
+                              vertical: 16,
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -3842,7 +3842,7 @@ class _GameLogDialog extends StatelessWidget {
                                     fontFamily: 'RobotoMono',
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 8),
                                 Text(
                                   headerLine,
                                   style: const TextStyle(
@@ -3852,7 +3852,7 @@ class _GameLogDialog extends StatelessWidget {
                                     height: 1.3,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 8),
                                 Text(
                                   dotted,
                                   style: TextStyle(
@@ -3873,7 +3873,7 @@ class _GameLogDialog extends StatelessWidget {
                                     fontFamily: 'RobotoMono',
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 8),
                                 Text(
                                   entry.details,
                                   style: const TextStyle(
@@ -3893,7 +3893,7 @@ class _GameLogDialog extends StatelessWidget {
                                     fontFamily: 'RobotoMono',
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 8),
                                 Row(
                                   children: [
                                     Text(
