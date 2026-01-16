@@ -10,6 +10,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
+    permissions:
+      contents: read
+    
     strategy:
       matrix:
         flutter-version: ['3.10.7', 'stable']
