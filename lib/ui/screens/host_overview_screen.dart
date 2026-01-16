@@ -290,7 +290,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           const SizedBox(height: 16),
 
           // 1. Permanent Roles
-          if (clinger != null) _buildClingerStatus(clinger),
+          _buildClingerRow(clinger),
           if (creep != null) _buildCreepStatus(creep),
           if (allyCat != null) _buildMultiLifeStatus(allyCat),
           if (seasonedDrinker != null) _buildMultiLifeStatus(seasonedDrinker),
@@ -405,14 +405,10 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     );
   }
 
-  Widget _buildClingerStatus(Player clinger) {
-    if (!clinger.isActive && !clinger.isAlive)
-      return const SizedBox.shrink(); // Don't show if dead? Or show as dead?
-
-    final partner = clinger.clingerPartnerId != null
+  Widget _buildClingerRow(Player? clinger) {
+    final partner = clinger?.clingerPartnerId != null
         ? widget.gameEngine.players
-              .where((p) => p.id == clinger.clingerPartnerId)
-              .firstOrNull
+            .firstWhere((p) => p.id == clinger!.clingerPartnerId)
         : null;
 
     return Padding(
@@ -422,14 +418,15 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: clinger.role.color.withOpacity(0.2),
+              color: (clinger?.role.color ?? Colors.grey).withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: clinger.role.color.withOpacity(0.5)),
+              border: Border.all(
+                  color: (clinger?.role.color ?? Colors.grey).withOpacity(0.5)),
             ),
             child: Text(
               'CLINGER',
               style: TextStyle(
-                color: clinger.role.color,
+                color: clinger?.role.color ?? Colors.grey,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
@@ -439,14 +436,19 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           Icon(Icons.arrow_forward, color: Colors.white54, size: 16),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              partner != null
-                  ? '${clinger.name} → Obsessed with ${partner.name} (${partner.role.name})'
-                  : '${clinger.name} → No obsession selected yet',
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-            ),
+            child: clinger != null
+                ? Text(
+                    partner != null
+                        ? '${clinger.name} → Obsessed with ${partner.name} (${partner.role.name})'
+                        : '${clinger.name} → No obsession selected yet',
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                  )
+                : const Text(
+                    '(Not in this game)',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
           ),
-          if (clinger.clingerFreedAsAttackDog)
+          if (clinger != null && clinger.clingerFreedAsAttackDog)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
