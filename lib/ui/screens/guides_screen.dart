@@ -26,8 +26,9 @@ class GuidesScreen extends StatelessWidget {
             ),
           ),
 
-          Column(
-            children: [
+          SafeArea(
+            child: Column(
+              children: [
               // TabBar at the top of the content area
               Container(
                 margin: const EdgeInsets.only(
@@ -72,6 +73,7 @@ class GuidesScreen extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         ],
       ),

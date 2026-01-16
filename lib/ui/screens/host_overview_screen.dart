@@ -131,11 +131,12 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           ),
 
           // Content
-          ClubBlackoutTheme.centeredConstrained(
-            maxWidth: 820,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 90, 16, 40),
-              children: [
+          SafeArea(
+            child: ClubBlackoutTheme.centeredConstrained(
+              maxWidth: 820,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 90, 16, 40),
+                children: [
                 // Game Stats
                 _buildGameStats(alivePlayers, deadPlayers),
                 const SizedBox(height: 16),
@@ -152,6 +153,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                 _buildGameControls(),
               ],
             ),
+          ),
           ),
         ],
       ),

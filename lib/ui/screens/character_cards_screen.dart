@@ -18,11 +18,12 @@ class CharacterCardsScreen extends StatelessWidget {
       !r.alliance.contains('Party Animal')
     ).toList();
 
-    return ClubBlackoutTheme.centeredConstrained(
-      maxWidth: 920,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+    return SafeArea(
+      child: ClubBlackoutTheme.centeredConstrained(
+        maxWidth: 920,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
           _buildAllianceGraph(),
           const SizedBox(height: 32),
           _buildRoleGrid('THE DEALERS', dealerTeam, ClubBlackoutTheme.neonRed, context),
@@ -32,6 +33,7 @@ class CharacterCardsScreen extends StatelessWidget {
           _buildRoleGrid('WILD CARDS & NEUTRALS', neutrals, ClubBlackoutTheme.neonPurple, context),
           const SizedBox(height: 48),
         ],
+      ),
       ),
     );
   }

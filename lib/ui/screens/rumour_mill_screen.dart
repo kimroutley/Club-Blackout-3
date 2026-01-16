@@ -62,8 +62,9 @@ class _RumourMillScreenState extends State<RumourMillScreen> with SingleTickerPr
             ),
             
             // Content
-            CustomScrollView(
-              slivers: [
+            SafeArea(
+              child: CustomScrollView(
+                slivers: [
                 SliverAppBar(
                   backgroundColor: Colors.transparent,
                   surfaceTintColor: Colors.transparent,
@@ -121,6 +122,7 @@ class _RumourMillScreenState extends State<RumourMillScreen> with SingleTickerPr
                   ),
                 ),
               ],
+            ),
             ),
           ],
         ),
