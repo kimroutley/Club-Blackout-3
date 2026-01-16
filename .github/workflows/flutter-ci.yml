@@ -1,0 +1,44 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.channel }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        channel:
+          - stable
+          - beta
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ matrix.channel }}
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze code
+        run: flutter analyze
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Upload coverage to Codecov (optional)
+        uses: codecov/codecov-action@v4
+        continue-on-error: true
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
