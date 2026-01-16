@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   
+  const String nightPriorityField = 'night_priority';
+  
   group('Roles Schema Validation', () {
     test('roles.json exists and loads successfully', () async {
       // Verify the file can be loaded
@@ -46,9 +48,9 @@ void main() {
           reason: 'Role at index $i missing "name" field',
         );
         expect(
-          role.containsKey('night_priority'),
+          role.containsKey(nightPriorityField),
           true,
-          reason: 'Role at index $i missing "night_priority" field',
+          reason: 'Role at index $i missing "$nightPriorityField" field',
         );
         
         // Validate field types
@@ -63,9 +65,9 @@ void main() {
           reason: 'Role at index $i has non-string name',
         );
         expect(
-          role['night_priority'],
+          role[nightPriorityField],
           isA<int>(),
-          reason: 'Role at index $i has non-integer night_priority',
+          reason: 'Role at index $i has non-integer $nightPriorityField',
         );
       }
     });
@@ -125,12 +127,12 @@ void main() {
       
       for (var i = 0; i < roles.length; i++) {
         final role = roles[i] as Map<String, dynamic>;
-        final priority = role['night_priority'] as int;
+        final priority = role[nightPriorityField] as int;
         
         expect(
           priority >= 0,
           true,
-          reason: 'Role "${role['name']}" has negative night_priority: $priority',
+          reason: 'Role "${role['name']}" has negative $nightPriorityField: $priority',
         );
       }
     });

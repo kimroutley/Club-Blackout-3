@@ -59,10 +59,14 @@ class NightResolver {
     final killActions = actions.where((a) => a.actionType == 'kill').toList();
     
     // Check if any Dealer was sent home - if so, cancel all dealer kills
-    final dealersSentHome = sentHome.where((targetId) {
-      final player = players.firstWhere((p) => p.id == targetId, orElse: () => players.first);
-      return player.role.alliance == 'The Dealers';
-    }).isNotEmpty;
+    final dealersSentHome = sentHome.any((targetId) {
+      try {
+        final player = players.firstWhere((p) => p.id == targetId);
+        return player.role.alliance == 'The Dealers';
+      } catch (e) {
+        return false;
+      }
+    });
     
     if (!dealersSentHome && killActions.isNotEmpty) {
       // Count votes for each target
@@ -87,9 +91,13 @@ class NightResolver {
         if (topTargets.length > 1) {
           // Sort by player name lexicographically
           topTargets.sort((a, b) {
-            final playerA = players.firstWhere((p) => p.id == a, orElse: () => players.first);
-            final playerB = players.firstWhere((p) => p.id == b, orElse: () => players.first);
-            return playerA.name.compareTo(playerB.name);
+            try {
+              final playerA = players.firstWhere((p) => p.id == a);
+              final playerB = players.firstWhere((p) => p.id == b);
+              return playerA.name.compareTo(playerB.name);
+            } catch (e) {
+              return 0;
+            }
           });
         }
         
