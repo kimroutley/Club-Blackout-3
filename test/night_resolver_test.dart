@@ -151,7 +151,10 @@ void main() {
       // Verify target was protected and NOT killed
       expect(result.killedPlayerIds, isEmpty);
       expect(result.protectedPlayerIds, contains('target1'));
-      expect(result.messages['target1'], contains('protected') | contains('blocked'));
+      expect(
+        result.messages['target1'],
+        anyOf([contains('protected'), contains('blocked')]),
+      );
     });
 
     test('Sober sends Dealer home and blocks all kills', () {
@@ -237,7 +240,10 @@ void main() {
       // Verify NO kills happened (dealer was sent home)
       expect(result.killedPlayerIds, isEmpty);
       expect(result.protectedPlayerIds, contains('dealer1'));
-      expect(result.messages['victim1'], contains('blocked') | contains('Dealer sent home'));
+      expect(
+        result.messages['victim1'],
+        anyOf([contains('blocked'), contains('Dealer sent home')]),
+      );
     });
 
     test('Minor immunity blocks Dealer kill until ID checked', () {
@@ -299,7 +305,10 @@ void main() {
 
       // Verify Minor was NOT killed (immunity)
       expect(result.killedPlayerIds, isEmpty);
-      expect(result.messages['minor1'], contains('Minor immunity') | contains('blocked'));
+      expect(
+        result.messages['minor1'],
+        anyOf([contains('Minor immunity'), contains('blocked')]),
+      );
     });
   });
 }
