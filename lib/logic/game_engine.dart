@@ -382,24 +382,13 @@ class GameEngine extends ChangeNotifier {
 
     // Enforce single Bouncer rule at assignment time
     if (newRole.id == 'bouncer') {
-      final existingBouncer = players.firstWhere(
-        (p) => p.id != playerId && p.role.id == 'bouncer' && p.isEnabled,
-        orElse: () => Player(
-          id: 'none',
-          name: '',
-          role: Role(
-            id: 'none',
-            name: '',
-            alliance: '',
-            type: '',
-            description: '',
-            nightPriority: 0,
-            assetPath: '',
-            colorHex: '#FFFFFF',
-          ),
-        ),
-      );
-      if (existingBouncer.id != 'none') {
+      final existingBouncer = players
+          .where(
+            (p) => p.id != playerId && p.role.id == 'bouncer' && p.isEnabled,
+          )
+          .firstOrNull;
+
+      if (existingBouncer != null) {
         GameLogger.warning(
           'Attempted to assign a second Bouncer to ${players[index].name}',
           context: 'GameEngine',
