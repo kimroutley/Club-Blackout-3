@@ -1,0 +1,46 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        flutter-version: ['3.10.7', 'stable']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ matrix.flutter-version }}
+        channel: 'stable'
+    
+    - name: Verify Flutter installation
+      run: flutter --version
+    
+    - name: Install dependencies
+      run: flutter pub get
+    
+    - name: Analyze code
+      run: flutter analyze
+    
+    - name: Run tests with coverage
+      run: flutter test --coverage
+    
+    - name: Upload coverage to Codecov (optional)
+      if: matrix.flutter-version == 'stable'
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage/lcov.info
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+      continue-on-error: true
