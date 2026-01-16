@@ -126,7 +126,7 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: widget.phaseColor.withOpacity(0.2),

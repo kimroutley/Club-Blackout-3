@@ -1768,7 +1768,31 @@ class GameEngine extends ChangeNotifier {
         break;
 
       case 'silver_fox':
-        logAction(step.title, "Silver Fox is disabled this game.");
+        final target = resolvePlayer(selections.first);
+
+        if (sourcePlayer != null && !sourcePlayer.silverFoxAbilityUsed) {
+          sourcePlayer.silverFoxAbilityUsed = true;
+          nightActions['silver_fox_reveal'] = target.id;
+
+          // Queue reveal ability
+          abilityResolver.queueAbility(
+            ActiveAbility(
+              abilityId: AbilityLibrary.silverFoxReveal.id,
+              sourcePlayerId: sourcePlayer.id,
+              targetPlayerIds: [target.id],
+              trigger: AbilityTrigger.nightAction,
+              effect: AbilityEffect.reveal,
+              priority: 1,
+            ),
+          );
+
+          logAction(
+            step.title,
+            "Silver Fox chose to force ${target.name} to reveal their role tomorrow.",
+          );
+        } else {
+          logAction(step.title, "Silver Fox ability already used or no source player.");
+        }
         break;
 
       case 'wallflower':

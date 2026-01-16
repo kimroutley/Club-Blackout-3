@@ -327,7 +327,7 @@ class _LobbyScreenState extends State<LobbyScreen>
         // Main Interface
         Column(
           children: [
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Expanded(
               child: _isPreviousNamesExpanded
                   ? ClubBlackoutTheme.centeredConstrained(
@@ -457,6 +457,7 @@ class _LobbyScreenState extends State<LobbyScreen>
                   color: Color(0xFFFF9933),
                   size: 36,
                 ),
+                tooltip: 'Add Host',
                 onPressed: _addHost,
               ),
               enabledBorder: UnderlineInputBorder(
@@ -504,6 +505,7 @@ class _LobbyScreenState extends State<LobbyScreen>
                   color: ClubBlackoutTheme.neonBlue,
                   size: 36,
                 ),
+                tooltip: 'Add Guest',
                 onPressed: () => _addPlayer(),
               ),
               border: InputBorder.none,
@@ -1023,10 +1025,11 @@ class _PreviousNamesPanelState extends State<_PreviousNamesPanel> {
               IconButton(
                 onPressed: widget.onClose,
                 icon: const Icon(Icons.close, color: Colors.white54),
+                tooltip: 'Close History',
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
@@ -1068,7 +1071,7 @@ class _PreviousNamesPanelState extends State<_PreviousNamesPanel> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Expanded(
             child: ListView.builder(
               itemCount: filtered.length,
@@ -1113,7 +1116,7 @@ class _PreviousNamesPanelState extends State<_PreviousNamesPanel> {
               },
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             height: 60,

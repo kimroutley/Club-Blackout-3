@@ -13,6 +13,39 @@ class ClubBlackoutTheme {
   static const Color crimsonRed = neonRed;
   static const Color electricBlue = neonBlue;
 
+  // Material 3 Spacing Constants (4dp grid system)
+  static const double spacing4 = 4.0;
+  static const double spacing8 = 8.0;
+  static const double spacing12 = 12.0;
+  static const double spacing16 = 16.0;
+  static const double spacing20 = 20.0;
+  static const double spacing24 = 24.0;
+  static const double spacing28 = 28.0;
+  static const double spacing32 = 32.0;
+  static const double spacing40 = 40.0;
+  static const double spacing48 = 48.0;
+  static const double spacing56 = 56.0;
+  static const double spacing64 = 64.0;
+
+  // Standard Padding Constants
+  static const EdgeInsets paddingAll4 = EdgeInsets.all(spacing4);
+  static const EdgeInsets paddingAll8 = EdgeInsets.all(spacing8);
+  static const EdgeInsets paddingAll12 = EdgeInsets.all(spacing12);
+  static const EdgeInsets paddingAll16 = EdgeInsets.all(spacing16);
+  static const EdgeInsets paddingAll24 = EdgeInsets.all(spacing24);
+  static const EdgeInsets paddingAll32 = EdgeInsets.all(spacing32);
+  
+  static const EdgeInsets cardPadding = EdgeInsets.all(spacing16);
+  static const EdgeInsets dialogPadding = EdgeInsets.all(spacing24);
+  static const EdgeInsets screenPadding = EdgeInsets.symmetric(
+    horizontal: spacing16,
+    vertical: spacing24,
+  );
+  static const EdgeInsets listItemPadding = EdgeInsets.symmetric(
+    horizontal: spacing16,
+    vertical: spacing12,
+  );
+
   // Shared typography used by some widgets
   static const TextStyle primaryFont = TextStyle(fontFamily: 'Hyperwave');
 
@@ -127,7 +160,7 @@ class ClubBlackoutTheme {
       side: BorderSide(color: color, width: isPrimary ? 2.5 : 2),
       shadowColor: color.withOpacity(0.5),
       elevation: isPrimary ? 8 : 6,
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       textStyle: TextStyle(
         fontSize: isPrimary ? 22 : 20,
