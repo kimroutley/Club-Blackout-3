@@ -144,6 +144,8 @@ class NightResolver {
         final targetId = action.targetId!;
         
         // Check if any dealer was sent home by Sober
+        // Note: Uses isActive which includes joinsNextNight check. This is intentional
+        // because players joining next night shouldn't participate in current night actions.
         final dealersInGame = players.where((p) => p.role.id == RoleIds.dealer && p.isActive);
         final anyDealerSentHome = dealersInGame.any((d) => sentHomeIds.contains(d.id));
         
@@ -200,6 +202,10 @@ class NightResolver {
   /// Check if dealers have reached parity (or majority) with party animals.
   ///
   /// Returns true if dealers win, false otherwise.
+  /// 
+  /// Note: Uses player.alliance property which can change during the game
+  /// (e.g., Second Wind conversion, Creep inheritance). This ensures victory
+  /// checks reflect the current game state, not the original role assignments.
   bool checkDealerVictory(List<Player> players) {
     final alivePlayers = players.where((p) => p.isAlive && p.isEnabled).toList();
     
@@ -213,6 +219,8 @@ class NightResolver {
   /// Check if party animals have won (all dealers dead).
   ///
   /// Returns true if party animals win, false otherwise.
+  /// 
+  /// Note: Uses player.alliance property which can change during the game.
   bool checkPartyAnimalVictory(List<Player> players) {
     final alivePlayers = players.where((p) => p.isAlive && p.isEnabled).toList();
     

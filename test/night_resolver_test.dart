@@ -8,9 +8,9 @@ void main() {
     test('Dealer kills target when no protection exists', () {
       // Create roles
       final dealerRole = Role(
-        id: RoleIds.dealer,
+        id: 'dealer',
         name: 'The Dealer',
-        alliance: Alliances.dealers,
+        alliance: 'The Dealers',
         type: 'aggressive',
         description: 'Kill players',
         nightPriority: 5,
