@@ -325,7 +325,7 @@ class _DaySceneDialogState extends State<DaySceneDialog> with TickerProviderStat
               builder: (context, child) {
                 return Container(
                   margin: const EdgeInsets.all(8),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: timerColor.withOpacity(0.1 + (_pulseController.value * 0.1)),
                     borderRadius: BorderRadius.circular(12),
@@ -386,7 +386,7 @@ class _DaySceneDialogState extends State<DaySceneDialog> with TickerProviderStat
             SafeArea(
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.only(top: 20, bottom: 200),
+                padding: const EdgeInsets.only(top: 24, bottom: 200),
                 itemCount: visibleCount,
                 itemBuilder: (context, index) {
                   _stepKeys.putIfAbsent(index, () => GlobalKey());
@@ -657,12 +657,12 @@ class _DaySceneDialogState extends State<DaySceneDialog> with TickerProviderStat
 
   Widget _buildSummaryLine(String line) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
-            padding: EdgeInsets.only(top: 2),
+            padding: EdgeInsets.only(top: 4),
             child: Icon(Icons.circle, size: 8, color: Colors.white70),
           ),
           const SizedBox(width: 12),
@@ -1054,7 +1054,7 @@ class _DaySceneDialogState extends State<DaySceneDialog> with TickerProviderStat
 
   Widget _buildStatBadge(IconData icon, String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),

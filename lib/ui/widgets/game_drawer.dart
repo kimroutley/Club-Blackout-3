@@ -134,7 +134,7 @@ class GameDrawer extends StatelessWidget {
                       if (gameEngine != null && gameEngine!.players.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: ClubBlackoutTheme.neonBlue.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(12),
@@ -619,9 +619,9 @@ class GameDrawer extends StatelessWidget {
             shrinkWrap: true,
             children: const [
               Text('- **v1.2.0 (Jan 2026)**: Interactive Gameplay Script, Enhanced Lobby UI.', style: TextStyle(color: Colors.white70)),
-              SizedBox(height: 10),
+              SizedBox(height: 12),
               Text('- **v1.1.0 (Dec 2025)**: Added Messy Bitch & Clinger Abilities, Game Log, Save/Load Feature (Beta).', style: TextStyle(color: Colors.white70)),
-              SizedBox(height: 10),
+              SizedBox(height: 12),
               Text('- **v1.0.0 (Nov 2025)**: Initial Release with core game mechanics and 10+ roles.', style: TextStyle(color: Colors.white70)),
             ],
           ),
@@ -727,7 +727,7 @@ class GameDrawer extends StatelessWidget {
                       ),
                       child: Card(
                         color: Colors.black.withOpacity(0.7),
-                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
                         child: ListTile(
                           title: Text(save.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           subtitle: Column(

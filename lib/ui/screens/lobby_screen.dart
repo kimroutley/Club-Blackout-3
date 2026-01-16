@@ -1026,7 +1026,7 @@ class _PreviousNamesPanelState extends State<_PreviousNamesPanel> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
@@ -1068,7 +1068,7 @@ class _PreviousNamesPanelState extends State<_PreviousNamesPanel> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Expanded(
             child: ListView.builder(
               itemCount: filtered.length,
@@ -1113,7 +1113,7 @@ class _PreviousNamesPanelState extends State<_PreviousNamesPanel> {
               },
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             height: 60,
