@@ -4,202 +4,238 @@ import 'package:club_blackout/models/player.dart';
 import 'package:club_blackout/models/role.dart';
 
 void main() {
-  group('NightResolver Victory Parity Tests', () {
-    late Role dealerRole;
-    late Role partyAnimalRole;
-
+  group('NightResolver Victory Conditions', () {
+    late NightResolver resolver;
+    
     setUp(() {
-      dealerRole = Role(
+      resolver = NightResolver();
+    });
+    
+    test('Dealers win at parity (equal numbers)', () {
+      final dealerRole = Role(
         id: 'dealer',
         name: 'The Dealer',
         alliance: 'The Dealers',
         type: 'aggressive',
-        description: 'Killer',
+        description: 'Kill role',
         nightPriority: 5,
         assetPath: '',
         colorHex: '#FF00FF',
       );
-
-      partyAnimalRole = Role(
+      
+      final partyAnimalRole = Role(
         id: 'party_animal',
         name: 'The Party Animal',
         alliance: 'The Party Animals',
         type: 'passive',
-        description: 'Citizen',
+        description: 'Passive role',
         nightPriority: 0,
         assetPath: '',
         colorHex: '#FFDAB9',
       );
+      
+      // 2 Dealers vs 2 Party Animals = parity
+      final dealer1 = Player(id: 'd1', name: 'Dealer1', role: dealerRole);
+      final dealer2 = Player(id: 'd2', name: 'Dealer2', role: dealerRole);
+      final pa1 = Player(id: 'pa1', name: 'PA1', role: partyAnimalRole);
+      final pa2 = Player(id: 'pa2', name: 'PA2', role: partyAnimalRole);
+      
+      final players = [dealer1, dealer2, pa1, pa2];
+      
+      final result = resolver.checkVictory(players);
+      
+      expect(result, 'dealers', reason: 'Dealers should win at parity');
     });
-
-    test('Dealers reach parity - should be checked by caller', () {
-      // Setup: 2 dealers, 2 party animals
-      final dealer1 = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
-      final dealer2 = Player(id: 'dealer2', name: 'Dealer2', role: dealerRole);
-      final victim1 = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
-      final victim2 = Player(id: 'victim2', name: 'Victim2', role: partyAnimalRole);
-
-      final players = [dealer1, dealer2, victim1, victim2];
-
-      // Dealers kill one victim
-      final actions = [
-        NightAction(playerId: 'dealer1', actionType: 'dealer_kill', targetId: 'victim1'),
-        NightAction(playerId: 'dealer2', actionType: 'dealer_kill', targetId: 'victim1'),
-      ];
-
-      final dead = NightResolver.resolve(players, actions);
-
-      expect(dead.contains('victim1'), true);
-      expect(victim1.isAlive, false);
-
-      // Count alive dealers vs party animals
-      final aliveDealers = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Dealers').length;
-      final alivePartyAnimals = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Party Animals').length;
-
-      // After this kill: 2 dealers vs 1 party animal
-      expect(aliveDealers, 2);
-      expect(alivePartyAnimals, 1);
-
-      // Dealers have majority - victory condition
-      // Note: NightResolver doesn't check victory, caller (GameEngine) does
-      expect(aliveDealers >= alivePartyAnimals, true);
-    });
-
-    test('Dealers exact parity (equal numbers)', () {
-      final dealer1 = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
-      final victim1 = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
-      final victim2 = Player(id: 'victim2', name: 'Victim2', role: partyAnimalRole);
-
-      final players = [dealer1, victim1, victim2];
-
-      // Kill one victim to reach parity (1 dealer vs 1 party animal)
-      final actions = [
-        NightAction(playerId: 'dealer1', actionType: 'dealer_kill', targetId: 'victim1'),
-      ];
-
-      final dead = NightResolver.resolve(players, actions);
-
-      expect(dead.contains('victim1'), true);
-
-      final aliveDealers = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Dealers').length;
-      final alivePartyAnimals = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Party Animals').length;
-
-      expect(aliveDealers, 1);
-      expect(alivePartyAnimals, 1);
-
-      // Parity reached - dealers win
-      expect(aliveDealers >= alivePartyAnimals, true);
-    });
-
-    test('All dealers eliminated - party animals win', () {
-      final dealer1 = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole, isAlive: false);
-      final victim1 = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
-      final victim2 = Player(id: 'victim2', name: 'Victim2', role: partyAnimalRole);
-
-      final players = [dealer1, victim1, victim2];
-
-      // No night actions - just check status
-      final dead = NightResolver.resolve(players, []);
-
-      final aliveDealers = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Dealers').length;
-      final alivePartyAnimals = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Party Animals').length;
-
-      expect(aliveDealers, 0);
-      expect(alivePartyAnimals, 2);
-
-      // Party animals win
-      expect(aliveDealers, 0);
-    });
-
-    test('Multiple kills in one night affects parity', () {
-      final dealer1 = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
-      final dealer2 = Player(id: 'dealer2', name: 'Dealer2', role: dealerRole);
-      final victim1 = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
-      final victim2 = Player(id: 'victim2', name: 'Victim2', role: partyAnimalRole);
-      final victim3 = Player(id: 'victim3', name: 'Victim3', role: partyAnimalRole);
-
-      final players = [dealer1, dealer2, victim1, victim2, victim3];
-
-      // Dealers vote for victim1
-      final actions = [
-        NightAction(playerId: 'dealer1', actionType: 'dealer_kill', targetId: 'victim1'),
-        NightAction(playerId: 'dealer2', actionType: 'dealer_kill', targetId: 'victim1'),
-      ];
-
-      final dead = NightResolver.resolve(players, actions);
-
-      expect(dead.length, 1);
-      expect(dead.contains('victim1'), true);
-
-      final aliveDealers = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Dealers').length;
-      final alivePartyAnimals = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Party Animals').length;
-
-      expect(aliveDealers, 2);
-      expect(alivePartyAnimals, 2);
-
-      // Exact parity - dealers win
-      expect(aliveDealers >= alivePartyAnimals, true);
-    });
-
-    test('Parity calculation excludes dead players', () {
-      final dealer1 = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
-      final dealer2 = Player(id: 'dealer2', name: 'Dealer2', role: dealerRole, isAlive: false);
-      final victim1 = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
-      final victim2 = Player(id: 'victim2', name: 'Victim2', role: partyAnimalRole);
-      final victim3 = Player(id: 'victim3', name: 'Victim3', role: partyAnimalRole, isAlive: false);
-
-      final players = [dealer1, dealer2, victim1, victim2, victim3];
-
-      // One dealer alive, two party animals alive
-      final aliveDealers = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Dealers').length;
-      final alivePartyAnimals = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Party Animals').length;
-
-      expect(aliveDealers, 1);
-      expect(alivePartyAnimals, 2);
-
-      // Party animals still have majority
-      expect(aliveDealers >= alivePartyAnimals, false);
-    });
-
-    test('Victory parity with neutral roles excluded', () {
-      final neutralRole = Role(
-        id: 'neutral',
-        name: 'Neutral',
-        alliance: 'Neutral',
-        type: 'neutral',
-        description: 'Neutral',
+    
+    test('Dealers win when outnumbering party animals', () {
+      final dealerRole = Role(
+        id: 'dealer',
+        name: 'The Dealer',
+        alliance: 'The Dealers',
+        type: 'aggressive',
+        description: 'Kill role',
+        nightPriority: 5,
+        assetPath: '',
+        colorHex: '#FF00FF',
+      );
+      
+      final partyAnimalRole = Role(
+        id: 'party_animal',
+        name: 'The Party Animal',
+        alliance: 'The Party Animals',
+        type: 'passive',
+        description: 'Passive role',
         nightPriority: 0,
         assetPath: '',
-        colorHex: '#CCCCCC',
+        colorHex: '#FFDAB9',
       );
-
-      final dealer1 = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
-      final victim1 = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
-      final neutral1 = Player(id: 'neutral1', name: 'Neutral1', role: neutralRole);
-
-      final players = [dealer1, victim1, neutral1];
-
-      // Count only dealers vs party animals (exclude neutrals)
-      final aliveDealers = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Dealers').length;
-      final alivePartyAnimals = players.where((p) => 
-          p.isAlive && p.role.alliance == 'The Party Animals').length;
-
-      expect(aliveDealers, 1);
-      expect(alivePartyAnimals, 1);
-
-      // Parity reached despite neutral being alive
-      expect(aliveDealers >= alivePartyAnimals, true);
+      
+      // 3 Dealers vs 2 Party Animals
+      final dealer1 = Player(id: 'd1', name: 'Dealer1', role: dealerRole);
+      final dealer2 = Player(id: 'd2', name: 'Dealer2', role: dealerRole);
+      final dealer3 = Player(id: 'd3', name: 'Dealer3', role: dealerRole);
+      final pa1 = Player(id: 'pa1', name: 'PA1', role: partyAnimalRole);
+      final pa2 = Player(id: 'pa2', name: 'PA2', role: partyAnimalRole);
+      
+      final players = [dealer1, dealer2, dealer3, pa1, pa2];
+      
+      final result = resolver.checkVictory(players);
+      
+      expect(result, 'dealers', reason: 'Dealers should win when outnumbering');
+    });
+    
+    test('Party Animals win when all Dealers are dead', () {
+      final dealerRole = Role(
+        id: 'dealer',
+        name: 'The Dealer',
+        alliance: 'The Dealers',
+        type: 'aggressive',
+        description: 'Kill role',
+        nightPriority: 5,
+        assetPath: '',
+        colorHex: '#FF00FF',
+      );
+      
+      final partyAnimalRole = Role(
+        id: 'party_animal',
+        name: 'The Party Animal',
+        alliance: 'The Party Animals',
+        type: 'passive',
+        description: 'Passive role',
+        nightPriority: 0,
+        assetPath: '',
+        colorHex: '#FFDAB9',
+      );
+      
+      final dealer1 = Player(id: 'd1', name: 'Dealer1', role: dealerRole, isAlive: false);
+      final pa1 = Player(id: 'pa1', name: 'PA1', role: partyAnimalRole);
+      final pa2 = Player(id: 'pa2', name: 'PA2', role: partyAnimalRole);
+      
+      final players = [dealer1, pa1, pa2];
+      
+      final result = resolver.checkVictory(players);
+      
+      expect(result, 'party_animals', reason: 'Party Animals should win when no Dealers alive');
+    });
+    
+    test('No winner when Dealers outnumbered', () {
+      final dealerRole = Role(
+        id: 'dealer',
+        name: 'The Dealer',
+        alliance: 'The Dealers',
+        type: 'aggressive',
+        description: 'Kill role',
+        nightPriority: 5,
+        assetPath: '',
+        colorHex: '#FF00FF',
+      );
+      
+      final partyAnimalRole = Role(
+        id: 'party_animal',
+        name: 'The Party Animal',
+        alliance: 'The Party Animals',
+        type: 'passive',
+        description: 'Passive role',
+        nightPriority: 0,
+        assetPath: '',
+        colorHex: '#FFDAB9',
+      );
+      
+      // 1 Dealer vs 3 Party Animals
+      final dealer1 = Player(id: 'd1', name: 'Dealer1', role: dealerRole);
+      final pa1 = Player(id: 'pa1', name: 'PA1', role: partyAnimalRole);
+      final pa2 = Player(id: 'pa2', name: 'PA2', role: partyAnimalRole);
+      final pa3 = Player(id: 'pa3', name: 'PA3', role: partyAnimalRole);
+      
+      final players = [dealer1, pa1, pa2, pa3];
+      
+      final result = resolver.checkVictory(players);
+      
+      expect(result, null, reason: 'Game should continue when Dealers are outnumbered');
+    });
+    
+    test('Whore counts toward Dealer victory', () {
+      final dealerRole = Role(
+        id: 'dealer',
+        name: 'The Dealer',
+        alliance: 'The Dealers',
+        type: 'aggressive',
+        description: 'Kill role',
+        nightPriority: 5,
+        assetPath: '',
+        colorHex: '#FF00FF',
+      );
+      
+      final whoreRole = Role(
+        id: 'whore',
+        name: 'The Whore',
+        alliance: 'The Dealers',
+        type: 'defensive',
+        description: 'Support role',
+        nightPriority: 0,
+        assetPath: '',
+        colorHex: '#008080',
+      );
+      
+      final partyAnimalRole = Role(
+        id: 'party_animal',
+        name: 'The Party Animal',
+        alliance: 'The Party Animals',
+        type: 'passive',
+        description: 'Passive role',
+        nightPriority: 0,
+        assetPath: '',
+        colorHex: '#FFDAB9',
+      );
+      
+      // 1 Dealer + 1 Whore vs 2 Party Animals = parity
+      final dealer1 = Player(id: 'd1', name: 'Dealer1', role: dealerRole);
+      final whore = Player(id: 'w1', name: 'Whore1', role: whoreRole);
+      final pa1 = Player(id: 'pa1', name: 'PA1', role: partyAnimalRole);
+      final pa2 = Player(id: 'pa2', name: 'PA2', role: partyAnimalRole);
+      
+      final players = [dealer1, whore, pa1, pa2];
+      
+      final result = resolver.checkVictory(players);
+      
+      expect(result, 'dealers', reason: 'Whore should count toward Dealer parity');
+    });
+    
+    test('Victory check ignores dead players', () {
+      final dealerRole = Role(
+        id: 'dealer',
+        name: 'The Dealer',
+        alliance: 'The Dealers',
+        type: 'aggressive',
+        description: 'Kill role',
+        nightPriority: 5,
+        assetPath: '',
+        colorHex: '#FF00FF',
+      );
+      
+      final partyAnimalRole = Role(
+        id: 'party_animal',
+        name: 'The Party Animal',
+        alliance: 'The Party Animals',
+        type: 'passive',
+        description: 'Passive role',
+        nightPriority: 0,
+        assetPath: '',
+        colorHex: '#FFDAB9',
+      );
+      
+      // 2 Dealers (1 dead) vs 3 Party Animals (1 dead) = 1v2, no parity
+      final dealer1 = Player(id: 'd1', name: 'Dealer1', role: dealerRole);
+      final dealer2 = Player(id: 'd2', name: 'Dealer2', role: dealerRole, isAlive: false);
+      final pa1 = Player(id: 'pa1', name: 'PA1', role: partyAnimalRole);
+      final pa2 = Player(id: 'pa2', name: 'PA2', role: partyAnimalRole);
+      final pa3 = Player(id: 'pa3', name: 'PA3', role: partyAnimalRole, isAlive: false);
+      
+      final players = [dealer1, dealer2, pa1, pa2, pa3];
+      
+      final result = resolver.checkVictory(players);
+      
+      expect(result, null, reason: 'Should only count alive players for victory');
     });
   });
 }
