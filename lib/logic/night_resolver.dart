@@ -242,5 +242,7 @@ class NightResolver {
     } catch (e) {
       return null;
     }
+    
+    return null;
   }
 }

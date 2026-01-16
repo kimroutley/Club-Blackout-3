@@ -153,7 +153,13 @@ test('Bouncer retains ID check when not challenging Roofi', () {
 });
 ```
 
----
+### ✅ THE ROOFI
+**Test Priority:** MEDIUM  
+**Suggested Tests:**
+- [ ] 📋 Roofi silences one player each night
+- [ ] 📋 Silenced player cannot speak during day phase
+- [ ] 📋 Silenced Dealer is also paralyzed next night
+- [ ] 📋 Status effect persists for full day
 
 ## 🟡 MEDIUM PRIORITY ROLES
 
@@ -182,7 +188,12 @@ test('Ally Cat loses a life when attacked', () {
 });
 ```
 
----
+### ✅ THE CLUB MANAGER
+**Test Priority:** LOW  
+**Suggested Tests:**
+- [ ] 📋 Views one player's role each night
+- [ ] 📋 Information is shown to Club Manager only
+- [ ] 📋 Can switch allegiances based on info
 
 ### 7. THE CREEP - Role Inheritance
 **Status:** MINOR GAP - Likely works; needs verification  
