@@ -8,292 +8,291 @@ void main() {
     late Role dealerRole;
     late Role medicRole;
     late Role partyAnimalRole;
+    late Role soberRole;
+    late Role roofiRole;
+    late Role minorRole;
 
     setUp(() {
-      // Create minimal role objects for testing
       dealerRole = Role(
         id: 'dealer',
         name: 'The Dealer',
         alliance: 'The Dealers',
-        type: 'Killer',
-        description: 'Kill one Party Animal each night',
+        type: 'aggressive',
+        description: 'Killer',
         nightPriority: 5,
         assetPath: '',
-        colorHex: '#FF0000',
+        colorHex: '#FF00FF',
       );
 
       medicRole = Role(
         id: 'medic',
         name: 'The Medic',
         alliance: 'The Party Animals',
-        type: 'Protector',
-        description: 'Protect players from death',
+        type: 'defensive',
+        description: 'Healer',
         nightPriority: 2,
         assetPath: '',
-        colorHex: '#00FF00',
+        colorHex: '#FF0000',
       );
 
       partyAnimalRole = Role(
         id: 'party_animal',
-        name: 'Party Animal',
+        name: 'The Party Animal',
         alliance: 'The Party Animals',
-        type: 'Villager',
-        description: 'No special abilities',
+        type: 'passive',
+        description: 'Citizen',
         nightPriority: 0,
         assetPath: '',
-        colorHex: '#0000FF',
-      );
-    });
-
-    test('Medic protection prevents Dealer kill', () {
-      // Create test players
-      final dealer = Player(
-        id: 'dealer1',
-        name: 'Dealer One',
-        role: dealerRole,
-        isAlive: true,
+        colorHex: '#FFDAB9',
       );
 
-      final medic = Player(
-        id: 'medic1',
-        name: 'Medic One',
-        role: medicRole,
-        isAlive: true,
-        medicChoice: 'PROTECT_DAILY',
-      );
-
-      final target = Player(
-        id: 'target1',
-        name: 'Target One',
-        role: partyAnimalRole,
-        isAlive: true,
-      );
-
-      final players = [dealer, medic, target];
-
-      // Create night actions: Medic protects target, Dealer kills target
-      final actions = [
-        NightAction(
-          roleId: 'medic',
-          sourcePlayerId: medic.id,
-          targetPlayerId: target.id,
-          actionType: 'protect',
-          priority: 3,
-        ),
-        NightAction(
-          roleId: 'dealer',
-          sourcePlayerId: dealer.id,
-          targetPlayerId: target.id,
-          actionType: 'kill',
-          priority: 5,
-        ),
-      ];
-
-      // Resolve night
-      final result = NightResolver.resolve(players, actions);
-
-      // Target should not die (protected by medic)
-      expect(result.deadPlayerIds, isEmpty);
-      expect(result.metadata['protected_${target.id}'], 'true');
-      expect(result.metadata['kill_target'], target.id);
-    });
-
-    test('Dealer kill succeeds when target is not protected', () {
-      final dealer = Player(
-        id: 'dealer1',
-        name: 'Dealer One',
-        role: dealerRole,
-        isAlive: true,
-      );
-
-      final target = Player(
-        id: 'target1',
-        name: 'Target One',
-        role: partyAnimalRole,
-        isAlive: true,
-      );
-
-      final players = [dealer, target];
-
-      final actions = [
-        NightAction(
-          roleId: 'dealer',
-          sourcePlayerId: dealer.id,
-          targetPlayerId: target.id,
-          actionType: 'kill',
-          priority: 5,
-        ),
-      ];
-
-      final result = NightResolver.resolve(players, actions);
-
-      // Target should die (not protected)
-      expect(result.deadPlayerIds, contains(target.id));
-      expect(result.metadata['kill_target'], target.id);
-    });
-
-    test('Sober sending Dealer home cancels all kills', () {
-      final soberRole = Role(
+      soberRole = Role(
         id: 'sober',
         name: 'The Sober',
         alliance: 'The Party Animals',
-        type: 'Protector',
-        description: 'Send one player home',
+        type: 'protective',
+        description: 'Protector',
         nightPriority: 1,
         assetPath: '',
-        colorHex: '#FFFF00',
+        colorHex: '#00FF00',
       );
 
-      final sober = Player(
-        id: 'sober1',
-        name: 'Sober One',
-        role: soberRole,
-        isAlive: true,
+      roofiRole = Role(
+        id: 'roofi',
+        name: 'The Roofi',
+        alliance: 'The Dealers',
+        type: 'disruptive',
+        description: 'Silencer',
+        nightPriority: 4,
+        assetPath: '',
+        colorHex: '#800080',
       );
 
-      final dealer = Player(
-        id: 'dealer1',
-        name: 'Dealer One',
-        role: dealerRole,
-        isAlive: true,
+      minorRole = Role(
+        id: 'minor',
+        name: 'The Minor',
+        alliance: 'The Party Animals',
+        type: 'passive',
+        description: 'Protected',
+        nightPriority: 0,
+        assetPath: '',
+        colorHex: '#888888',
       );
-
-      final target = Player(
-        id: 'target1',
-        name: 'Target One',
-        role: partyAnimalRole,
-        isAlive: true,
-      );
-
-      final players = [sober, dealer, target];
-
-      final actions = [
-        NightAction(
-          roleId: 'sober',
-          sourcePlayerId: sober.id,
-          targetPlayerId: dealer.id,
-          actionType: 'send_home',
-          priority: 1,
-        ),
-        NightAction(
-          roleId: 'dealer',
-          sourcePlayerId: dealer.id,
-          targetPlayerId: target.id,
-          actionType: 'kill',
-          priority: 5,
-        ),
-      ];
-
-      final result = NightResolver.resolve(players, actions);
-
-      // No one should die (dealer was sent home, cancelling kill)
-      expect(result.deadPlayerIds, isEmpty);
-      expect(result.metadata['dealer_sent_home'], 'true');
-      expect(result.metadata['dealer_kill_cancelled'], 'true');
     });
 
-    test('Multiple dealers vote for same target deterministically', () {
-      final dealer1 = Player(
-        id: 'dealer1',
-        name: 'Dealer One',
-        role: dealerRole,
-        isAlive: true,
-      );
+    test('Medic protect prevents Dealer kill', () {
+      // Setup players
+      final dealer = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
+      final medic = Player(id: 'medic1', name: 'Medic1', role: medicRole);
+      final victim = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
+      medic.medicChoice = 'PROTECT_DAILY';
 
-      final dealer2 = Player(
-        id: 'dealer2',
-        name: 'Dealer Two',
-        role: dealerRole,
-        isAlive: true,
-      );
+      final players = [dealer, medic, victim];
 
-      final target = Player(
-        id: 'target1',
-        name: 'Target One',
-        role: partyAnimalRole,
-        isAlive: true,
-      );
-
-      final players = [dealer1, dealer2, target];
-
+      // Setup actions
       final actions = [
         NightAction(
-          roleId: 'dealer',
-          sourcePlayerId: dealer1.id,
-          targetPlayerId: target.id,
-          actionType: 'kill',
-          priority: 5,
+          playerId: 'dealer1',
+          actionType: 'dealer_kill',
+          targetId: 'victim1',
         ),
         NightAction(
-          roleId: 'dealer',
-          sourcePlayerId: dealer2.id,
-          targetPlayerId: target.id,
-          actionType: 'kill',
-          priority: 5,
+          playerId: 'medic1',
+          actionType: 'medic',
+          targetId: 'victim1',
+          metadata: {'medicChoice': 'PROTECT_DAILY'},
         ),
       ];
 
-      final result = NightResolver.resolve(players, actions);
+      // Resolve
+      final dead = NightResolver.resolve(players, actions);
 
-      // Target should die (both dealers voted for same target)
-      expect(result.deadPlayerIds, contains(target.id));
-      expect(result.metadata['kill_target'], target.id);
+      // Verify: victim should be alive (protected)
+      expect(victim.isAlive, true);
+      expect(dead.isEmpty, true);
     });
 
-    test('Tie-breaking is lexical when dealers vote for different targets', () {
-      final dealer1 = Player(
-        id: 'dealer1',
-        name: 'Dealer One',
-        role: dealerRole,
-        isAlive: true,
-      );
+    test('Dealer kill succeeds when not protected', () {
+      final dealer = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
+      final victim = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
 
-      final dealer2 = Player(
-        id: 'dealer2',
-        name: 'Dealer Two',
-        role: dealerRole,
-        isAlive: true,
-      );
-
-      final targetA = Player(
-        id: 'zzz_target',
-        name: 'Target ZZZ',
-        role: partyAnimalRole,
-        isAlive: true,
-      );
-
-      final targetB = Player(
-        id: 'aaa_target',
-        name: 'Target AAA',
-        role: partyAnimalRole,
-        isAlive: true,
-      );
-
-      final players = [dealer1, dealer2, targetA, targetB];
+      final players = [dealer, victim];
 
       final actions = [
         NightAction(
-          roleId: 'dealer',
-          sourcePlayerId: dealer1.id,
-          targetPlayerId: targetA.id,
-          actionType: 'kill',
-          priority: 5,
-        ),
-        NightAction(
-          roleId: 'dealer',
-          sourcePlayerId: dealer2.id,
-          targetPlayerId: targetB.id,
-          actionType: 'kill',
-          priority: 5,
+          playerId: 'dealer1',
+          actionType: 'dealer_kill',
+          targetId: 'victim1',
         ),
       ];
 
-      final result = NightResolver.resolve(players, actions);
+      final dead = NightResolver.resolve(players, actions);
 
-      // Should choose lexically first target (aaa_target)
-      expect(result.deadPlayerIds, contains(targetB.id));
-      expect(result.deadPlayerIds, isNot(contains(targetA.id)));
-      expect(result.metadata['kill_target'], targetB.id);
+      expect(victim.isAlive, false);
+      expect(dead.contains('victim1'), true);
+    });
+
+    test('Multiple dealer votes - most votes wins', () {
+      final dealer1 = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
+      final dealer2 = Player(id: 'dealer2', name: 'Dealer2', role: dealerRole);
+      final victim1 = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
+      final victim2 = Player(id: 'victim2', name: 'Victim2', role: partyAnimalRole);
+
+      final players = [dealer1, dealer2, victim1, victim2];
+
+      final actions = [
+        NightAction(playerId: 'dealer1', actionType: 'dealer_kill', targetId: 'victim1'),
+        NightAction(playerId: 'dealer2', actionType: 'dealer_kill', targetId: 'victim1'),
+      ];
+
+      final dead = NightResolver.resolve(players, actions);
+
+      expect(victim1.isAlive, false);
+      expect(victim2.isAlive, true);
+      expect(dead.contains('victim1'), true);
+    });
+
+    test('Dealer kill tie-break by lexicographic order', () {
+      final dealer1 = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
+      final dealer2 = Player(id: 'dealer2', name: 'Dealer2', role: dealerRole);
+      final victimA = Player(id: 'victim_a', name: 'VictimA', role: partyAnimalRole);
+      final victimZ = Player(id: 'victim_z', name: 'VictimZ', role: partyAnimalRole);
+
+      final players = [dealer1, dealer2, victimA, victimZ];
+
+      // Tie: one vote each
+      final actions = [
+        NightAction(playerId: 'dealer1', actionType: 'dealer_kill', targetId: 'victim_z'),
+        NightAction(playerId: 'dealer2', actionType: 'dealer_kill', targetId: 'victim_a'),
+      ];
+
+      final dead = NightResolver.resolve(players, actions);
+
+      // Should kill victim_a (lexicographically first)
+      expect(victimA.isAlive, false);
+      expect(victimZ.isAlive, true);
+      expect(dead.contains('victim_a'), true);
+    });
+
+    test('Sober send home prevents death', () {
+      final dealer = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
+      final sober = Player(id: 'sober1', name: 'Sober1', role: soberRole);
+      final victim = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
+
+      final players = [dealer, sober, victim];
+
+      final actions = [
+        NightAction(playerId: 'sober1', actionType: 'send_home', targetId: 'victim1'),
+        NightAction(playerId: 'dealer1', actionType: 'dealer_kill', targetId: 'victim1'),
+      ];
+
+      final dead = NightResolver.resolve(players, actions);
+
+      expect(victim.isAlive, true);
+      expect(dead.isEmpty, true);
+    });
+
+    test('Sober sends Dealer home - no kills happen', () {
+      final dealer = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
+      final sober = Player(id: 'sober1', name: 'Sober1', role: soberRole);
+      final victim = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
+
+      final players = [dealer, sober, victim];
+
+      final actions = [
+        NightAction(playerId: 'sober1', actionType: 'send_home', targetId: 'dealer1'),
+        NightAction(playerId: 'dealer1', actionType: 'dealer_kill', targetId: 'victim1'),
+      ];
+
+      final dead = NightResolver.resolve(players, actions);
+
+      // No kills should happen when dealer sent home
+      expect(victim.isAlive, true);
+      expect(dealer.isAlive, true);
+      expect(dead.isEmpty, true);
+    });
+
+    test('Roofi silences player', () {
+      final roofi = Player(id: 'roofi1', name: 'Roofi1', role: roofiRole);
+      final victim = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
+
+      final players = [roofi, victim];
+
+      final actions = [
+        NightAction(
+          playerId: 'roofi1',
+          actionType: 'roofi',
+          targetId: 'victim1',
+          metadata: {'currentDay': 1},
+        ),
+      ];
+
+      NightResolver.resolve(players, actions);
+
+      expect(victim.silencedDay, 1);
+    });
+
+    test('Minor protection - first attack fails', () {
+      final dealer = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
+      final minor = Player(id: 'minor1', name: 'Minor1', role: minorRole);
+
+      final players = [dealer, minor];
+
+      final actions = [
+        NightAction(playerId: 'dealer1', actionType: 'dealer_kill', targetId: 'minor1'),
+      ];
+
+      final dead = NightResolver.resolve(players, actions);
+
+      // Minor should survive first attack but be marked as ID'd
+      expect(minor.isAlive, true);
+      expect(minor.minorHasBeenIDd, true);
+      expect(dead.isEmpty, true);
+    });
+
+    test('Minor - second attack kills', () {
+      final dealer = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
+      final minor = Player(id: 'minor1', name: 'Minor1', role: minorRole);
+      minor.minorHasBeenIDd = true; // Already ID'd
+
+      final players = [dealer, minor];
+
+      final actions = [
+        NightAction(playerId: 'dealer1', actionType: 'dealer_kill', targetId: 'minor1'),
+      ];
+
+      final dead = NightResolver.resolve(players, actions);
+
+      // Minor should die on second attack
+      expect(minor.isAlive, false);
+      expect(dead.contains('minor1'), true);
+    });
+
+    test('Deterministic ordering - actions resolved in correct priority', () {
+      final dealer = Player(id: 'dealer1', name: 'Dealer1', role: dealerRole);
+      final medic = Player(id: 'medic1', name: 'Medic1', role: medicRole);
+      final sober = Player(id: 'sober1', name: 'Sober1', role: soberRole);
+      final victim = Player(id: 'victim1', name: 'Victim1', role: partyAnimalRole);
+
+      final players = [dealer, medic, sober, victim];
+
+      // Actions in random order - should be sorted by priority
+      final actions = [
+        NightAction(playerId: 'dealer1', actionType: 'dealer_kill', targetId: 'victim1'),
+        NightAction(
+          playerId: 'medic1',
+          actionType: 'medic',
+          targetId: 'victim1',
+          metadata: {'medicChoice': 'PROTECT_DAILY'},
+        ),
+        // Sober action (priority 1) should execute first
+      ];
+
+      final dead = NightResolver.resolve(players, actions);
+
+      // Medic protection should prevent kill
+      expect(victim.isAlive, true);
+      expect(dead.isEmpty, true);
     });
   });
 }

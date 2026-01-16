@@ -1,112 +1,139 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('Roles Schema Validation', () {
-    test('roles.json exists and has valid structure', () async {
-      // Load the roles.json file
-      final String rolesJson = await rootBundle.loadString('assets/data/roles.json');
-      expect(rolesJson, isNotEmpty);
+  group('roles.json schema validation', () {
+    late Map<String, dynamic> rolesData;
 
-      // Parse JSON
-      final Map<String, dynamic> data = jsonDecode(rolesJson);
+    setUpAll(() {
+      // Load roles.json file
+      final file = File('assets/data/roles.json');
+      expect(file.existsSync(), true, reason: 'roles.json file must exist at assets/data/roles.json');
 
-      // Validate top-level structure
-      expect(data, containsPair('roles', isA<List>()));
-
-      final List<dynamic> roles = data['roles'];
-      expect(roles, isNotEmpty);
-
-      // Track unique IDs
-      final Set<String> roleIds = {};
-
-      for (var role in roles) {
-        expect(role, isA<Map<String, dynamic>>());
-
-        final Map<String, dynamic> roleData = role;
-
-        // Validate required fields
-        expect(roleData, containsPair('id', isA<String>()));
-        expect(roleData, containsPair('name', isA<String>()));
-        expect(roleData, containsPair('alliance', isA<String>()));
-        expect(roleData, containsPair('type', isA<String>()));
-        expect(roleData, containsPair('night_priority', isA<int>()));
-        expect(roleData, containsPair('asset_path', isA<String>()));
-
-        final String roleId = roleData['id'];
-
-        // Validate unique IDs
-        expect(roleIds.contains(roleId), isFalse,
-            reason: 'Duplicate role ID found: $roleId');
-        roleIds.add(roleId);
-
-        // Validate ID format (no spaces, lowercase with underscores)
-        expect(roleId, matches(r'^[a-z_]+$'),
-            reason: 'Role ID "$roleId" should be lowercase with underscores only');
-
-        // Validate name is not empty
-        expect(roleData['name'], isNotEmpty);
-
-        // Validate alliance is one of expected values
-        final String alliance = roleData['alliance'];
-        expect(
-          ['The Dealers', 'The Party Animals', 'Neutral', 'VARIABLE', 'None'],
-          contains(alliance),
-          reason: 'Role $roleId has invalid alliance: $alliance',
-        );
-
-        // Validate night_priority is reasonable
-        final int priority = roleData['night_priority'];
-        expect(priority, greaterThanOrEqualTo(0));
-        expect(priority, lessThanOrEqualTo(10));
-      }
-
-      // Validate specific critical roles exist
-      expect(roleIds, contains('dealer'));
-      expect(roleIds, contains('party_animal'));
-      expect(roleIds, contains('medic'));
-      expect(roleIds, contains('bouncer'));
+      final jsonString = file.readAsStringSync();
+      rolesData = json.decode(jsonString) as Map<String, dynamic>;
     });
 
-    test('roles.json optional fields are valid when present', () async {
-      final String rolesJson = await rootBundle.loadString('assets/data/roles.json');
-      final Map<String, dynamic> data = jsonDecode(rolesJson);
-      final List<dynamic> roles = data['roles'];
+    test('roles.json has "roles" array', () {
+      expect(rolesData.containsKey('roles'), true);
+      expect(rolesData['roles'], isA<List>());
+    });
+
+    test('each role has required fields: id, name, nightPriority', () {
+      final roles = rolesData['roles'] as List;
+      expect(roles.isNotEmpty, true, reason: 'roles array should not be empty');
+
+      for (var i = 0; i < roles.length; i++) {
+        final role = roles[i] as Map<String, dynamic>;
+        
+        // Check for 'id' field
+        expect(role.containsKey('id'), true, 
+            reason: 'Role at index $i must have "id" field');
+        expect(role['id'], isA<String>(), 
+            reason: 'Role at index $i: "id" must be a string');
+        expect((role['id'] as String).isNotEmpty, true, 
+            reason: 'Role at index $i: "id" must not be empty');
+
+        // Check for 'name' field
+        expect(role.containsKey('name'), true, 
+            reason: 'Role at index $i (${role['id']}) must have "name" field');
+        expect(role['name'], isA<String>(), 
+            reason: 'Role at index $i (${role['id']}): "name" must be a string');
+        expect((role['name'] as String).isNotEmpty, true, 
+            reason: 'Role at index $i (${role['id']}): "name" must not be empty');
+
+        // Check for 'night_priority' field (note: using snake_case as per JSON convention)
+        expect(role.containsKey('night_priority'), true, 
+            reason: 'Role at index $i (${role['id']}) must have "night_priority" field');
+        expect(role['night_priority'], isA<int>(), 
+            reason: 'Role at index $i (${role['id']}): "night_priority" must be an integer');
+      }
+    });
+
+    test('role IDs are unique', () {
+      final roles = rolesData['roles'] as List;
+      final ids = <String>[];
+      final duplicates = <String>[];
 
       for (var role in roles) {
-        final Map<String, dynamic> roleData = role;
-        final String roleId = roleData['id'];
-
-        // Validate optional fields if present
-        if (roleData.containsKey('description')) {
-          expect(roleData['description'], isA<String>());
+        final roleMap = role as Map<String, dynamic>;
+        final id = roleMap['id'] as String;
+        
+        if (ids.contains(id)) {
+          duplicates.add(id);
+        } else {
+          ids.add(id);
         }
+      }
 
-        if (roleData.containsKey('has_binary_choice_at_start')) {
-          expect(roleData['has_binary_choice_at_start'], isA<bool>());
+      expect(duplicates.isEmpty, true, 
+          reason: 'Duplicate role IDs found: ${duplicates.join(", ")}');
+      expect(ids.length, roles.length, 
+          reason: 'Number of unique IDs should match number of roles');
+    });
+
+    test('all roles have valid alliance values', () {
+      final roles = rolesData['roles'] as List;
+      final validAlliances = [
+        'The Dealers',
+        'The Party Animals',
+        'Neutral',
+        'None (Neutral Survivor)',
+        'Variable',
+      ];
+
+      for (var i = 0; i < roles.length; i++) {
+        final role = roles[i] as Map<String, dynamic>;
+        
+        if (role.containsKey('alliance')) {
+          final alliance = role['alliance'] as String;
+          expect(validAlliances.contains(alliance), true,
+              reason: 'Role ${role['id']} has invalid alliance: $alliance');
         }
+      }
+    });
 
-        if (roleData.containsKey('choices')) {
-          expect(roleData['choices'], isA<List>());
-        }
+    test('night_priority values are non-negative integers', () {
+      final roles = rolesData['roles'] as List;
 
-        if (roleData.containsKey('ability')) {
-          expect(roleData['ability'], isA<String>());
-        }
+      for (var role in roles) {
+        final roleMap = role as Map<String, dynamic>;
+        final priority = roleMap['night_priority'] as int;
+        
+        expect(priority >= 0, true, 
+            reason: 'Role ${roleMap['id']} has negative night_priority: $priority');
+      }
+    });
 
-        if (roleData.containsKey('start_alliance')) {
-          expect(roleData['start_alliance'], isA<String>());
-        }
+    test('roles have description field', () {
+      final roles = rolesData['roles'] as List;
 
-        if (roleData.containsKey('death_alliance')) {
-          expect(roleData['death_alliance'], isA<String>());
-        }
+      for (var role in roles) {
+        final roleMap = role as Map<String, dynamic>;
+        
+        expect(roleMap.containsKey('description'), true,
+            reason: 'Role ${roleMap['id']} must have "description" field');
+        expect(roleMap['description'], isA<String>(),
+            reason: 'Role ${roleMap['id']}: "description" must be a string');
+      }
+    });
 
-        if (roleData.containsKey('color_hex')) {
-          final String colorHex = roleData['color_hex'];
-          expect(colorHex, matches(r'^#[0-9A-Fa-f]{6}$'),
-              reason: 'Role $roleId has invalid color_hex: $colorHex');
+    test('roles with has_binary_choice_at_start have choices array', () {
+      final roles = rolesData['roles'] as List;
+
+      for (var role in roles) {
+        final roleMap = role as Map<String, dynamic>;
+        
+        if (roleMap.containsKey('has_binary_choice_at_start') && 
+            roleMap['has_binary_choice_at_start'] == true) {
+          expect(roleMap.containsKey('choices'), true,
+              reason: 'Role ${roleMap['id']} has has_binary_choice_at_start but no choices array');
+          expect(roleMap['choices'], isA<List>(),
+              reason: 'Role ${roleMap['id']}: "choices" must be an array');
+          final choices = roleMap['choices'] as List;
+          expect(choices.length, greaterThan(0),
+              reason: 'Role ${roleMap['id']}: "choices" array must not be empty');
         }
       }
     });

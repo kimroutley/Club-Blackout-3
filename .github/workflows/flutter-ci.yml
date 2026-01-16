@@ -2,52 +2,43 @@ name: Flutter CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
   test:
-    name: Test on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    
-    permissions:
-      contents: read
-    
+    name: Test on ${{ matrix.channel }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        flutter-version: ['3.13.0']
-    
+        channel:
+          - stable
+          - beta
+      fail-fast: false
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Setup Flutter
+
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ matrix.flutter-version }}
-          channel: 'stable'
-      
-      - name: Verify Flutter installation
-        run: flutter --version
-      
+          channel: ${{ matrix.channel }}
+          cache: true
+
       - name: Get dependencies
         run: flutter pub get
-      
+
       - name: Analyze code
         run: flutter analyze
-      
-      - name: Run tests
+
+      - name: Run tests with coverage
         run: flutter test --coverage
-      
+
       - name: Upload coverage to Codecov (optional)
-        if: success()
         uses: codecov/codecov-action@v4
         continue-on-error: true
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
