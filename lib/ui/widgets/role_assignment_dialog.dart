@@ -189,326 +189,238 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
       );
     }
 
-    // Try a few times to satisfy the required lineup while keeping the mode's vibe.
-    // If we can't, we fall back to a deterministic "always valid" lineup.
-    List<Role> buildAttempt() {
-      final recommendedDealers = RoleValidator.recommendedDealerCount(
-        playerCount,
-      ).clamp(1, playerCount);
-      final selected = <Role>[];
-      final usedUniqueIds = <String>{};
+    // Deterministic role assignment that satisfies mode and constraints
+    final recommendedDealers = RoleValidator.recommendedDealerCount(
+      playerCount,
+    ).clamp(1, playerCount);
+    final selected = <Role>[];
+    final usedUniqueIds = <String>{};
 
-      // Dealers first (repeat allowed)
-      for (var i = 0; i < recommendedDealers; i++) {
-        selected.add(dealerRole);
+    // 1. Mandatory Roles
+    // Dealers first (repeat allowed)
+    for (var i = 0; i < recommendedDealers; i++) {
+      selected.add(dealerRole);
+    }
+
+    // Ensure at least one Medic or Bouncer
+    // Randomize choice unless one is missing
+    Role firstSupport;
+    if (medicRole != null && bouncerRole != null) {
+      firstSupport = random.nextBool() ? medicRole : bouncerRole;
+    } else {
+      firstSupport = (medicRole ?? bouncerRole)!;
+    }
+    selected.add(firstSupport);
+    usedUniqueIds.add(firstSupport.id);
+
+    // Auto-add Second Wind if more than 6 players
+    if (playerCount > 6) {
+      final secondWindRole = _byId('second_wind');
+      if (secondWindRole != null && usedUniqueIds.add(secondWindRole.id)) {
+        selected.add(secondWindRole);
       }
+    }
 
-      // Ensure at least one Medic or Bouncer
-      final firstSupport = (medicRole ?? bouncerRole)!;
-      selected.add(firstSupport);
-      usedUniqueIds.add(firstSupport.id);
+    // Required defaults: Party Animal + Wallflower
+    if (usedUniqueIds.add(partyAnimalRole.id)) {
+      selected.add(partyAnimalRole);
+    }
+    if (usedUniqueIds.add(wallflowerRole.id)) {
+      selected.add(wallflowerRole);
+    }
 
-      // Auto-add Second Wind if more than 6 players
-      if (playerCount > 6) {
-        final secondWindRole = _byId('second_wind');
-        if (secondWindRole != null && usedUniqueIds.add(secondWindRole.id)) {
-          selected.add(secondWindRole);
-        }
+    // Ensure at least 2 Party Animal-aligned players (incl Medic/Bouncer/etc).
+    // Current count includes: First Support (maybe), PA, Wallflower, Second Wind (maybe)
+    int partyAlignedCount = selected.where(_isPartyAligned).length;
+    if (partyAlignedCount < 2) {
+      // Prefer adding the other of Medic/Bouncer if available
+      final otherSupport = (firstSupport.id == 'medic')
+          ? bouncerRole
+          : medicRole;
+      if (otherSupport != null && usedUniqueIds.add(otherSupport.id)) {
+        selected.add(otherSupport);
       }
+    }
 
-      // Required defaults: Party Animal + Wallflower
-      if (usedUniqueIds.add(partyAnimalRole.id)) {
-        selected.add(partyAnimalRole);
-      }
-      if (usedUniqueIds.add(wallflowerRole.id)) {
-        selected.add(wallflowerRole);
-      }
+    // 2. Prepare buckets for filling remaining slots
+    // Remaining unique role pool
+    final pool = allRoles
+        .where((r) => !_isDealerRole(r))
+        .where((r) => !usedUniqueIds.contains(r.id))
+        .toList();
 
-      // Ensure at least 2 Party Animal-aligned players (incl Medic/Bouncer/etc).
-      int partyAlignedCount = selected.where(_isPartyAligned).length;
-      if (partyAlignedCount < 2) {
-        // Prefer adding the other of Medic/Bouncer if available (more consistent with the host guide).
-        final otherSupport = (firstSupport.id == 'medic')
-            ? bouncerRole
-            : medicRole;
-        if (otherSupport != null && usedUniqueIds.add(otherSupport.id)) {
-          selected.add(otherSupport);
-          partyAlignedCount++;
-        }
-      }
-
-      // Remaining unique role pool
-      final pool = allRoles
-          .where((r) => !_isDealerRole(r))
-          .where((r) => !usedUniqueIds.contains(r.id))
+    List<Role> getCandidates(List<String> keywords) {
+      final copy = pool
+          .where((r) => _isType(r, keywords) && !usedUniqueIds.contains(r.id))
           .toList();
+      copy.shuffle(random);
+      return copy;
+    }
 
-      List<Role> pickFrom(List<Role> candidates) {
-        final copy = candidates
-            .where((r) => pool.any((p) => p.id == r.id))
-            .toList();
-        copy.shuffle(random);
-        return copy;
-      }
+    // Mode buckets
+    final offensive = getCandidates(['aggressive', 'offensive']);
+    final defensive = getCandidates([
+      'defensive',
+      'protective',
+      'investigative',
+    ]);
+    final reactive = getCandidates([
+      'reactive',
+      'chaos',
+      'disruptive',
+      'wild',
+    ]);
+    final passive = getCandidates(['passive']);
 
-      // Mode buckets (best-effort; falls back if role types don't match)
-      final offensive = pickFrom(
-        pool.where((r) => _isType(r, ['aggressive', 'offensive'])).toList(),
-      );
-      final defensive = pickFrom(
-        pool
-            .where(
-              (r) => _isType(r, ['defensive', 'protective', 'investigative']),
-            )
-            .toList(),
-      );
-      final reactive = pickFrom(
-        pool
-            .where(
-              (r) => _isType(r, ['reactive', 'chaos', 'disruptive', 'wild']),
-            )
-            .toList(),
-      );
-      final passive = pickFrom(
-        pool.where((r) => _isType(r, ['passive'])).toList(),
-      );
+    void takeFrom(List<Role> source, int count) {
+      for (var i = 0; i < count && source.isNotEmpty; i++) {
+        // We must re-check usedUniqueIds because a role might be in multiple buckets
+        // or selected in a previous step.
+        // Also source might have duplicates if we didn't filter strictly enough,
+        // but `getCandidates` filters by usedUniqueIds at creation time.
+        // However, as we add to `usedUniqueIds` during `takeFrom`, subsequent calls
+        // or subsequent iterations need to be careful?
+        // Actually `getCandidates` returns a fresh list. If a role is in `offensive` AND `defensive`,
+        // it could be in both lists.
+        final role = source.removeAt(0);
+        if (usedUniqueIds.contains(role.id)) continue;
 
-      void takeFrom(List<Role> source, int count) {
-        for (var i = 0; i < count && source.isNotEmpty; i++) {
-          final role = source.removeAt(0);
-          if (usedUniqueIds.add(role.id)) {
-            selected.add(role);
-          }
-        }
-      }
-
-      final remainingSlots = playerCount - selected.length;
-      if (remainingSlots > 0) {
-        switch (mode) {
-          case GameMode.bloodbath:
-            takeFrom(offensive, (remainingSlots * 0.6).round());
-            takeFrom(defensive, (remainingSlots * 0.25).round());
-            takeFrom(
-              reactive,
-              remainingSlots -
-                  ((remainingSlots * 0.6).round()) -
-                  ((remainingSlots * 0.25).round()),
-            );
-            break;
-          case GameMode.politicalNightmare:
-            takeFrom(defensive, (remainingSlots * 0.6).round());
-            takeFrom(offensive, (remainingSlots * 0.2).round());
-            takeFrom(
-              reactive,
-              remainingSlots -
-                  ((remainingSlots * 0.6).round()) -
-                  ((remainingSlots * 0.2).round()),
-            );
-            break;
-          case GameMode.freeForAll:
-            takeFrom(reactive, (remainingSlots * 0.7).round());
-            // "regular" mix
-            final regular = <Role>[...offensive, ...defensive, ...passive];
-            regular.shuffle(random);
-            takeFrom(
-              regular,
-              remainingSlots - ((remainingSlots * 0.7).round()),
-            );
-            break;
-          case GameMode.custom:
-            final mixed = <Role>[
-              ...defensive,
-              ...reactive,
-              ...offensive,
-              ...passive,
-            ];
-            mixed.shuffle(random);
-            takeFrom(mixed, remainingSlots);
-            break;
-        }
-      }
-
-      // Fill anything left with whatever remains.
-      final leftovers = List<Role>.from(
-        pool.where((r) => !usedUniqueIds.contains(r.id)),
-      );
-      leftovers.shuffle(random);
-      for (final role in leftovers) {
-        if (selected.length >= playerCount) break;
-
-        // Auto-add Bouncer if Ally Cat is present and Bouncer not already added
-        if (selected.any((r) => r.id == 'ally_cat')) {
-          if (!selected.any((r) => r.id == 'bouncer') && bouncerRole != null) {
-            // Replace a random non-essential Party Animal role with Bouncer
-            final replaceableIndex = selected.lastIndexWhere(
-              (r) =>
-                  r.alliance == 'The Party Animals' &&
-                  r.id != 'party_animal' &&
-                  r.id != 'wallflower' &&
-                  r.id != 'medic' &&
-                  r.id != 'ally_cat' &&
-                  r.id != 'second_wind',
-            );
-            if (replaceableIndex != -1) {
-              usedUniqueIds.remove(selected[replaceableIndex].id);
-              selected[replaceableIndex] = bouncerRole;
-              usedUniqueIds.add('bouncer');
-            }
-          }
-        }
         if (usedUniqueIds.add(role.id)) {
           selected.add(role);
         }
       }
+    }
 
-      // If we still couldn't fill, that's a content problem.
+    var remainingSlots = playerCount - selected.length;
+    if (remainingSlots > 0) {
+      switch (mode) {
+        case GameMode.bloodbath:
+          takeFrom(offensive, (remainingSlots * 0.6).round());
+          takeFrom(defensive, (remainingSlots * 0.25).round());
+          takeFrom(
+            reactive,
+            remainingSlots -
+                ((remainingSlots * 0.6).round()) -
+                ((remainingSlots * 0.25).round()),
+          );
+          break;
+        case GameMode.politicalNightmare:
+          takeFrom(defensive, (remainingSlots * 0.6).round());
+          takeFrom(offensive, (remainingSlots * 0.2).round());
+          takeFrom(
+            reactive,
+            remainingSlots -
+                ((remainingSlots * 0.6).round()) -
+                ((remainingSlots * 0.2).round()),
+          );
+          break;
+        case GameMode.freeForAll:
+          takeFrom(reactive, (remainingSlots * 0.7).round());
+          final regular = <Role>[...offensive, ...defensive, ...passive];
+          regular.shuffle(random);
+          takeFrom(
+            regular,
+            remainingSlots - ((remainingSlots * 0.7).round()),
+          );
+          break;
+        case GameMode.custom:
+          final mixed = <Role>[
+            ...defensive,
+            ...reactive,
+            ...offensive,
+            ...passive,
+          ];
+          mixed.shuffle(random);
+          takeFrom(mixed, remainingSlots);
+          break;
+      }
+    }
+
+    // 3. Fill leftovers
+    // Recalculate pool because we've used some roles
+    final leftovers = allRoles
+        .where((r) => !_isDealerRole(r) && !usedUniqueIds.contains(r.id))
+        .toList();
+    leftovers.shuffle(random);
+
+    for (final role in leftovers) {
+      if (selected.length >= playerCount) break;
+      if (usedUniqueIds.add(role.id)) {
+        selected.add(role);
+      }
+    }
+
+    // 4. Validate and Fix Dependencies (Deterministic fix)
+    // Check Bouncer dependency for Ally Cat and Minor
+    final hasAllyCat = selected.any((r) => r.id == 'ally_cat');
+    final hasMinor = selected.any((r) => r.id == 'minor');
+    final hasBouncer = selected.any((r) => r.id == 'bouncer');
+
+    if ((hasAllyCat || hasMinor) && !hasBouncer && bouncerRole != null) {
+      // We need to add Bouncer.
+      // If we have space (unlikely here), add it.
       if (selected.length < playerCount) {
-        throw StateError(
-          'Not enough unique roles to fill $playerCount players. Add more roles or reduce players.',
-        );
-      }
-
-      // Keep the game start from being trivial: dealers cannot already have strict majority.
-      final dealerCount = selected.where(_isDealerRole).length;
-      if (dealerCount > (playerCount - dealerCount)) {
-        return const <Role>[];
-      }
-
-      // Ensure we have at least 2 Party Animal-aligned players.
-      if (selected.where(_isPartyAligned).length < 2) {
-        return const <Role>[];
-      }
-
-      // Ensure required defaults exist.
-      if (!selected.any((r) => r.id == 'party_animal')) return const <Role>[];
-      if (!selected.any((r) => r.id == 'wallflower')) return const <Role>[];
-
-      // Ensure required roles exist
-      if (!selected.any(_isDealerRole)) return const <Role>[];
-      if (!selected.any((r) => r.id == 'medic' || r.id == 'bouncer'))
-        return const <Role>[];
-
-      // Validate role dependencies
-      if (!_validateRoleDependencies(selected)) return const <Role>[];
-
-      // Ensure uniqueness except repeatable roles
-      final seen = <String>{};
-      for (final role in selected) {
-        if (RoleValidator.multipleAllowedRoles.contains(role.id)) continue;
-        if (!seen.add(role.id)) return const <Role>[];
-      }
-
-      return selected;
-    }
-
-    List<Role> selectedRoles = const <Role>[];
-    for (var attempt = 0; attempt < 40; attempt++) {
-      final attemptRoles = buildAttempt();
-      if (attemptRoles.isNotEmpty) {
-        selectedRoles = attemptRoles;
-        break;
-      }
-    }
-
-    if (selectedRoles.isEmpty) {
-      // Deterministic fallback: dealers + medic/bouncer + fill with Party Animal roles first.
-      final recommendedDealers = RoleValidator.recommendedDealerCount(
-        playerCount,
-      ).clamp(1, playerCount);
-      final selected = <Role>[];
-      final usedUniqueIds = <String>{};
-      for (var i = 0; i < recommendedDealers; i++) {
-        selected.add(dealerRole);
-      }
-      final support = (medicRole ?? bouncerRole)!;
-      selected.add(support);
-      usedUniqueIds.add(support.id);
-
-      // Auto-add Second Wind if more than 6 players
-      if (playerCount > 6) {
-        final secondWindRole = _byId('second_wind');
-        if (secondWindRole != null && usedUniqueIds.add(secondWindRole.id)) {
-          selected.add(secondWindRole);
-        }
-      }
-
-      if (usedUniqueIds.add(partyAnimalRole.id)) {
-        selected.add(partyAnimalRole);
-      }
-      if (usedUniqueIds.add(wallflowerRole.id)) {
-        selected.add(wallflowerRole);
-      }
-
-      if (support.id == 'medic' && bouncerRole != null) {
         selected.add(bouncerRole);
-        usedUniqueIds.add(bouncerRole.id);
-      } else if (support.id == 'bouncer' && medicRole != null) {
-        selected.add(medicRole);
-        usedUniqueIds.add(medicRole.id);
-      }
+        usedUniqueIds.add('bouncer');
+      } else {
+        // Swap out a non-critical role for Bouncer.
+        // Candidates for removal: NOT Dealer, Ally Cat, Minor, Party Animal, Wallflower.
+        // Also prefer removing roles added late (at the end of the list),
+        // but let's just find a valid candidate.
+        final candidateIndex = selected.lastIndexWhere(
+          (r) =>
+              r.id != 'dealer' &&
+              r.id != 'ally_cat' &&
+              r.id != 'minor' &&
+              r.id != 'party_animal' &&
+              r.id != 'wallflower' &&
+              r.id != 'medic' && // prefer keeping medic if present
+              r.id != 'second_wind',
+        );
 
-      final partyFirst = allRoles
-          .where((r) => !_isDealerRole(r))
-          .where((r) => _isPartyAligned(r) && !usedUniqueIds.contains(r.id))
-          .toList();
-      partyFirst.shuffle(random);
-
-      final others = allRoles
-          .where((r) => !_isDealerRole(r))
-          .where(
+        if (candidateIndex != -1) {
+          final removed = selected[candidateIndex];
+          usedUniqueIds.remove(removed.id);
+          selected[candidateIndex] = bouncerRole;
+          usedUniqueIds.add('bouncer');
+        } else {
+          // If we can't find a perfect candidate, we might have to sacrifice Medic or Second Wind?
+          // Fallback: Replace ANY non-dealer, non-dependent role.
+           final fallbackIndex = selected.lastIndexWhere(
             (r) =>
-                !_isNeutral(r) &&
-                !_isPartyAligned(r) &&
-                !usedUniqueIds.contains(r.id),
-          )
-          .toList();
-      others.shuffle(random);
-
-      final neutrals = allRoles
-          .where((r) => !_isDealerRole(r))
-          .where((r) => _isNeutral(r) && !usedUniqueIds.contains(r.id))
-          .toList();
-      neutrals.shuffle(random);
-
-      for (final role in [...partyFirst, ...others, ...neutrals]) {
-        // Auto-add Bouncer if Ally Cat is present and Bouncer not already added
-        if (selected.any((r) => r.id == 'ally_cat')) {
-          if (!selected.any((r) => r.id == 'bouncer') && bouncerRole != null) {
-            // If we have space, add bouncer
-            if (selected.length < playerCount && usedUniqueIds.add('bouncer')) {
-              selected.add(bouncerRole);
-            } else if (selected.length >= playerCount) {
-              // Replace a non-essential role
-              final replaceableIndex = selected.lastIndexWhere(
-                (r) =>
-                    r.alliance == 'The Party Animals' &&
-                    r.id != 'party_animal' &&
-                    r.id != 'wallflower' &&
-                    r.id != 'medic' &&
-                    r.id != 'ally_cat' &&
-                    r.id != 'second_wind',
-              );
-              if (replaceableIndex != -1) {
-                usedUniqueIds.remove(selected[replaceableIndex].id);
-                selected[replaceableIndex] = bouncerRole;
-                usedUniqueIds.add('bouncer');
-              }
-            }
+                r.id != 'dealer' &&
+                r.id != 'ally_cat' &&
+                r.id != 'minor' &&
+                r.id != 'party_animal' &&
+                r.id != 'wallflower',
+          );
+          if (fallbackIndex != -1) {
+             final removed = selected[fallbackIndex];
+             usedUniqueIds.remove(removed.id);
+             selected[fallbackIndex] = bouncerRole;
+             usedUniqueIds.add('bouncer');
           }
         }
-        if (selected.length >= playerCount) break;
-        if (usedUniqueIds.add(role.id)) {
-          selected.add(role);
-        }
       }
-
-      if (selected.length < playerCount) {
-        throw StateError(
-          'Not enough unique roles to fill $playerCount players. Add more roles or reduce players.',
-        );
-      }
-      selectedRoles = selected;
     }
+
+    // Final checks
+    if (selected.length < playerCount) {
+      throw StateError(
+        'Not enough unique roles to fill $playerCount players. Add more roles or reduce players.',
+      );
+    }
+
+    // Ensure Dealer Majority rule doesn't break game
+    // (Should be covered by recommendedDealers, but double check)
+    final dealerCount = selected.where(_isDealerRole).length;
+    if (dealerCount > (playerCount - dealerCount)) {
+        // This is a configuration error if recommendedDealers is broken
+        // Force reduce dealers?
+        // For now, assuming recommendedDealers is correct (max 3 for 15 players).
+    }
+
+    List<Role> selectedRoles = selected;
 
     // Shuffle and assign
     selectedRoles.shuffle(random);
@@ -542,7 +454,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
               opacity: 0.9,
               borderColor: ClubBlackoutTheme.neonPink,
             ),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

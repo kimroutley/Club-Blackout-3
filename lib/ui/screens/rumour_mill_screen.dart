@@ -62,8 +62,9 @@ class _RumourMillScreenState extends State<RumourMillScreen> with SingleTickerPr
             ),
             
             // Content
-            CustomScrollView(
-              slivers: [
+            SafeArea(
+              child: CustomScrollView(
+                slivers: [
                 SliverAppBar(
                   backgroundColor: Colors.transparent,
                   surfaceTintColor: Colors.transparent,
@@ -121,6 +122,7 @@ class _RumourMillScreenState extends State<RumourMillScreen> with SingleTickerPr
                   ),
                 ),
               ],
+            ),
             ),
           ],
         ),
@@ -352,25 +354,24 @@ class _RumourMillScreenState extends State<RumourMillScreen> with SingleTickerPr
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: player.hasRumour
-                                      ? [
-                                          rumourColor.withOpacity(0.15),
-                                          rumourColor.withOpacity(0.05),
-                                        ]
-                                      : [
-                                          Colors.white.withOpacity(0.05),
-                                          Colors.white.withOpacity(0.02),
-                                        ],
-                                  ),
+                            // Bolt: Removed nested BackdropFilter for performance
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: player.hasRumour
+                                    ? [
+                                        rumourColor.withOpacity(0.15),
+                                        rumourColor.withOpacity(0.05),
+                                      ]
+                                    : [
+                                        Colors.white.withOpacity(0.05),
+                                        Colors.white.withOpacity(0.02),
+                                      ],
                                 ),
-                                child: ListTile(
+                              ),
+                              child: ListTile(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                   leading: Container(
                                     width: 48,
@@ -447,7 +448,6 @@ class _RumourMillScreenState extends State<RumourMillScreen> with SingleTickerPr
                                   ),
                                 ),
                               ),
-                            ),
                           ),
                           ),
                         ),

@@ -18,11 +18,12 @@ class CharacterCardsScreen extends StatelessWidget {
       !r.alliance.contains('Party Animal')
     ).toList();
 
-    return ClubBlackoutTheme.centeredConstrained(
-      maxWidth: 920,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+    return SafeArea(
+      child: ClubBlackoutTheme.centeredConstrained(
+        maxWidth: 920,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
           _buildAllianceGraph(),
           const SizedBox(height: 32),
           _buildRoleGrid('THE DEALERS', dealerTeam, ClubBlackoutTheme.neonRed, context),
@@ -32,6 +33,7 @@ class CharacterCardsScreen extends StatelessWidget {
           _buildRoleGrid('WILD CARDS & NEUTRALS', neutrals, ClubBlackoutTheme.neonPurple, context),
           const SizedBox(height: 48),
         ],
+      ),
       ),
     );
   }
@@ -75,12 +77,12 @@ class CharacterCardsScreen extends StatelessWidget {
             children: [
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 10),
+                  padding: const EdgeInsets.only(top: 12),
                   child: RoleCardWidget(role: role),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(bottom: 20, top: 10),
+                padding: const EdgeInsets.only(bottom: 24, top: 12),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: role.color),
                   onPressed: () => Navigator.pop(context),
@@ -271,7 +273,7 @@ class CharacterCardsScreen extends StatelessWidget {
                  Row(
                    children: [
                      Icon(Icons.transform, color: Colors.white54, size: 14),
-                     const SizedBox(width: 6),
+                     const SizedBox(width: 8),
                      Text(
                        conversion,
                        style: const TextStyle(
@@ -365,9 +367,9 @@ class CharacterCardsScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         ...sentences.map((sentence) => Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 6),
+          padding: const EdgeInsets.only(left: 8, bottom: 8),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -403,7 +405,7 @@ class CharacterCardsScreen extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
@@ -499,7 +501,7 @@ class _RoleGalleryTile extends StatelessWidget {
                 : Icon(Icons.person, color: role.color, size: 40),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           SizedBox(
             width: 90,
             child: Text(
