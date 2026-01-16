@@ -104,6 +104,17 @@ class AbilityResolver {
     _blocks.clear();
     _redirects.clear();
   }
+
+  /// Remove a queued ability that matches the criteria
+  void cancelAbility(String abilityId, {String? sourcePlayerId, String? targetPlayerId}) {
+    _abilityQueue.removeWhere((ability) {
+      bool matchId = ability.abilityId == abilityId;
+      bool matchSource = sourcePlayerId == null || ability.sourcePlayerId == sourcePlayerId;
+      bool matchTarget = targetPlayerId == null || ability.targetPlayerIds.contains(targetPlayerId);
+
+      return matchId && matchSource && matchTarget;
+    });
+  }
   
   /// Process all queued abilities in priority order
   List<AbilityResult> resolveAllAbilities(List<Player> players) {
