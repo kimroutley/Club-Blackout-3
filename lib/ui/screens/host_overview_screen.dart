@@ -35,7 +35,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final players = sortedPlayersByDisplayName(widget.gameEngine.players);
+    final players =
+      sortedPlayersByDisplayName(widget.gameEngine.guests.toList());
     final enabledPlayers = players.where((p) => p.isEnabled).length;
     final alivePlayers = players.where((p) => p.isActive).length;
     final deadPlayers = enabledPlayers - alivePlayers;
@@ -160,6 +161,75 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     );
   }
 
+  List<Widget> _buildPlayerStatusChips(Player player) {
+    final chips = <Widget>[];
+
+    Widget buildChip(String label, Color color) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: color.withOpacity(0.5), width: 0.5),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 9, // Small font for dense info
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+
+    // Role-specific states
+    if (player.hasRumour) {
+      chips.add(buildChip('RUMOUR', ClubBlackoutTheme.neonPurple));
+    }
+    if (player.soberSentHome) {
+      chips.add(buildChip('SENT HOME', ClubBlackoutTheme.neonBlue));
+    }
+    if (player.clingerPartnerId != null) {
+      final target = widget.gameEngine.players
+          .firstWhere((p) => p.id == player.clingerPartnerId, orElse: () => player);
+      chips.add(buildChip('OBSESSED: ${target.name}', ClubBlackoutTheme.neonPink));
+    }
+    if (player.creepTargetId != null) {
+      final target = widget.gameEngine.players
+          .firstWhere((p) => p.id == player.creepTargetId, orElse: () => player);
+      chips.add(buildChip('CREEPING: ${target.name}', ClubBlackoutTheme.neonGreen));
+    }
+    if (player.clingerFreedAsAttackDog) {
+      chips.add(buildChip('UNLEASHED', ClubBlackoutTheme.neonRed));
+    }
+    if (player.medicChoice != null) {
+      chips.add(buildChip(
+        player.medicChoice == 'PROTECT_DAILY' ? 'MEDIC: PROTECT' : 'MEDIC: REVIVE',
+        ClubBlackoutTheme.neonBlue,
+      ));
+    }
+    if (player.idCheckedByBouncer) {
+      chips.add(buildChip('CHECKED', Colors.grey));
+    }
+    if (player.silencedDay == widget.gameEngine.dayCount) {
+      chips.add(buildChip('SILENCED', Colors.white));
+    }
+    if (player.minorHasBeenIDd) {
+      chips.add(buildChip('MINOR ID\'D', ClubBlackoutTheme.neonOrange));
+    }
+    if (player.secondWindConverted) {
+      chips.add(buildChip('CONVERTED', ClubBlackoutTheme.neonOrange));
+    } else if (player.secondWindPendingConversion) {
+      chips.add(buildChip('PENDING CONV', ClubBlackoutTheme.neonOrange));
+    }
+    if (player.joinsNextNight) {
+      chips.add(buildChip('LATE JOIN', ClubBlackoutTheme.neonGreen));
+    }
+
+    return chips;
+  }
+
   Widget _buildGameStats(int alive, int dead) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -249,9 +319,23 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     final sentHome = widget.gameEngine.players
         .where((p) => p.soberSentHome)
         .toList();
-    final protected = widget.gameEngine.players
-        .where((p) => widget.gameEngine.nightActions['protect'] == p.id)
-        .toList();
+    
+    // Pending/Active Night Actions
+    final dealerTargetId = widget.gameEngine.nightActions['kill'];
+    final roofiTargetId = widget.gameEngine.nightActions['roofi'];
+    final bouncerTargetId = widget.gameEngine.nightActions['bouncer_check'];
+    final medicTargetId = widget.gameEngine.nightActions['protect'];
+    
+    // Helper to get player by ID
+    Player? getP(String? id) => id != null 
+        ? widget.gameEngine.players.where((p) => p.id == id).firstOrNull 
+        : null;
+
+    final protected = getP(medicTargetId); // Medic target for tonight
+    final dealerTarget = getP(dealerTargetId);
+    final roofiTarget = getP(roofiTargetId);
+    final bouncerTarget = getP(bouncerTargetId);
+
     final lastNightLog = widget.gameEngine.gameLog
         .where((e) => e.turn >= widget.gameEngine.dayCount - 1)
         .toList();
@@ -304,10 +388,35 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
 
           const Divider(color: Colors.white24, height: 24),
 
-          // 2. Active Temporary Effects
+          // 2. LIVE NIGHT ACTIONS (Pending Resolution)
+          if (dealerTarget != null || roofiTarget != null || bouncerTarget != null || protected != null || sentHome.isNotEmpty) ...[
+             const Text(
+              "PENDING NIGHT ACTIONS (Live)",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (dealerTarget != null)
+              _buildStatItem(Icons.dangerous, "Dealers Hunting: ${dealerTarget.name}", ClubBlackoutTheme.neonRed),
+            if (roofiTarget != null)
+              _buildStatItem(Icons.block, "Roofi Targeting: ${roofiTarget.name}", Colors.grey),
+            if (bouncerTarget != null)
+              _buildStatItem(Icons.verified_user, "Bouncer ID'ing: ${bouncerTarget.name}", ClubBlackoutTheme.neonBlue),
+            if (protected != null)
+               _buildStatItem(Icons.medical_services, "Medic Protecting: ${protected.name}", Colors.green),
+            if (sentHome.isNotEmpty)
+              ...sentHome.map((p) => _buildStatItem(Icons.no_drinks, "Sober Sent Home: ${p.name}", Colors.blue)),
+             const SizedBox(height: 16),
+          ],
+
+          // 3. Active Temporary Effects (Resolved Previous Night)
           if (silenced.isNotEmpty) ...[
             const Text(
-              "SILENCED (Roofi)",
+              "SILENCED (Roofi - Active)",
               style: TextStyle(
                 color: Colors.grey,
                 fontSize: 12,
@@ -324,7 +433,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           ],
           if (sentHome.isNotEmpty) ...[
             const Text(
-              "SENT HOME (Sober)",
+              "SENT HOME (Sober - Active)",
               style: TextStyle(
                 color: Colors.amber,
                 fontSize: 12,
@@ -339,27 +448,10 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
             ),
             const SizedBox(height: 8),
           ],
-          if (protected.isNotEmpty) ...[
-            const Text(
-              "PROTECTED (Medic)",
-              style: TextStyle(
-                color: Colors.green,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            ...protected.map(
-              (p) => Text(
-                "• ${p.name}",
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
 
           const Divider(color: Colors.white24, height: 24),
 
-          // 3. Recent Action Log (Last Night + Today)
+          // 4. Recent Action Log (Last Night + Today)
           const Text(
             "RECENT ACTIONS",
             style: TextStyle(
@@ -408,9 +500,15 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
   }
 
   Widget _buildClingerRow(Player? clinger) {
-    final partner = clinger?.clingerPartnerId != null
+    String? partnerId = clinger?.clingerPartnerId;
+    if (partnerId == null && widget.gameEngine.nightActions.containsKey('clinger_obsession')) {
+       partnerId = widget.gameEngine.nightActions['clinger_obsession'];
+    }
+
+    final partner = partnerId != null
         ? widget.gameEngine.players
-            .firstWhere((p) => p.id == clinger!.clingerPartnerId)
+            .where((p) => p.id == partnerId)
+            .firstOrNull
         : null;
 
     return Padding(
@@ -473,9 +571,14 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
   }
 
   Widget _buildCreepStatus(Player creep) {
-    final target = creep.creepTargetId != null
+    String? targetId = creep.creepTargetId;
+    if (targetId == null && widget.gameEngine.nightActions.containsKey('creep_target')) {
+       targetId = widget.gameEngine.nightActions['creep_target'];
+    }
+
+    final target = targetId != null
         ? widget.gameEngine.players
-              .where((p) => p.id == creep.creepTargetId)
+              .where((p) => p.id == targetId)
               .firstOrNull
         : null;
 
@@ -798,6 +901,25 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                       ],
                     ],
                   ),
+                  if (player.statusEffects.isNotEmpty ||
+                      player.hasRumour ||
+                      player.soberSentHome ||
+                      player.clingerPartnerId != null ||
+                      player.creepTargetId != null ||
+                      player.clingerFreedAsAttackDog ||
+                      player.medicChoice != null ||
+                      player.idCheckedByBouncer ||
+                      player.silencedDay == widget.gameEngine.dayCount ||
+                      player.minorHasBeenIDd ||
+                      player.secondWindConverted ||
+                      player.secondWindPendingConversion) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: _buildPlayerStatusChips(player),
+                    ),
+                  ],
                 ],
               ),
             ),

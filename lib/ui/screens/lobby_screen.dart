@@ -137,6 +137,34 @@ class _LobbyScreenState extends State<LobbyScreen>
     }
   }
 
+  Future<void> _createTestGame() async {
+    try {
+      // 1. Generate test data
+      await widget.gameEngine.createTestGame();
+
+      // 2. Validate setup generated (ensure min counts)
+      final setupError = _validateRoleCompositionForGameStart();
+      if (setupError != null) {
+        // Test game generator should result in valid game, but just in case
+        _showError("Test game generation failed: $setupError");
+        return;
+      }
+
+      // 3. Start
+      await widget.gameEngine.startGame();
+
+      // 4. Go
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => GameScreen(gameEngine: widget.gameEngine),
+        ),
+      );
+    } catch (e) {
+      _showError(e.toString());
+    }
+  }
+
   void _showError(String message) {
     // Replaced Toast with Dialog for errors
     showDialog(
@@ -209,7 +237,7 @@ class _LobbyScreenState extends State<LobbyScreen>
 
   String? _validateRoleCompositionForGameStart() {
     final validation = RoleValidator.validateGameSetup(
-      widget.gameEngine.players,
+      widget.gameEngine.guests,
     );
     if (!validation.isValid) return validation.error ?? 'Setup invalid.';
 
@@ -222,11 +250,9 @@ class _LobbyScreenState extends State<LobbyScreen>
 
   ({int enabled, int dealers, int partyAligned, int medics, int bouncers})
   _roleCountsForSetup() {
-    // Assuming Player model has isEnabled and Role has alliance.
-    // If not, revert to standard list filtering.
-    final enabledPlayers = widget.gameEngine.players
-        .where((p) => true)
-        .toList(); // Simplified if isEnabled missing
+    final enabledPlayers = widget.gameEngine.guests
+      .where((p) => p.isEnabled)
+      .toList();
     int dealers = 0, partyAligned = 0, medics = 0, bouncers = 0;
 
     for (final p in enabledPlayers) {
@@ -304,14 +330,20 @@ class _LobbyScreenState extends State<LobbyScreen>
 
   @override
   Widget build(BuildContext context) {
-    final players = sortedPlayersByDisplayName(widget.gameEngine.players);
+    final allPlayers = sortedPlayersByDisplayName(widget.gameEngine.players);
+    Player? hostPlayer;
+    try {
+      hostPlayer = allPlayers.firstWhere((p) => p.role.id == 'host');
+    } catch (_) {
+      hostPlayer = null;
+    }
+
+    final players = allPlayers.where((p) => p.role.id != 'host').toList();
     final playerCount = players.length;
     final minPlayers = 4;
     final canStart = playerCount >= minPlayers;
     final progress = (playerCount / minPlayers).clamp(0.0, 1.0);
-    final hostExists = widget.gameEngine.players.any(
-      (p) => p.role.id == 'host',
-    );
+    final hostExists = hostPlayer != null;
 
     return Stack(
       children: [
@@ -350,7 +382,30 @@ class _LobbyScreenState extends State<LobbyScreen>
                           maxWidth: 760,
                           child: Column(
                             children: [
+                              // Test Game Button
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 24),
+                                child: TextButton.icon(
+                                  onPressed: _createTestGame,
+                                  icon: const Icon(Icons.bug_report, color: Colors.white38),
+                                  label: const Text(
+                                    'LOAD TEST GAME',
+                                    style: TextStyle(color: Colors.white38),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.all(16),
+                                    backgroundColor: Colors.white.withOpacity(0.05),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                ),
+                              ),
                               if (!hostExists) _buildHostInputSection(),
+                              if (hostPlayer != null) ...[
+                                _buildHostVipCard(hostPlayer!),
+                                const SizedBox(height: 12),
+                              ],
                               _buildGuestInputSection(canStart),
                               if (players.isNotEmpty) ...[
                                 const SizedBox(height: 32),
@@ -476,6 +531,86 @@ class _LobbyScreenState extends State<LobbyScreen>
     );
   }
 
+  Widget _buildHostVipCard(Player host) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: ClubBlackoutTheme.neonOrange.withOpacity(0.8),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ClubBlackoutTheme.neonOrange.withOpacity(0.25),
+            blurRadius: 24,
+            spreadRadius: 2,
+          ),
+        ],
+        gradient: LinearGradient(
+          colors: [
+            ClubBlackoutTheme.neonOrange.withOpacity(0.12),
+            Colors.black.withOpacity(0.7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: ClubBlackoutTheme.neonOrange, width: 2),
+              boxShadow: ClubBlackoutTheme.boxGlow(ClubBlackoutTheme.neonOrange, intensity: 0.8),
+            ),
+            child: const Icon(Icons.stars, color: ClubBlackoutTheme.neonOrange, size: 30),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  host.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'VIP Host',
+                  style: TextStyle(
+                    color: ClubBlackoutTheme.neonOrange,
+                    letterSpacing: 1.1,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Chip(
+            backgroundColor: ClubBlackoutTheme.neonOrange.withOpacity(0.15),
+            label: Text(
+              'Not counted as guest',
+              style: TextStyle(
+                color: ClubBlackoutTheme.neonOrange,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+            side: BorderSide(color: ClubBlackoutTheme.neonOrange.withOpacity(0.4)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildGuestInputSection(bool canStart) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -534,7 +669,7 @@ class _LobbyScreenState extends State<LobbyScreen>
     final availableRoles = RoleValidator.getAvailableRoles(
       widget.gameEngine.roleRepository.roles,
       'new_player',
-      widget.gameEngine.players,
+      widget.gameEngine.guests,
     );
 
     final allOptions = <DropdownMenuEntry<Role?>>[

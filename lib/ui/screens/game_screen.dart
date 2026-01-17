@@ -409,17 +409,9 @@ class _GameScreenState extends State<GameScreen>
             target.role.alliance == 'criminal' || target.role.id == 'dealer';
         _showBouncerConfirmation(target, isDealerAlly);
       } else if (step.id == 'creep_act') {
-        final targetId = _currentSelection.first;
-        final target = widget.gameEngine.players.firstWhere(
-          (p) => p.id == targetId,
-        );
-        _showCreepConfirmation(target);
+        // Just store selection - reveal happens in next step
       } else if (step.id == 'clinger_obsession') {
-        final targetId = _currentSelection.first;
-        final target = widget.gameEngine.players.firstWhere(
-          (p) => p.id == targetId,
-        );
-        _showClingerConfirmation(target);
+        // Just store selection - reveal happens in next step
       } else if (step.id == 'sober_act') {
         final targetId = _currentSelection.first;
         final target = widget.gameEngine.players.firstWhere(
@@ -613,77 +605,39 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _showCreepConfirmation(Player target) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RoleCardWidget(role: target.role, playerName: target.name),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: FilledButton.styleFrom(
-                  backgroundColor: target.role.color,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.all(16),
-                  shape: const CircleBorder(),
-                ),
-                child: const Icon(Icons.check, size: 28),
-              ),
-            ],
-          ),
-        ),
-      ),
+    showRoleReveal(
+      context,
+      target.role,
+      target.name,
+      subtitle: 'Creep Target',
+      onComplete: () {}, // Optional callback
     );
   }
 
   void _showClingerConfirmation(Player target) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RoleCardWidget(role: target.role, playerName: target.name),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: ClubBlackoutTheme.neonPink.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: ClubBlackoutTheme.neonPink.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: const Text(
-                  'You are now bound to this player. You will vote exactly as they vote. If they die, you die.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white70,
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 28),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ClubBlackoutTheme.neonPink,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.all(16),
-                  shape: const CircleBorder(),
-                ),
-                child: const Icon(Icons.check, size: 28),
-              ),
-            ],
+    showRoleReveal(
+      context,
+      target.role,
+      target.name,
+      subtitle: 'OBSESSION TARGET',
+      body: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: ClubBlackoutTheme.neonPink.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: ClubBlackoutTheme.neonPink.withOpacity(0.3),
+            width: 1,
           ),
+        ),
+        child: const Text(
+          'You are now bound to this player. You will vote exactly as they vote. If they die, you die.',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.white70,
+            height: 1.4,
+          ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
@@ -2466,6 +2420,10 @@ class _GameScreenState extends State<GameScreen>
                                 step.actionType ==
                                     ScriptActionType.binaryChoice)
                               _buildBinaryChoice(step),
+                            if (isLast &&
+                                step.actionType ==
+                                    ScriptActionType.showInfo)
+                              _buildShowInfoAction(step),
                           ],
                         );
                       },
@@ -2705,6 +2663,45 @@ class _GameScreenState extends State<GameScreen>
     return const SizedBox.shrink();
   }
 
+  Widget _buildShowInfoAction(ScriptStep step) {
+    if (step.id != 'clinger_reveal' && step.id != 'creep_reveal') {
+      return const SizedBox.shrink();
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: FilledButton.icon(
+          onPressed: () => _handleShowInfoAction(step),
+          icon: const Icon(Icons.visibility),
+          label: const Text("REVEAL INFORMATION"),
+          style: ClubBlackoutTheme.neonButtonStyle(Colors.white),
+        ),
+      ),
+    );
+  }
+
+  void _handleShowInfoAction(ScriptStep step) {
+    if (step.id == 'clinger_reveal') {
+      final targetId = widget.gameEngine.nightActions['clinger_obsession'];
+      if (targetId != null) {
+        final target = widget.gameEngine.players.firstWhere(
+          (p) => p.id == targetId,
+          orElse: () => widget.gameEngine.players.first,
+        );
+        _showClingerConfirmation(target);
+      }
+    } else if (step.id == 'creep_reveal') {
+      final targetId = widget.gameEngine.nightActions['creep_act'];
+      if (targetId != null) {
+        final target = widget.gameEngine.players.firstWhere(
+          (p) => p.id == targetId,
+          orElse: () => widget.gameEngine.players.first,
+        );
+        _showCreepConfirmation(target);
+      }
+    }
+  }
+
   void _checkAbilityNotifications() {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -2776,13 +2773,6 @@ class _GameScreenState extends State<GameScreen>
                 !p.hasReviveToken,
           ),
           'msg': "Medic: Revive ability is available.",
-        },
-        {
-          'id_base': 'sober_ready',
-          'condition': widget.gameEngine.players.any(
-            (p) => p.role.id == 'sober' && p.isActive && !p.soberAbilityUsed,
-          ),
-          'msg': "The Sober: Send Home ability available.",
         },
         {
           'id_base': 'bouncer_ready',
@@ -2991,17 +2981,6 @@ class _GameScreenState extends State<GameScreen>
               heroTag: 'fab_medic',
               onPressed: _showMedicReviveDialog,
               child: roleIcon('medic'),
-            ),
-          const SizedBox(height: 12),
-
-          // Sober -> Send Home (Manual Activation - Day Ability) - Active when Alive
-          if (widget.gameEngine.players.any(
-            (p) => p.role.id == 'sober' && p.isActive && !p.soberAbilityUsed,
-          ))
-            FloatingActionButton(
-              heroTag: 'fab_sober',
-              onPressed: _showSoberAbility,
-              child: roleIcon('sober'),
             ),
           const SizedBox(height: 12),
 

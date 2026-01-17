@@ -243,16 +243,16 @@ class AbilityResolver {
           // Check for Minor protection
           if (player.role.id == 'minor' && !player.minorHasBeenIDd) {
             minorProtected.add(targetId);
-            // player.minorHasBeenIDd = true; // REMOVED: Dealers attacking doesn't strip immunity. Only Bouncer does.
             // Minor survives.
           } else {
-            final livesBeforeKill = player.lives;
-            player.kill();
-            if (!player.isAlive) {
-              killed.add(targetId);
-            } else if (player.lives < livesBeforeKill) {
-              // Lost a life but still alive
+            // Predetermine outcome based on lives, but primarily report intent to GameEngine
+            // GameEngine.processDeath will handle the actual state updates and "absorb" logic.
+            // Assumption: Any player with > 1 life will absorb the hit unless Ability specifically ignores it.
+            // Since we can't easily check 'isDealerAttempt' here, we assume standard behavior.
+            if (player.lives > 1) {
               livesLost.add(targetId);
+            } else {
+              killed.add(targetId);
             }
           }
         }

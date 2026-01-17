@@ -10,6 +10,7 @@ void showRoleReveal(
   Role role,
   String playerName, {
   String? subtitle,
+  Widget? body,
   VoidCallback? onComplete,
 }) {
   SoundService().playRoleReveal();
@@ -22,6 +23,7 @@ void showRoleReveal(
       role: role,
       playerName: playerName,
       subtitle: subtitle,
+      body: body,
       onComplete: onComplete,
     ),
   );
@@ -31,6 +33,7 @@ class RoleRevealDialog extends StatefulWidget {
   final Role role;
   final String playerName;
   final String? subtitle;
+  final Widget? body;
   final VoidCallback? onComplete;
 
   const RoleRevealDialog({
@@ -38,6 +41,7 @@ class RoleRevealDialog extends StatefulWidget {
     required this.role,
     required this.playerName,
     this.subtitle,
+    this.body,
     this.onComplete,
   });
 
@@ -166,6 +170,11 @@ class _RoleRevealDialogState extends State<RoleRevealDialog>
                         ),
                         textAlign: TextAlign.center,
                       ),
+                    ],
+
+                    if (widget.body != null) ...[
+                      const SizedBox(height: 16),
+                      widget.body!,
                     ],
 
                     const SizedBox(height: 24),

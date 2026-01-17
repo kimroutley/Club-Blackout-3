@@ -271,7 +271,8 @@ class PlayerGuideBody extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildSectionCard({
@@ -306,7 +307,6 @@ class PlayerGuideBody extends StatelessWidget {
             const SizedBox(height: 24),
             ...children,
           ],
-        ),
         ),
       ),
     );

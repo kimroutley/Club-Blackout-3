@@ -397,10 +397,11 @@ class ScriptBuilder {
   static List<ScriptStep> _buildMedicSteps(List<Player> players) {
     // Find the medic and check their permanent choice from Night 0
     final medic = players.where((p) => p.role.id == 'medic' && p.isActive).firstOrNull;
+    final medicMode = medic?.medicChoice ?? 'PROTECT_DAILY';
     
     // Only wake medic if they chose PROTECT_DAILY at setup
     // If they chose REVIVE, they don't wake at night (revive happens during day phase)
-    if (medic == null || medic.medicChoice != 'PROTECT_DAILY') {
+    if (medic == null || medicMode != 'PROTECT_DAILY') {
       return [];
     }
     

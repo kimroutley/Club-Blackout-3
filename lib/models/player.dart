@@ -39,6 +39,12 @@ class Player {
   bool bouncerAbilityRevoked = false; // Bouncer lost ID ability due to failed challenge
   bool bouncerHasRoofiAbility = false; // Bouncer gained Roofi ability from successful challenge
 
+  // Persistent Reactive Targets (persist across Day phase for death reactions)
+  String? teaSpillerTargetId;
+  String? predatorTargetId;
+  String? dramaQueenTargetAId;
+  String? dramaQueenTargetBId;
+
   Player({
     required this.id,
     required this.name,
@@ -147,6 +153,10 @@ class Player {
       'blockedKillNight': blockedKillNight,
       'roofiAbilityRevoked': roofiAbilityRevoked,
       'bouncerAbilityRevoked': bouncerAbilityRevoked,
+      'teaSpillerTargetId': teaSpillerTargetId,
+      'predatorTargetId': predatorTargetId,
+      'dramaQueenTargetAId': dramaQueenTargetAId,
+      'dramaQueenTargetBId': dramaQueenTargetBId,
     };
   }
 

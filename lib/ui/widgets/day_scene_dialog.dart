@@ -483,8 +483,9 @@ class _DaySceneDialogState extends State<DaySceneDialog> with TickerProviderStat
 
   Widget _buildPhaseCard() {
     final isActive = _currentStep == 0;
-    final aliveCount = widget.gameEngine.players.where((p) => p.isActive).length;
-    final deadCount = widget.gameEngine.players.length - aliveCount;
+    final guests = widget.gameEngine.guests;
+    final aliveCount = guests.where((p) => p.isActive).length;
+    final deadCount = guests.length - aliveCount;
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

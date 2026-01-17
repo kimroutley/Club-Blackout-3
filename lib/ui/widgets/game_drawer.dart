@@ -771,6 +771,20 @@ class GameDrawer extends StatelessWidget {
                 ),
         ),
         actions: [
+          // TEST GAME BUTTON (Hidden in Load Game Menu)
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              HapticFeedback.heavyImpact();
+              await gameEngine.createTestGame(roleCount: 20);
+              
+              if (context.mounted) {
+                // Return to lobby to see the new roster
+                Navigator.of(context).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
+              }
+            },
+            child: Text('TEST', style: TextStyle(color: Colors.white.withOpacity(0.1))),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('CLOSE', style: TextStyle(color: Colors.white.withOpacity(0.7))),

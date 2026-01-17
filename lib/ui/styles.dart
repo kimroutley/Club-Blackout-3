@@ -67,17 +67,17 @@ class ClubBlackoutTheme {
 
   static List<BoxShadow> boxGlow(Color color, {double intensity = 1.0}) => [
         BoxShadow(
-          color: color.withOpacity(0.6 * intensity),
+          color: color.withOpacity((0.6 * intensity).clamp(0.0, 1.0)),
           blurRadius: 12,
           spreadRadius: 2,
         ),
         BoxShadow(
-          color: color.withOpacity(0.4 * intensity),
+          color: color.withOpacity((0.4 * intensity).clamp(0.0, 1.0)),
           blurRadius: 24,
           spreadRadius: 4,
         ),
         BoxShadow(
-          color: color.withOpacity(0.2 * intensity),
+          color: color.withOpacity((0.2 * intensity).clamp(0.0, 1.0)),
           blurRadius: 32,
           spreadRadius: 0,
         ),

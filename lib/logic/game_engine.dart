@@ -1,6 +1,7 @@
 ﻿// ignore_for_file: unreachable_switch_case
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
@@ -215,7 +216,7 @@ class GameEngine extends ChangeNotifier {
     );
 
     // Unique roles become unavailable once they’ve appeared in the game at all (alive OR dead).
-  final usedUniqueRoleIds = _playerList
+    final usedUniqueRoleIds = _playerList
         .map((p) => p.role.id)
         .where((id) => id != 'temp')
         .where((id) => !RoleValidator.multipleAllowedRoles.contains(id))
@@ -229,10 +230,11 @@ class GameEngine extends ChangeNotifier {
         .toList();
 
     // Allow Dealers only if within the recommended scaling AFTER adding this player.
-  final currentEnabledNonHost = _playerList.where((p) => p.isEnabled).length;
+    final currentEnabledNonHost =
+        _playerList.where((p) => p.isEnabled && p.role.id != 'host').length;
     final newTotal = currentEnabledNonHost + 1;
     final recommendedDealers = RoleValidator.recommendedDealerCount(newTotal);
-  final currentDealersAlive = _playerList
+    final currentDealersAlive = _playerList
         .where((p) => p.isEnabled && p.isAlive && p.role.id == 'dealer')
         .length;
     final canAddDealer =
@@ -250,6 +252,13 @@ class GameEngine extends ChangeNotifier {
 
   List<Player> get enabledPlayers => _playerList.where((p) => p.isEnabled).toList();
   List<Player> get activePlayers => _playerList.where((p) => p.isActive).toList();
+  List<Player> get enabledGuests =>
+      _playerList.where((p) => p.isEnabled && p.role.id != 'host').toList();
+  List<Player> get guests =>
+      UnmodifiableListView(_playerList.where((p) => p.role.id != 'host'));
+  List<Player> get activeGuests => UnmodifiableListView(
+        _playerList.where((p) => p.role.id != 'host' && p.isActive),
+      );
 
   ScriptStep? get currentScriptStep {
     if (_scriptQueue.isNotEmpty && _scriptIndex < _scriptQueue.length) {
@@ -478,8 +487,138 @@ class GameEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Quickly seed a test roster with up to [roleCount] distinct roles and random names.
+  /// Host is kept separate and not counted toward guest totals.
+  Future<void> createTestGame({int roleCount = 20, bool includeHost = true}) async {
+    if (roleRepository.roles.isEmpty) {
+      await roleRepository.loadRoles();
+    }
+
+    // Clear any existing state
+    resetGame();
+
+    final random = Random();
+    final allRoles = roleRepository.roles
+        .where((r) => r.id != 'host' && r.id != 'temp')
+        .toList();
+
+    // Ensure we do not request more roles than exist
+    roleCount = roleCount.clamp(1, allRoles.length);
+
+    // Shuffle and take the first N
+    allRoles.shuffle(random);
+    final selected = allRoles.take(roleCount).toList();
+
+    Role? roleById(String id) =>
+        roleRepository.roles.firstWhere((r) => r.id == id, orElse: () => Role(
+              id: 'missing',
+              name: 'Missing Role',
+              alliance: 'None',
+              type: 'Placeholder',
+              description: '',
+              nightPriority: 0,
+              assetPath: '',
+              colorHex: '#FFFFFF',
+            ));
+
+    void ensureRole(String id) {
+      if (selected.any((r) => r.id == id)) return;
+      final needed = roleById(id);
+      if (needed != null && needed.id != 'missing') {
+        // Replace the last role to guarantee presence.
+        if (selected.isNotEmpty) {
+          selected[selected.length - 1] = needed;
+        } else {
+          selected.add(needed);
+        }
+      }
+    }
+
+    // Guarantee key roles so the test game is playable.
+    ensureRole('dealer');
+    ensureRole('party_animal');
+    ensureRole('wallflower');
+    // Prefer medic, otherwise bouncer
+    if (!selected.any((r) => r.id == 'medic' || r.id == 'bouncer')) {
+      ensureRole('medic');
+      if (!selected.any((r) => r.id == 'medic' || r.id == 'bouncer')) {
+        ensureRole('bouncer');
+      }
+    }
+
+    // Sample name bank (>= 20 unique)
+    final sampleNames = [
+      'Alex',
+      'Bailey',
+      'Casey',
+      'Devon',
+      'Emerson',
+      'Frankie',
+      'Harper',
+      'Indigo',
+      'Jules',
+      'Kai',
+      'Logan',
+      'Morgan',
+      'Nova',
+      'Oakley',
+      'Parker',
+      'Quinn',
+      'Riley',
+      'Sawyer',
+      'Tatum',
+      'Urban',
+      'Vale',
+      'Willow',
+      'Xan',
+      'Yara',
+      'Zane',
+    ];
+    sampleNames.shuffle(random);
+
+    // Create players
+    for (int i = 0; i < selected.length; i++) {
+      final role = selected[i];
+      final name = sampleNames[i % sampleNames.length];
+
+      final player = Player(
+        id: '${DateTime.now().microsecondsSinceEpoch}_${random.nextInt(99999)}',
+        name: name,
+        role: role,
+      );
+      player.initialize();
+      _playerMap[player.id] = player;
+      _playerList.add(player);
+    }
+
+    if (includeHost) {
+      final hostRole = roleById('host');
+      final hostPlayer = Player(
+        id: 'host_${DateTime.now().microsecondsSinceEpoch}',
+        name: 'Host',
+        role: (hostRole == null || hostRole.id == 'missing')
+            ? Role(
+                id: 'host',
+                name: 'Host',
+                alliance: 'Neutral',
+                type: 'Host',
+                description: 'Facilitator',
+                nightPriority: 0,
+                assetPath: 'Icons/host.png',
+                colorHex: '#FFFFFF',
+              )
+            : hostRole,
+      );
+      hostPlayer.initialize();
+      _playerMap[hostPlayer.id] = hostPlayer;
+      _playerList.add(hostPlayer);
+    }
+
+    notifyListeners();
+  }
+
   Future<void> startGame() async {
-    final enabledCount = enabledPlayers.length;
+    final enabledCount = enabledGuests.length;
     GameLogger.info(
       'Starting game with $enabledCount players',
       context: 'GameEngine',
@@ -504,7 +643,7 @@ class GameEngine extends ChangeNotifier {
       // Initialize Script: Intro -> Dynamic Night
       _scriptQueue = [
         ...GameScript.intro,
-        ...ScriptBuilder.buildNightScript(enabledPlayers, dayCount),
+        ...ScriptBuilder.buildNightScript(enabledGuests, dayCount),
       ];
       _scriptIndex = 0;
       _currentPhase = GamePhase.setup;
@@ -640,6 +779,7 @@ class GameEngine extends ChangeNotifier {
 
   void _loadNextPhaseScript() {
     final oldPhase = _currentPhase;
+    final players = guests;
 
     if (_currentPhase == GamePhase.setup) {
       // After setup (Night 0), go directly to Night 1
@@ -876,6 +1016,7 @@ class GameEngine extends ChangeNotifier {
 
   /// Process all night abilities using the new ability system
   String _resolveNightPhase() {
+    final players = guests;
     _clingerDoubleDeaths.clear();
 
     // Process abilities in priority order
@@ -935,83 +1076,128 @@ class GameEngine extends ChangeNotifier {
     // Standard Dealer Kills
     if (nightActions.containsKey('kill')) {
       final targetId = nightActions['kill']!;
-      processedVictims.add(targetId);
+      final target = _playerMap[targetId] ?? _playerList.first;
+      
+      // Look for the specific ability result for Dealer Kill
+      final dealerResult = results.firstWhere(
+        (r) => r.abilityId == 'dealer_kill',
+        orElse: () => AbilityResult(abilityId: 'none', success: false, message: 'No Action'),
+      );
 
-      final target =
-          _playerMap[targetId] ??
-          _playerList.first;
+      // Check for Blocked
+      // Note: AbilityResolver sets message "Ability was blocked" if blocked by Sober/etc
+      if (dealerResult.message == "Ability was blocked") {
+         report.writeln("• 🛑 BLOCKED: The Dealers tried to strike, but they were all paralyzed/blocked!");
+      } else if (!dealerResult.success && dealerResult.message == "No Action") {
+         // This implies no ability was queued/executed, despite nightActions['kill'] existing.
+         // Could happen if action was cancelled or state desync.
+         report.writeln("• 🛑 Action Failed: Dealers targeted ${target.name} but something prevented the action logic.");
+      } else {
+        processedVictims.add(targetId);
 
-      if (killedIds.contains(targetId)) {
-        // Successful Kill
-        // Process death (Universal Second Wind check happens inside processDeath)
-        processDeath(target, cause: 'night_kill');
+        // Determine outcome from the resolved ability
+        final isKilled = dealerResult.targets.contains(targetId);
+        final isLossOfLife = (dealerResult.metadata['lives_lost'] as List<String>?)?.contains(targetId) ?? false;
+        final isProtected = (dealerResult.metadata['protected'] as List<String>?)?.contains(targetId) ?? false;
+        final isMinorProtected = (dealerResult.metadata['minor_protected'] as List<String>?)?.contains(targetId) ?? false;
 
-        if (target.isAlive && target.secondWindPendingConversion) {
+        if (isKilled || isLossOfLife) {
+          // Process death/damage via central method
+          processDeath(target, cause: 'night_kill');
+
+          // Check actual state after processDeath for accurate reporting
+          if (!target.isAlive) {
+            report.writeln(
+              "• 💀 TRAGEDY! The Dealers found ${target.name} last night. The party is over for them.",
+            );
+            // REACTIVE ROLE ALERTS
+            if (target.role.id == 'tea_spiller') {
+              report.writeln(
+                "  ☕ ! SPILT TEA ALERT: The Tea Spiller died! Check the menu !",
+              );
+            }
+            if (target.role.id == 'drama_queen') {
+              report.writeln(
+                "  🎭 ! DRAMA QUEEN ALERT: A swap is required! Check the menu !",
+              );
+            }
+          } else {
+            // Survived (Lives or Second Wind)
+            if (target.isAlive && target.secondWindPendingConversion) {
+              report.writeln(
+                "• 💨 The Dealers cornered ${target.name}, but suddenly... they seemed to join forces? (Second Wind - Host: Check Action!)",
+              );
+            } else if (isLossOfLife) {
+               // Fallback: If they are alive but lives reduced (checked via hack or just trust assumption)
+               report.writeln(
+                "• 🍺 TOUGH AS NAILS: The Dealers hit ${target.name} hard, but they just ordered another drink! (Seasoned Drinker lost 1 life).",
+              );
+            } 
+          }
+        } else if (isProtected) {
           report.writeln(
-            "• 💨 The Dealers cornered ${target.name}, but suddenly... they seemed to join forces? (Second Wind - Host: Check Action!)",
+            "• 💊 CLOSE CALL!: The Dealers tried to take out ${target.name}, but The Medic rushed in with a glitter IV drip! SAVED!",
+          );
+        } else if (isMinorProtected) {
+          report.writeln(
+            "• 👶 ID CHECK FAILED: The Dealers attacked ${target.name}, but she played the 'I'm just a kid!' card. The Minor survives (Immunity)!",
           );
         } else {
-          report.writeln(
-            "• 💀 TRAGEDY! The Dealers found ${target.name} last night. The party is over for them.",
+          // Fallback
+           report.writeln(
+            "• ? The Dealers targeted ${target.name}, but they survived mysteriously.",
           );
-          // REACTIVE ROLE ALERTS
-          if (target.role.id == 'tea_spiller') {
-            report.writeln(
-              "  ☕ ! SPILT TEA ALERT: The Tea Spiller died! Check the menu !",
-            );
-          }
-          if (target.role.id == 'drama_queen') {
-            report.writeln(
-              "  🎭 ! DRAMA QUEEN ALERT: A swap is required! Check the menu !",
-            );
-          }
         }
-      } else if (protectedIds.contains(targetId)) {
-        // Saved by Medic
-        report.writeln(
-          "• 💊 CLOSE CALL!: The Dealers tried to take out ${target.name}, but The Medic rushed in with a glitter IV drip! SAVED!",
-        );
-      } else if (minorProtectedIds.contains(targetId)) {
-        // Saved by Minor Immunity
-        report.writeln(
-          "• 👶 ID CHECK FAILED: The Dealers attacked ${target.name}, but she played the 'I'm just a kid!' card. The Minor survives (Immunity)!",
-        );
-      } else if (livesLostIds.contains(targetId)) {
-        // Seasoned Drinker lost a life
-        report.writeln(
-          "• 🍺 TOUGH AS NAILS: The Dealers hit ${target.name} hard, but they just ordered another drink! (Seasoned Drinker lost 1 life).",
-        );
-      } else {
-        // Other fail reason (e.g. Sober block?)
-        // report.writeln("• The Dealers targeted ${target.name}, but were thwarted!");
-      }
-      quietNight = false;
+        quietNight = false;
+    }
     }
 
-    // Other Kills (Clinger, Messy Bitch, etc)
-    for (var killedId in killedIds) {
-      if (!processedVictims.contains(killedId)) {
-        final victim =
-            _playerMap[killedId] ??
-            _playerList.first;
-        processDeath(victim, cause: 'night_kill_special');
-        report.writeln(
-          "• ⁉️ MYSTERY: ${victim.name} was found passed out cold... permanently. (Special Kill).",
-        );
-        processedVictims.add(killedId);
-        quietNight = false;
-      }
-    }
-
-    // 3. LIVES LOST (that weren't main target - unlikely but possible)
-    for (var lostLifeId in livesLostIds) {
-      if (!processedVictims.contains(lostLifeId)) {
-        final player = _playerMap[lostLifeId]!;
-        report.writeln(
-          "• 🩹 OUCH: ${player.name} took a hit but is still standing (Lost a Life).",
-        );
-        processedVictims.add(lostLifeId);
-        quietNight = false;
+    // 3. OTHER Kills & Special Attacks (Unified Loop)
+    // Iterate through all results to handle non-Dealer kills/damage
+    for (var result in results) {
+      // Skip Dealer kills as they are handled in the detailed block above
+      if (result.abilityId == 'dealer_kill') continue; 
+      
+      if (result.abilityId.contains('kill') && result.success) {
+        // Combine all affected targets (Killed + Lives Lost)
+        final targets = [
+          ...result.targets,
+          ...?(result.metadata['lives_lost'] as List<String>?)
+        ];
+        
+        for (var targetId in targets) {
+           final victim = _playerMap[targetId];
+           if (victim == null) continue;
+           
+           // Mark for summary header (set handles duplicates)
+           processedVictims.add(targetId);
+           
+           // EXECUTE STATE CHANGE
+           // This will handle life decrement, death, and reactions (Tea Spiller, Drama Queen)
+           processDeath(victim, cause: result.abilityId);
+           
+           // REPORT
+           if (!victim.isAlive) {
+              final causeName = result.abilityId
+                  .replaceAll('_', ' ')
+                  .replaceFirst('kill', '')
+                  .trim()
+                  .toUpperCase();
+                  
+              report.writeln(
+                "• ⁉️ MYSTERY no more: ${victim.name} was eliminated by $causeName.",
+              );
+              
+              if (victim.role.id == 'tea_spiller') {
+                 report.writeln("  ☕ ! SPILT TEA ALERT: The Tea Spiller died!");
+              }
+           } else {
+              report.writeln(
+                "• 🩹 OUCH: ${victim.name} took a hit from ${result.abilityId} but is still standing (Lost a Life).",
+              );
+           }
+           quietNight = false;
+        }
       }
     }
 
@@ -1030,6 +1216,23 @@ class GameEngine extends ChangeNotifier {
     // Medic Save (if not covered above - e.g. random save on non-target?)
     // Note: protectedIds are usually only populated if there was a THREAT.
     // If medic protects someone not targeted, nothing happens.
+
+    // Sober Send Home
+    final sentHomePlayers = players.where((p) => p.soberSentHome).toList();
+    if (sentHomePlayers.isNotEmpty) {
+      for (final p in sentHomePlayers) {
+        if (p.role.id == 'dealer') {
+             report.writeln(
+              "• ⛔ SENT HOME: The Sober targeted ${p.name}, sending a DEALER home early! No murders from them tonight!",
+            );
+        } else {
+             report.writeln(
+              "• 🚕 SENT HOME: The Sober sent ${p.name} home. They were safe in their bed.",
+            );
+        }
+      }
+      quietNight = false;
+    }
 
     // Bouncer Check
     if (nightActions.containsKey('bouncer_check')) {
@@ -1113,8 +1316,47 @@ class GameEngine extends ChangeNotifier {
         "• Surprisingly... nothing happened. It was a quiet night.",
       );
     }
+    final deathNames = processedVictims
+        .map((id) => _playerMap[id])
+        .whereType<Player>()
+        .where((p) => !p.isAlive)
+        .map((p) => p.name)
+        .toList();
 
-    return report.toString();
+    final savedNames = {...protectedIds, ...minorProtectedIds}
+        .map((id) => _playerMap[id])
+        .whereType<Player>()
+        .where((p) => p.isAlive)
+        .map((p) => p.name)
+        .toList();
+
+    final lifeDingNames = livesLostIds
+        .map((id) => _playerMap[id])
+        .whereType<Player>()
+        .map((p) => p.name)
+        .toList();
+
+    final headlineParts = <String>[];
+    if (deathNames.isNotEmpty) {
+      headlineParts.add('${deathNames.length} out (${deathNames.join(', ')})');
+    }
+    if (savedNames.isNotEmpty) {
+      headlineParts.add('${savedNames.length} saved (${savedNames.join(', ')})');
+    }
+    if (lifeDingNames.isNotEmpty) {
+      headlineParts.add('${lifeDingNames.length} shook (${lifeDingNames.join(', ')})');
+    }
+    if (_clingerDoubleDeaths.isNotEmpty) {
+      headlineParts.add('hearts broken');
+    }
+
+    final nightLabel = (dayCount + 1).clamp(1, 99);
+    final headline = headlineParts.isEmpty
+        ? '⚡ Night $nightLabel recap: All quiet — everyone stumbled back alive.'
+        : '⚡ Night $nightLabel recap: ${headlineParts.join(' • ')}';
+
+    final body = report.toString().trimRight();
+    return [headline, body].where((s) => s.trim().isNotEmpty).join('\n');
   }
 
   /// Process reactions that trigger when a player dies
@@ -1130,8 +1372,8 @@ class GameEngine extends ChangeNotifier {
 
   void _handleDramaQueenSwap(PendingReaction reaction) {
     dramaQueenSwapPending = true;
-    dramaQueenMarkedAId ??= nightActions['drama_swap_a'];
-    dramaQueenMarkedBId ??= nightActions['drama_swap_b'];
+    dramaQueenMarkedAId ??= nightActions['drama_swap_a'] ?? reaction.sourcePlayer.dramaQueenTargetAId;
+    dramaQueenMarkedBId ??= nightActions['drama_swap_b'] ?? reaction.sourcePlayer.dramaQueenTargetBId;
 
     final String? markedAName =
         dramaQueenMarkedAId != null
@@ -1227,10 +1469,14 @@ class GameEngine extends ChangeNotifier {
     player.blockedKillNight = null;
     player.roofiAbilityRevoked = false;
     player.bouncerAbilityRevoked = false;
+    player.teaSpillerTargetId = null;
+    player.predatorTargetId = null;
+    player.dramaQueenTargetAId = null;
+    player.dramaQueenTargetBId = null;
   }
 
   void _handleTeaSpillerReveal(PendingReaction reaction) {
-    String? targetId = nightActions['tea_spiller_mark'];
+    String? targetId = nightActions['tea_spiller_mark'] ?? reaction.sourcePlayer.teaSpillerTargetId;
 
     if (targetId != null) {
       try {
@@ -1307,7 +1553,8 @@ class GameEngine extends ChangeNotifier {
   }
 
   void _assignRoles() {
-    final eligiblePlayers = _playerList.where((p) => p.isEnabled).toList();
+    final eligiblePlayers =
+        _playerList.where((p) => p.isEnabled && p.role.id != 'host').toList();
     if (eligiblePlayers.isEmpty) return;
 
     final random = Random();
@@ -1726,6 +1973,12 @@ class GameEngine extends ChangeNotifier {
           nightActions['drama_swap_b'] = second.id;
           dramaQueenMarkedAId = first.id;
           dramaQueenMarkedBId = second.id;
+
+          if (sourcePlayer != null) {
+            sourcePlayer.dramaQueenTargetAId = first.id;
+            sourcePlayer.dramaQueenTargetBId = second.id;
+          }
+
           logAction(
             step.title,
             "Drama Queen marked ${first.name} and ${second.name} for swap on death.",
@@ -1734,6 +1987,12 @@ class GameEngine extends ChangeNotifier {
           final target = resolvePlayer(selections.first);
           dramaQueenMarkedAId = target.id;
           dramaQueenMarkedBId = null;
+          
+          if (sourcePlayer != null) {
+            sourcePlayer.dramaQueenTargetAId = target.id;
+            sourcePlayer.dramaQueenTargetBId = null;
+          }
+
           logAction(
             step.title,
             "Drama Queen selected ${target.name} (needs two targets for swap).",
@@ -1744,6 +2003,11 @@ class GameEngine extends ChangeNotifier {
       case 'tea_spiller':
         final target = resolvePlayer(selections.first);
         nightActions['tea_spiller_mark'] = target.id;
+        
+        if (sourcePlayer != null) {
+          sourcePlayer.teaSpillerTargetId = target.id;
+        }
+
         logAction(
           step.title,
           "Tea Spiller marked ${target.name} for reveal on death.",
@@ -1753,6 +2017,11 @@ class GameEngine extends ChangeNotifier {
       case 'predator':
         final target = resolvePlayer(selections.first);
         nightActions['predator_mark'] = target.id;
+        
+        if (sourcePlayer != null) {
+          sourcePlayer.predatorTargetId = target.id;
+        }
+
         logAction(
           step.title,
           "Predator will retaliate against ${target.name} if voted out.",
@@ -1983,6 +2252,39 @@ class GameEngine extends ChangeNotifier {
 
   /// Handles option-based script steps (e.g., Medic choose PROTECT vs REVIVE at setup).
   void handleScriptOption(ScriptStep step, String selectedOption) {
+    if (step.id == 'second_wind_decision') {
+      final option = selectedOption.toLowerCase();
+      bool accepted = option == 'yes' || option == 'true' || option == 'convert';
+
+      final secondWind = players.firstWhere(
+        (p) => p.secondWindPendingConversion,
+        orElse: () => players.first,
+      );
+      
+      if (secondWind.id != players.first.id || secondWind.secondWindPendingConversion) {
+        if (accepted) {
+          logAction("Second Wind Decision", "Dealers chose to CONVERT Second Wind.");
+          final dealerRole = roleRepository.getRoleById('dealer');
+          if (dealerRole != null) {
+            secondWind.role = dealerRole;
+            secondWind.alliance = dealerRole.alliance;
+            secondWind.isAlive = true;
+            secondWind.secondWindConverted = true;
+            secondWind.secondWindPendingConversion = false;
+            secondWind.initialize();
+          }
+        } else {
+          logAction("Second Wind Decision", "Dealers chose to KILL Second Wind.");
+          secondWind.secondWindRefusedConversion = true;
+          secondWind.secondWindPendingConversion = false;
+          // Process death immediately since this acts as the "Kill confirmation" during Day
+          processDeath(secondWind, cause: 'second_wind_failed');
+        }
+      }
+      notifyListeners();
+      return;
+    }
+
     final roleId = step.roleId;
 
     switch (roleId) {
@@ -2233,7 +2535,7 @@ class GameEngine extends ChangeNotifier {
 
     // Check for Predator retaliation
     if (player.role.id == 'predator') {
-      final retaliationTarget = nightActions['predator_mark'];
+      final retaliationTarget = nightActions['predator_mark'] ?? player.predatorTargetId;
       if (retaliationTarget != null) {
         final victim =
             _playerMap[retaliationTarget] ??
