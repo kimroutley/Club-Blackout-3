@@ -74,7 +74,10 @@ class GameEngine extends ChangeNotifier {
   List<String> deadPlayerIds = [];
   List<String> nameHistory = [];
   List<GameLogEntry> _gameLog = [];
-  String lastNightSummary = '';
+  String lastNightSummary = ''; // Public summary (deaths, etc.)
+  String lastNightHostRecap = ''; // Private full recap for Host
+  String? messyBitchGossip; // Daily generated gossip text
+  Map<String, int> lastNightStats = {};
   bool dramaQueenSwapPending = false;
   String? dramaQueenMarkedAId;
   String? dramaQueenMarkedBId;
@@ -98,6 +101,118 @@ class GameEngine extends ChangeNotifier {
 
   GameEngine({required this.roleRepository}) {
     _loadNameHistory();
+    // Hook up ability logging
+    abilityResolver.onAbilityQueued = (ability) {
+      // 1. Log to Reaction System (History/Triggers)
+      reactionSystem.triggerEvent(
+        GameEvent(
+          type: GameEventType.abilityUsed,
+          sourcePlayerId: ability.sourcePlayerId,
+          targetPlayerId: ability.targetPlayerIds.isNotEmpty
+              ? ability.targetPlayerIds.first
+              : null,
+          data: {
+            'abilityId': ability.abilityId,
+            'trigger': ability.trigger.toString(),
+            'effect': ability.effect.toString(),
+            'allTargets': ability.targetPlayerIds,
+            'metadata': ability.metadata,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        ),
+        _playerList,
+      );
+
+      // 2. Log to Game Log (Visible UI)
+      logAction(
+        'Input Recorded: ${ability.metadata['roleName'] ?? 'Unknown Role'}',
+        'Ability: ${ability.abilityId}. Targets: ${ability.targetPlayerIds.map((id) => _playerMap[id]?.name ?? id).join(", ")}',
+      );
+
+      // 3. Real-Time Status Update (For Host Overview)
+      for (var targetId in ability.targetPlayerIds) {
+        String statusName = '';
+        String statusDesc = '';
+        String statusEmoji = '';
+
+        switch (ability.effect) {
+          case AbilityEffect.protect:
+            statusName = 'Protected (Pending)';
+            statusDesc = 'Targeted for protection';
+            statusEmoji = '???';
+            break;
+          case AbilityEffect.kill:
+            statusName = 'Targeted (Pending)';
+            statusDesc = 'Targeted for elimination';
+            statusEmoji = '??';
+            break;
+          case AbilityEffect.silence:
+            statusName = 'Silenced (Pending)';
+            statusDesc = 'Will be silenced';
+            statusEmoji = '??';
+            break;
+          case AbilityEffect.mark:
+            statusName = 'Marked (${ability.metadata['roleName'] ?? '?'})';
+            statusDesc = 'Marked by ability';
+            statusEmoji = '??';
+            break;
+          case AbilityEffect.redirect:
+            statusName = 'Redirect Target';
+            statusDesc = 'Votes/Attacks deflected here';
+            statusEmoji = '??';
+            break;
+          case AbilityEffect.inherit:
+            statusName = 'Mimicked';
+            statusDesc = 'Role copied via inheritance';
+            statusEmoji = '??';
+            break;
+          case AbilityEffect.copy:
+            statusName = 'Mimicked';
+            statusDesc = 'Role being copied';
+            statusEmoji = '??';
+            break;
+          case AbilityEffect.modify:
+            if (ability.metadata.containsKey('taboo_name')) {
+              statusName = 'Taboo Name';
+              statusDesc = 'Name is taboo for Lightweight';
+              statusEmoji = '??';
+            }
+            break;
+          case AbilityEffect.block:
+            statusName = 'Blocked';
+            statusDesc = 'Ability blocked';
+            statusEmoji = '??';
+            break;
+          case AbilityEffect.reveal:
+            statusName = 'Revealed (Pending)';
+            statusDesc = 'Role will be forced revealed';
+            statusEmoji = '???';
+            break;
+          case AbilityEffect.investigate:
+            // Optional: Show check status briefly?
+            // Leaving skipped for now as per design to avoid clutter,
+            // but could add if user specifically asks.
+            continue;
+          default:
+            // Don't show generic status for checks/investigations to avoid clutter
+            continue;
+        }
+
+        if (statusName.isNotEmpty) {
+          statusEffectManager.applyEffect(
+            targetId,
+            StatusEffect(
+              id: 'pending_${ability.abilityId}_${DateTime.now().millisecondsSinceEpoch}',
+              name: '$statusEmoji $statusName',
+              description: statusDesc,
+              duration: 1, // Lasts until processed/cleared
+              isPermanent: false,
+            ),
+          );
+        }
+      }
+      notifyListeners(); // Ensure UI updates immediately
+    };
   }
 
   Future<void> _loadNameHistory() async {
@@ -196,7 +311,7 @@ class GameEngine extends ChangeNotifier {
     );
     if (partyAnimalRole.id == 'missing') {
       // Party Animal is treated as the default filler role.
-      throw StateError(
+      throw RoleAssignmentException(
         'Missing required role: party_animal. Check assets/data/roles.json.',
       );
     }
@@ -215,7 +330,7 @@ class GameEngine extends ChangeNotifier {
       ),
     );
 
-    // Unique roles become unavailable once they’ve appeared in the game at all (alive OR dead).
+    // Unique roles become unavailable once they've appeared in the game at all (alive OR dead).
     final usedUniqueRoleIds = _playerList
         .map((p) => p.role.id)
         .where((id) => id != 'temp')
@@ -230,8 +345,9 @@ class GameEngine extends ChangeNotifier {
         .toList();
 
     // Allow Dealers only if within the recommended scaling AFTER adding this player.
-    final currentEnabledNonHost =
-        _playerList.where((p) => p.isEnabled && p.role.id != 'host').length;
+    final currentEnabledNonHost = _playerList
+        .where((p) => p.isEnabled && p.role.id != 'host')
+        .length;
     final newTotal = currentEnabledNonHost + 1;
     final recommendedDealers = RoleValidator.recommendedDealerCount(newTotal);
     final currentDealersAlive = _playerList
@@ -250,15 +366,17 @@ class GameEngine extends ChangeNotifier {
     return results;
   }
 
-  List<Player> get enabledPlayers => _playerList.where((p) => p.isEnabled).toList();
-  List<Player> get activePlayers => _playerList.where((p) => p.isActive).toList();
+  List<Player> get enabledPlayers =>
+      _playerList.where((p) => p.isEnabled).toList();
+  List<Player> get activePlayers =>
+      _playerList.where((p) => p.isActive).toList();
   List<Player> get enabledGuests =>
       _playerList.where((p) => p.isEnabled && p.role.id != 'host').toList();
   List<Player> get guests =>
       UnmodifiableListView(_playerList.where((p) => p.role.id != 'host'));
   List<Player> get activeGuests => UnmodifiableListView(
-        _playerList.where((p) => p.role.id != 'host' && p.isActive),
-      );
+    _playerList.where((p) => p.role.id != 'host' && p.isActive),
+  );
 
   ScriptStep? get currentScriptStep {
     if (_scriptQueue.isNotEmpty && _scriptIndex < _scriptQueue.length) {
@@ -277,7 +395,7 @@ class GameEngine extends ChangeNotifier {
         'Invalid player name: ${validation.error}',
         context: 'GameEngine',
       );
-      throw ArgumentError(validation.error);
+      throw ValidationException(validation.error ?? 'Invalid input');
     }
 
     final sanitizedName = InputValidator.sanitizeString(name);
@@ -290,7 +408,7 @@ class GameEngine extends ChangeNotifier {
         'Duplicate player name: $sanitizedName',
         context: 'GameEngine',
       );
-      throw ArgumentError('A player with this name already exists');
+      throw ValidationException('A player with this name already exists');
     }
 
     // Add to history if new
@@ -342,7 +460,7 @@ class GameEngine extends ChangeNotifier {
   /// Add a player mid-day who will become active next night.
   Player addPlayerDuringDay(String name, {Role? role}) {
     if (_currentPhase == GamePhase.lobby) {
-      throw StateError('Players can only join after the game has started');
+      throw GameStateException(GamePhase.day.name, GamePhase.lobby.name);
     }
 
     GameLogger.debug('Adding late joiner: $name', context: 'GameEngine');
@@ -353,7 +471,7 @@ class GameEngine extends ChangeNotifier {
         'Invalid player name: ${validation.error}',
         context: 'GameEngine',
       );
-      throw ArgumentError(validation.error);
+      throw ValidationException(validation.error ?? 'Invalid input');
     }
 
     final sanitizedName = InputValidator.sanitizeString(name);
@@ -365,14 +483,14 @@ class GameEngine extends ChangeNotifier {
         'Duplicate player name: $sanitizedName',
         context: 'GameEngine',
       );
-      throw ArgumentError('A player with this name already exists');
+      throw ValidationException('A player with this name already exists');
     }
 
     _addToHistory(sanitizedName);
 
     final available = availableRolesForNewPlayer();
     if (available.isEmpty) {
-      throw StateError(
+      throw InvalidActionException(
         'No roles are available for new players at this point in the game',
       );
     }
@@ -380,7 +498,7 @@ class GameEngine extends ChangeNotifier {
     Role assignedRole;
     if (role != null) {
       if (!available.any((r) => r.id == role.id)) {
-        throw ArgumentError('Selected role is not available');
+        throw RoleAssignmentException('Selected role is not available');
       }
       assignedRole = role;
     } else {
@@ -450,7 +568,7 @@ class GameEngine extends ChangeNotifier {
           'Attempted to assign a second Bouncer to ${player.name}',
           context: 'GameEngine',
         );
-        throw StateError(
+        throw RoleAssignmentException(
           'Only one Bouncer is allowed. ${existingBouncer.name} already has this role.',
         );
       }
@@ -461,7 +579,7 @@ class GameEngine extends ChangeNotifier {
     player.initialize();
 
     GameLogger.info(
-      'Updated ${player.name} role: $oldRole → ${newRole.name}',
+      'Updated ${player.name} role: $oldRole ? ${newRole.name}',
       context: 'GameEngine',
     );
     notifyListeners();
@@ -484,136 +602,6 @@ class GameEngine extends ChangeNotifier {
     _playerMap.remove(id);
     _playerList.removeWhere((p) => p.id == id);
     GameLogger.info('Removed player: ${player.name}', context: 'GameEngine');
-    notifyListeners();
-  }
-
-  /// Quickly seed a test roster with up to [roleCount] distinct roles and random names.
-  /// Host is kept separate and not counted toward guest totals.
-  Future<void> createTestGame({int roleCount = 20, bool includeHost = true}) async {
-    if (roleRepository.roles.isEmpty) {
-      await roleRepository.loadRoles();
-    }
-
-    // Clear any existing state
-    resetGame();
-
-    final random = Random();
-    final allRoles = roleRepository.roles
-        .where((r) => r.id != 'host' && r.id != 'temp')
-        .toList();
-
-    // Ensure we do not request more roles than exist
-    roleCount = roleCount.clamp(1, allRoles.length);
-
-    // Shuffle and take the first N
-    allRoles.shuffle(random);
-    final selected = allRoles.take(roleCount).toList();
-
-    Role? roleById(String id) =>
-        roleRepository.roles.firstWhere((r) => r.id == id, orElse: () => Role(
-              id: 'missing',
-              name: 'Missing Role',
-              alliance: 'None',
-              type: 'Placeholder',
-              description: '',
-              nightPriority: 0,
-              assetPath: '',
-              colorHex: '#FFFFFF',
-            ));
-
-    void ensureRole(String id) {
-      if (selected.any((r) => r.id == id)) return;
-      final needed = roleById(id);
-      if (needed != null && needed.id != 'missing') {
-        // Replace the last role to guarantee presence.
-        if (selected.isNotEmpty) {
-          selected[selected.length - 1] = needed;
-        } else {
-          selected.add(needed);
-        }
-      }
-    }
-
-    // Guarantee key roles so the test game is playable.
-    ensureRole('dealer');
-    ensureRole('party_animal');
-    ensureRole('wallflower');
-    // Prefer medic, otherwise bouncer
-    if (!selected.any((r) => r.id == 'medic' || r.id == 'bouncer')) {
-      ensureRole('medic');
-      if (!selected.any((r) => r.id == 'medic' || r.id == 'bouncer')) {
-        ensureRole('bouncer');
-      }
-    }
-
-    // Sample name bank (>= 20 unique)
-    final sampleNames = [
-      'Alex',
-      'Bailey',
-      'Casey',
-      'Devon',
-      'Emerson',
-      'Frankie',
-      'Harper',
-      'Indigo',
-      'Jules',
-      'Kai',
-      'Logan',
-      'Morgan',
-      'Nova',
-      'Oakley',
-      'Parker',
-      'Quinn',
-      'Riley',
-      'Sawyer',
-      'Tatum',
-      'Urban',
-      'Vale',
-      'Willow',
-      'Xan',
-      'Yara',
-      'Zane',
-    ];
-    sampleNames.shuffle(random);
-
-    // Create players
-    for (int i = 0; i < selected.length; i++) {
-      final role = selected[i];
-      final name = sampleNames[i % sampleNames.length];
-
-      final player = Player(
-        id: '${DateTime.now().microsecondsSinceEpoch}_${random.nextInt(99999)}',
-        name: name,
-        role: role,
-      );
-      player.initialize();
-      _playerMap[player.id] = player;
-      _playerList.add(player);
-    }
-
-    if (includeHost) {
-      final hostRole = roleById('host');
-      final hostPlayer = Player(
-        id: 'host_${DateTime.now().microsecondsSinceEpoch}',
-        name: 'Host',
-        role: (hostRole == null || hostRole.id == 'missing')
-            ? Role(
-                id: 'host',
-                name: 'Host',
-                alliance: 'Neutral',
-                type: 'Host',
-                description: 'Facilitator',
-                nightPriority: 0,
-                assetPath: 'Icons/host.png',
-                colorHex: '#FFFFFF',
-              )
-            : hostRole,
-      );
-      hostPlayer.initialize();
-      _playerMap[hostPlayer.id] = hostPlayer;
-      _playerList.add(hostPlayer);
-    }
-
     notifyListeners();
   }
 
@@ -758,6 +746,7 @@ class GameEngine extends ChangeNotifier {
         step.instructionText.isNotEmpty
             ? step.instructionText
             : step.readAloudText,
+        type: GameLogType.script,
       );
     }
   }
@@ -786,10 +775,17 @@ class GameEngine extends ChangeNotifier {
       _currentPhase = GamePhase.night;
       onPhaseChanged?.call(oldPhase, _currentPhase);
 
-      // Resolve setup night (typically no deaths, just configurations)
+      // Resolve setup night so abilities like Creep or Clinger take effect
       _resolveNightPhase();
 
-      // Clear ability queue
+      // Log separation for clarity
+      logAction(
+        "Setup Complete",
+        "Transitioning to Day 1 / Night 1 cycle.",
+        type: GameLogType.system,
+      );
+
+      // Clear ability queue from Setup so it doesn't pollute Night 1
       nightActions.clear();
       _abilityTargets.clear();
       abilityResolver.clear();
@@ -841,8 +837,11 @@ class GameEngine extends ChangeNotifier {
         players,
       );
       _scriptIndex = 0;
-      dayCount++;
+      // Day count increment moved to end of day phase
     } else if (_currentPhase == GamePhase.day) {
+      // End of Day Phase -> Start Night Phase
+      dayCount++;
+
       // Check if any votes were made during the day phase
       if (!_dayphaseVotesMade) {
         // No votes cast - announce and skip to night directly
@@ -949,7 +948,7 @@ class GameEngine extends ChangeNotifier {
     _processDeathReactions(victim, reactions);
 
     // 2. Mark as Dead
-    victim.die(dayCount);
+    victim.die(dayCount, cause);
     deadPlayerIds.add(victim.id);
 
     // 3. Log
@@ -1018,6 +1017,8 @@ class GameEngine extends ChangeNotifier {
   String _resolveNightPhase() {
     final players = guests;
     _clingerDoubleDeaths.clear();
+    messyBitchGossip = null;
+    final Set<String> processedAbilityIds = {};
 
     // Process abilities in priority order
     final results = abilityResolver.resolveAllAbilities(players);
@@ -1045,14 +1046,31 @@ class GameEngine extends ChangeNotifier {
     }
 
     // --- LOGIC EXECUTION & REPORT GENERATION ---
+    // We maintain two buffers:
+    // 1. report (Public): Deaths, revives, loud events.
+    // 2. hostReport (Private): Detailed log of moves.
     StringBuffer report = StringBuffer();
-    // report.writeln("Good Morning, Clubbers!"); // Dialog handles header
-    // report.writeln("Here is what went down last night:\n");
-
-    bool quietNight = true;
+    StringBuffer hostReport = StringBuffer();
 
     // 1. CREEP
+    // Recover Creep action from Ability Resolver to ensure persistence
+    final creepResult = results.firstWhere(
+      (r) => r.abilityId == 'creep_mimic',
+      orElse: () => AbilityResult(
+        abilityId: 'none',
+        success: false,
+        message: 'No Action',
+      ),
+    );
+
     String? creepTargetSelection = nightActions['creep_target'];
+    // Fallback: Use the resolved ability result if map is empty (e.g., after reload)
+    if (creepTargetSelection == null &&
+        creepResult.success &&
+        creepResult.targets.isNotEmpty) {
+      creepTargetSelection = creepResult.targets.first;
+    }
+
     if (creepTargetSelection != null) {
       try {
         final creep = _playerList.firstWhere((p) => p.role.id == 'creep');
@@ -1060,10 +1078,11 @@ class GameEngine extends ChangeNotifier {
         final target = _playerMap[creepTargetSelection]!;
         creep.alliance = target.role.alliance;
         logAction("Creep Selection", "Creep chose to mimic ${target.name}");
-        report.writeln(
-          "• 👻 Someone was acting super creepy towards ${target.name}. Just a vibe check.",
-        );
-        quietNight = false;
+        final msg =
+            "👁️ 💋 Someone was caught staring a little too long at ${target.name}'s backside... Just a lingering vibe check.";
+        report.writeln(msg);
+        hostReport.writeln(msg);
+        processedAbilityIds.add('creep_mimic');
       } catch (e) {
         /* ignore */
       }
@@ -1073,192 +1092,295 @@ class GameEngine extends ChangeNotifier {
     // We combine kills and protections into a narrative
     Set<String> processedVictims = {};
 
+    // Fallback killer in case an ability result is missing but the intent map has the target
+    void applyFallbackKill({
+      required String abilityId,
+      required String? targetId,
+      required String publicLabel,
+      required String hostLabel,
+    }) {
+      if (targetId == null || targetId.isEmpty) return;
+      if (processedVictims.contains(targetId)) return;
+      final victim = _playerMap[targetId];
+      if (victim == null) return;
+
+      final wasAliveBefore = victim.isAlive;
+      processDeath(victim, cause: abilityId);
+      processedVictims.add(targetId);
+
+      if (!victim.isAlive) {
+        final msg = "💀 $publicLabel ${victim.name}.";
+        report.writeln(msg);
+        hostReport.writeln("💀 $hostLabel ${victim.name}.");
+      } else if (wasAliveBefore) {
+        livesLostIds.add(victim.id);
+        report.writeln(
+          " ${victim.name} was hit by $publicLabel but burned a life to survive.",
+        );
+        hostReport.writeln(
+          " $hostLabel ${victim.name} (survived; life consumed).",
+        );
+      }
+    }
+
     // Standard Dealer Kills
-    if (nightActions.containsKey('kill')) {
-      final targetId = nightActions['kill']!;
-      final target = _playerMap[targetId] ?? _playerList.first;
-      
-      // Look for the specific ability result for Dealer Kill
-      final dealerResult = results.firstWhere(
-        (r) => r.abilityId == 'dealer_kill',
-        orElse: () => AbilityResult(abilityId: 'none', success: false, message: 'No Action'),
-      );
+    final dealerResult = results.firstWhere(
+      (r) => r.abilityId == 'dealer_kill',
+      orElse: () => AbilityResult(
+        abilityId: 'none',
+        success: false,
+        message: 'No Action',
+      ),
+    );
 
-      // Check for Blocked
-      // Note: AbilityResolver sets message "Ability was blocked" if blocked by Sober/etc
-      if (dealerResult.message == "Ability was blocked") {
-         report.writeln("• 🛑 BLOCKED: The Dealers tried to strike, but they were all paralyzed/blocked!");
-      } else if (!dealerResult.success && dealerResult.message == "No Action") {
-         // This implies no ability was queued/executed, despite nightActions['kill'] existing.
-         // Could happen if action was cancelled or state desync.
-         report.writeln("• 🛑 Action Failed: Dealers targeted ${target.name} but something prevented the action logic.");
-      } else {
-        processedVictims.add(targetId);
+    // Robust Check: Intent (nightActions) OR Result (dealerResult)
+    if (nightActions.containsKey('kill') ||
+        dealerResult.abilityId == 'dealer_kill') {
+      processedAbilityIds.add('dealer_kill');
 
-        // Determine outcome from the resolved ability
-        final isKilled = dealerResult.targets.contains(targetId);
-        final isLossOfLife = (dealerResult.metadata['lives_lost'] as List<String>?)?.contains(targetId) ?? false;
-        final isProtected = (dealerResult.metadata['protected'] as List<String>?)?.contains(targetId) ?? false;
-        final isMinorProtected = (dealerResult.metadata['minor_protected'] as List<String>?)?.contains(targetId) ?? false;
+      // Attempt to resolve target from result first, then fallback to intent map
+      String targetId = dealerResult.targets.isNotEmpty
+          ? dealerResult.targets.first
+          : (nightActions['kill'] ?? '');
 
-        if (isKilled || isLossOfLife) {
-          // Process death/damage via central method
-          processDeath(target, cause: 'night_kill');
+      if (targetId.isNotEmpty) {
+        final target = _playerMap[targetId] ?? _playerList.first;
 
-          // Check actual state after processDeath for accurate reporting
-          if (!target.isAlive) {
-            report.writeln(
-              "• 💀 TRAGEDY! The Dealers found ${target.name} last night. The party is over for them.",
-            );
-            // REACTIVE ROLE ALERTS
-            if (target.role.id == 'tea_spiller') {
-              report.writeln(
-                "  ☕ ! SPILT TEA ALERT: The Tea Spiller died! Check the menu !",
-              );
-            }
-            if (target.role.id == 'drama_queen') {
-              report.writeln(
-                "  🎭 ! DRAMA QUEEN ALERT: A swap is required! Check the menu !",
-              );
-            }
-          } else {
-            // Survived (Lives or Second Wind)
-            if (target.isAlive && target.secondWindPendingConversion) {
-              report.writeln(
-                "• 💨 The Dealers cornered ${target.name}, but suddenly... they seemed to join forces? (Second Wind - Host: Check Action!)",
-              );
-            } else if (isLossOfLife) {
-               // Fallback: If they are alive but lives reduced (checked via hack or just trust assumption)
-               report.writeln(
-                "• 🍺 TOUGH AS NAILS: The Dealers hit ${target.name} hard, but they just ordered another drink! (Seasoned Drinker lost 1 life).",
-              );
-            } 
-          }
-        } else if (isProtected) {
-          report.writeln(
-            "• 💊 CLOSE CALL!: The Dealers tried to take out ${target.name}, but The Medic rushed in with a glitter IV drip! SAVED!",
-          );
-        } else if (isMinorProtected) {
-          report.writeln(
-            "• 👶 ID CHECK FAILED: The Dealers attacked ${target.name}, but she played the 'I'm just a kid!' card. The Minor survives (Immunity)!",
+        final bool missingResult =
+            dealerResult.abilityId == 'none' ||
+            (!dealerResult.success && dealerResult.message == "No Action");
+
+        if (dealerResult.message == "Ability was blocked") {
+          final msg =
+              " BLOCKED: The Dealers tried to strike ${target.name}, but were blocked!";
+          report.writeln(msg);
+          hostReport.writeln(msg);
+        } else if (missingResult) {
+          applyFallbackKill(
+            abilityId: 'dealer_kill',
+            targetId: targetId,
+            publicLabel: '🍹 🩸 SPILT DRINK! The Dealers cornered and cut off',
+            hostLabel: 'DEALER (fallback) eliminated',
           );
         } else {
-          // Fallback
-           report.writeln(
-            "• ? The Dealers targeted ${target.name}, but they survived mysteriously.",
-          );
+          processedVictims.add(targetId);
+
+          final isKilled = dealerResult.targets.contains(targetId);
+          final isLossOfLife =
+              (dealerResult.metadata['lives_lost'] as List<String>?)?.contains(
+                targetId,
+              ) ??
+              false;
+          final isProtected =
+              (dealerResult.metadata['protected'] as List<String>?)?.contains(
+                targetId,
+              ) ??
+              false;
+          final isMinorProtected =
+              (dealerResult.metadata['minor_protected'] as List<String>?)
+                  ?.contains(targetId) ??
+              false;
+
+          if (isKilled || isLossOfLife) {
+            processDeath(target, cause: 'night_kill');
+
+            if (!target.isAlive) {
+              final msg =
+                  "🍹 🩸 SPILT DRINK! The Dealers cornered ${target.name} in the VIP booth. They've been cut off permanently - the party's over.";
+              report.writeln(msg);
+              hostReport.writeln(msg);
+              statusEffectManager.applyEffect(
+                target.id,
+                StatusEffect(
+                  id: "killed_dealer_${dayCount}_${target.id}",
+                  name: "KILLED (DEALER)",
+                  description: "Murdered by Dealers",
+                  duration: 1,
+                ),
+              );
+
+              if (target.role.id == 'tea_spiller') {
+                final tea =
+                    "☕ 🔥 THE TEA IS SCALDING: The Tea Spiller is out, and the gossip is burning up the floor! Check the menu!";
+                report.writeln(tea);
+                hostReport.writeln(tea);
+              }
+              if (target.role.id == 'drama_queen') {
+                final dq =
+                    "👑 🎬 DRAMA QUEEN ALERT: A spotlight-stealing swap is required! Check the menu!";
+                report.writeln(dq);
+                hostReport.writeln(dq);
+              }
+            } else {
+              if (target.isAlive && target.secondWindPendingConversion) {
+                report.writeln(
+                  " The Dealers cornered ${target.name}, but... they survived unexpectedly?",
+                );
+                hostReport.writeln(
+                  " SECOND WIND TRIGGERED: ${target.name} is converting. Check script/pending actions!",
+                );
+              } else if (isLossOfLife) {
+                final msg =
+                    "🍻 🍺 ONE MORE ROUND: The Dealers hit ${target.name} hard, but they just wiped their mouth and ordered another double. (Lost 1 life, gained a headache).";
+                report.writeln(msg);
+                hostReport.writeln(msg);
+                statusEffectManager.applyEffect(
+                  target.id,
+                  StatusEffect(
+                    id: "lost_life_${dayCount}_${target.id}",
+                    name: "LOST LIFE",
+                    description: "Lost 1 life to attack",
+                    duration: 1,
+                  ),
+                );
+              }
+            }
+          } else if (isProtected) {
+            final msg =
+                "🩺 💋 MOUTH TO MOUTH! The Dealers tried to finish off ${target.name}, but The Medic performed a 'hands-on' rescue with a shot of adrenaline (and maybe some tongue). SAVED!";
+            report.writeln(msg);
+            hostReport.writeln(msg);
+            statusEffectManager.applyEffect(
+              target.id,
+              StatusEffect(
+                id: "saved_medic_${dayCount}_${target.id}",
+                name: "SAVED (MEDIC)",
+                description: "Dealer attack blocked by Medic",
+                duration: 1,
+              ),
+            );
+          } else if (isMinorProtected) {
+            final msg =
+                "🍼 🔞 UNDERAGE OVERRULE! The Dealers tried to bounce ${target.name}, but they've got that youthful immunity. Too young for this trouble!";
+            report.writeln(msg);
+            hostReport.writeln(msg);
+            statusEffectManager.applyEffect(
+              target.id,
+              StatusEffect(
+                id: "saved_minor_${dayCount}_${target.id}",
+                name: "SAVED (MINOR)",
+                description: "Dealer attack blocked by Minor trait",
+                duration: 1,
+              ),
+            );
+          } else {
+            final msg =
+                "❓ 🍹 The Dealers targeted ${target.name}, but they survived mysteriously.";
+            report.writeln(msg);
+            hostReport.writeln(msg);
+            statusEffectManager.applyEffect(
+              target.id,
+              StatusEffect(
+                id: "saved_unknown_${dayCount}_${target.id}",
+                name: "SURVIVED (?)",
+                description: "Survived attack (Unknown reason)",
+                duration: 1,
+              ),
+            );
+          }
         }
-        quietNight = false;
-    }
+      }
     }
 
     // 3. OTHER Kills & Special Attacks (Unified Loop)
-    // Iterate through all results to handle non-Dealer kills/damage
     for (var result in results) {
-      // Skip Dealer kills as they are handled in the detailed block above
-      if (result.abilityId == 'dealer_kill') continue; 
-      
+      if (result.abilityId == 'dealer_kill') continue;
+
       if (result.abilityId.contains('kill') && result.success) {
-        // Combine all affected targets (Killed + Lives Lost)
+        processedAbilityIds.add(result.abilityId);
         final targets = [
           ...result.targets,
-          ...?(result.metadata['lives_lost'] as List<String>?)
+          ...?(result.metadata['lives_lost'] as List<String>?),
         ];
-        
+
         for (var targetId in targets) {
-           final victim = _playerMap[targetId];
-           if (victim == null) continue;
-           
-           // Mark for summary header (set handles duplicates)
-           processedVictims.add(targetId);
-           
-           // EXECUTE STATE CHANGE
-           // This will handle life decrement, death, and reactions (Tea Spiller, Drama Queen)
-           processDeath(victim, cause: result.abilityId);
-           
-           // REPORT
-           if (!victim.isAlive) {
-              final causeName = result.abilityId
-                  .replaceAll('_', ' ')
-                  .replaceFirst('kill', '')
-                  .trim()
-                  .toUpperCase();
-                  
-              report.writeln(
-                "• ⁉️ MYSTERY no more: ${victim.name} was eliminated by $causeName.",
-              );
-              
-              if (victim.role.id == 'tea_spiller') {
-                 report.writeln("  ☕ ! SPILT TEA ALERT: The Tea Spiller died!");
-              }
-           } else {
-              report.writeln(
-                "• 🩹 OUCH: ${victim.name} took a hit from ${result.abilityId} but is still standing (Lost a Life).",
-              );
-           }
-           quietNight = false;
+          final victim = _playerMap[targetId];
+          if (victim == null) continue;
+
+          processedVictims.add(targetId);
+          processDeath(victim, cause: result.abilityId);
+
+          if (!victim.isAlive) {
+            final causeName = result.abilityId
+                .replaceAll('_', ' ')
+                .replaceFirst('kill', '')
+                .trim()
+                .toUpperCase();
+
+            final msg =
+                "🕶️ 💀 A NIGHT TO FORGET: ${victim.name} got tangled up with the $causeName and won't be waking up for breakfast.";
+            report.writeln(msg);
+            hostReport.writeln(msg);
+            statusEffectManager.applyEffect(
+              victim.id,
+              StatusEffect(
+                id: "killed_${result.abilityId}_${dayCount}_${victim.id}",
+                name: "KILLED ($causeName)",
+                description: "Eliminated by $causeName",
+                duration: 1,
+              ),
+            );
+
+            if (victim.role.id == 'tea_spiller') {
+              final tea = "  ? ! SPILT TEA ALERT: The Tea Spiller died!";
+              report.writeln(tea);
+              hostReport.writeln(tea);
+            }
+          } else {
+            final msg =
+                " OUCH: ${victim.name} took a hit from ${result.abilityId} but is still standing (Lost a Life).";
+            report.writeln(msg);
+            hostReport.writeln(msg);
+          }
         }
       }
     }
 
-    // 4. CLINGER HEARTBREAK (Processed via callback in processDeath which calls _handleClingerObsessionDeath)
-    // We can check the list we populated
-    if (_clingerDoubleDeaths.isNotEmpty) {
-      for (var death in _clingerDoubleDeaths) {
-        report.writeln(
-          "• 💔 HEARTBREAK: ${death['clinger']} just couldn't live without ${death['obsession']}... they died of a broken heart!",
-        );
-      }
-      quietNight = false;
+    // Fallbacks for any kill intents that never produced a result (e.g., attack dog)
+    if (!processedAbilityIds.contains('clinger_attack_dog')) {
+      applyFallbackKill(
+        abilityId: 'clinger_attack_dog',
+        targetId: nightActions['kill_clinger'],
+        publicLabel: '🐕 🩸 ATTACK DOG tore apart',
+        hostLabel: 'ATTACK DOG eliminated',
+      );
     }
 
-    // 5. SILENCE & BLOCKS & SAVES (Non-kill related)
-    // Medic Save (if not covered above - e.g. random save on non-target?)
-    // Note: protectedIds are usually only populated if there was a THREAT.
-    // If medic protects someone not targeted, nothing happens.
+    // 4. CLINGER HEARTBREAK
+    if (_clingerDoubleDeaths.isNotEmpty) {
+      for (var death in _clingerDoubleDeaths) {
+        final msg =
+            "💔 💀 FATAL OBSESSION: ${death['clinger']} couldn't handle the rejection! They've checked out for good since ${death['obsession']} is gone.";
+        report.writeln(msg);
+        hostReport.writeln(msg);
+      }
+    }
 
-    // Sober Send Home
+    // 5. SILENCE & BLOCKS & SAVES
     final sentHomePlayers = players.where((p) => p.soberSentHome).toList();
     if (sentHomePlayers.isNotEmpty) {
       for (final p in sentHomePlayers) {
+        // Public sees generic message always to avoid spoilers
+        final publicMsg =
+            "🚫 🛋️ COCKBLOCK! The Sober cut off ${p.name} and called them an Uber. No more action for you tonight!";
+        report.writeln(publicMsg);
+
         if (p.role.id == 'dealer') {
-             report.writeln(
-              "• ⛔ SENT HOME: The Sober targeted ${p.name}, sending a DEALER home early! No murders from them tonight!",
-            );
+          hostReport.writeln(
+            "🚫 🛋️ COCKBLOCK (DEALER): The Sober targeted ${p.name}, blocking the Dealers!",
+          );
         } else {
-             report.writeln(
-              "• 🚕 SENT HOME: The Sober sent ${p.name} home. They were safe in their bed.",
-            );
+          hostReport.writeln(publicMsg);
         }
       }
-      quietNight = false;
     }
 
-    // Bouncer Check
-    if (nightActions.containsKey('bouncer_check')) {
-      final targetId = nightActions['bouncer_check']!;
-      try {
-        final target = _playerMap[targetId]!;
-        final bouncer = _playerList.firstWhere(
-          (p) => p.role.id == 'bouncer',
-        );
-        if (!bouncer.bouncerAbilityRevoked) {
-          report.writeln(
-            "• 🕵️‍♂️ SECURITY: The Bouncer checked ${target.name}'s ID at the door.",
-          );
-          quietNight = false;
-
-          if (target.role.id == 'minor' && !target.minorHasBeenIDd) {
-            // Note: Actual state change usually happens in UI interaction or here.
-            // If handled in UI, this just confirms it. If not, we set it here.
-            // To be safe, we verify/set it here too.
-            target.minorHasBeenIDd = true;
-            report.writeln(
-              "  ⚠️ ALERT: The Minor (${target.name}) was carded and is now VULNERABLE to attacks!",
-            );
-          }
-        }
-      } catch (_) {}
+    // Bouncer Check (Legacy Check) - will likely be handled by generic loop
+    if (nightActions.containsKey('bouncer_check') &&
+        !processedAbilityIds.contains('bouncer_check')) {
+      // Only log here if generic loop misses it, but generic loop iterates results.
+      // If no result exists but action exists, we might want to log failure?
+      // Let's rely on generic loop for success/failure reporting.
     }
 
     final silencedToday = players
@@ -1266,8 +1388,10 @@ class GameEngine extends ChangeNotifier {
         .toList();
     if (silencedToday.isNotEmpty) {
       final names = silencedToday.map((p) => p.name).join(", ");
-      report.writeln("• Shhh! Silenced for today: $names.");
-      quietNight = false;
+      final msg =
+          "🤐  Sore Throat? $names had their mouth full last night and can't say a word today.";
+      report.writeln(msg);
+      hostReport.writeln(msg);
     }
 
     final dealersBlocked = players
@@ -1280,9 +1404,10 @@ class GameEngine extends ChangeNotifier {
         .toList();
     if (dealersBlocked.isNotEmpty) {
       final names = dealersBlocked.map((p) => p.name).join(", ");
-      report.writeln(
-        "• Blocked! Dealers prevented from killing next night: $names.",
-      );
+      final msg =
+          "⛔ Blocked! Dealers prevented from killing next night: $names.";
+      report.writeln(msg);
+      hostReport.writeln(msg);
     }
 
     // 6. MEDIC REVIVE
@@ -1300,10 +1425,11 @@ class GameEngine extends ChangeNotifier {
             if (target.lives <= 0) target.lives = 1;
             medic.hasReviveToken = true;
             logAction('Medic Revive', 'Revived ${target.name}.');
-            report.writeln(
-              "• MIRACLE! The Medic revived ${target.name} from the dead!",
-            );
-            quietNight = false;
+
+            final msg =
+                "🧟  IT'S ALIVE! The Medic performed some 'invigorating' mouth-to-mouth and brought ${target.name} back for one last round!";
+            report.writeln(msg);
+            hostReport.writeln(msg);
           }
         }
       } catch (e) {
@@ -1311,9 +1437,145 @@ class GameEngine extends ChangeNotifier {
       }
     }
 
-    if (quietNight) {
+    // 7. GENERIC REPORTING (Global Stats)
+    // Iterate remaining results to provide full transparency for Host
+    for (var result in results) {
+      if (processedAbilityIds.contains(result.abilityId)) continue;
+      // Skip system abilities
+      if (result.abilityId.startsWith('system_')) continue;
+
+      if (result.success) {
+        final targetNames = result.targets
+            .map((id) => _playerMap[id]?.name ?? 'Unknown')
+            .join(', ');
+
+        String icon = "📝";
+        String msg = "";
+
+        switch (result.abilityId) {
+          case 'medic_protect':
+            icon = "🩺";
+            msg =
+                "The Medic gave $targetNames a private 'physical' examination.";
+            break;
+          case 'whore_redirect':
+            icon = "💋";
+            msg =
+                "The Whore took $targetNames back to the VIP room for a little distraction.";
+            break;
+          case 'bouncer_check':
+            icon = "👮";
+            msg =
+                "The Bouncer gave $targetNames a full body pat-down. Very thorough.";
+            break;
+          case 'reporter_scoop':
+            icon = "📸";
+            msg =
+                "The Reporter caught $targetNames in a compromising position.";
+            break;
+          case 'psychic_read':
+            icon = "🔮";
+            msg = "The Psychic felt a rising energy coming from $targetNames.";
+            break;
+          case 'party_animal_party':
+            icon = "💃";
+            msg =
+                "The Party Animal ground up against $targetNames on the dance floor.";
+            break;
+          case 'bartender_mix':
+            icon = "🍸";
+            msg =
+                "The Bartender served $targetNames something stiff and salty.";
+            break;
+          case 'cupid_link':
+            icon = "💘";
+            msg = "Cupid tied $targetNames together in a very kinky knot.";
+            break;
+          case 'messy_bitch_spread':
+            icon = "??";
+            final gossipTemplates = [
+              "I heard [Target] was on their knees in the VIP lounge... and they certainly weren't praying.",
+              "Rumour has it [Target] isn't wearing a single stitch of underwear tonight. Easy access.",
+              "[Target] was just seen leaving the handicapped stall with two other people. Must be a tight squeeze.",
+              "Someone saw [Target] doing things with an ice cube that honestly shouldn't be legal in public.",
+              "[Target] disappeared into the coat check for 20 minutes and came out walking a little funny.",
+              "Word is [Target] offered the bartender more than just a cash tip for that last drink.",
+              "I saw [Target] drop their keys on purpose just to bend over in front of the DJ. Desperate.",
+              "[Target]'s lipstick is smeared, and I'm pretty sure that wasn't their own zipper they were adjusting.",
+              "Apparently [Target] has a piercing in a place you usually only show your doctor... or a very lucky date.",
+              "[Target] was spotted whispering their room number to arguably the ugliest staff member here.",
+              "They say [Target] has a special talent for swallowing... shots. And other things.",
+              "[Target] was caught doing body shots off the bouncer's... belt buckle.",
+              "Who knew [Target] had a tattoo that says 'Open 24/7' right above their... lower back?",
+              "[Target] was seen engaging in some heavy petting in the dark corner. With themselves.",
+            ];
+            final gossip =
+                gossipTemplates[Random().nextInt(gossipTemplates.length)]
+                    .replaceAll('[Target]', targetNames);
+            messyBitchGossip = gossip;
+            // Add prominent gossip to the public report
+            report.writeln(" RUMOUR MILL: $gossip");
+
+            msg = "The Messy Bitch spread a rumour about $targetNames.";
+            break;
+          default:
+            final niceName = result.abilityId
+                .replaceAll('_', ' ')
+                .toUpperCase();
+            msg =
+                "Action: $niceName on ${targetNames.isEmpty ? 'Self/Global' : targetNames}.";
+            icon = "?";
+            break;
+        }
+
+        if (msg.isNotEmpty) {
+          // Host sees detailed stats
+          hostReport.writeln("$icon $msg");
+
+          // Apply status effects so Host Overview reflects night actions
+          // This makes "Roofie", "Checks", "Protections" etc visible on player cards
+          for (var targetId in result.targets) {
+            statusEffectManager.applyEffect(
+              targetId,
+              StatusEffect(
+                id: "status_${result.abilityId}_${dayCount}_$targetId",
+                name: result.abilityId
+                    .split('_')
+                    .map((s) => s.toUpperCase())
+                    .join(' '),
+                description: msg,
+                duration: 1, // Lasts for the day
+              ),
+            );
+          }
+
+          // These roles have visible effects that players should see in the Morning Briefing
+          if ([
+            'party_animal_party',
+            'bartender_mix',
+          ].contains(result.abilityId)) {
+            report.writeln("$icon $msg");
+          }
+        }
+      } else {
+        // Report failures too for Host Stats benefit (Private)
+        if (result.message == "Ability was blocked") {
+          final roleName = result.abilityId.split('_').first.toUpperCase();
+          hostReport.writeln(" $roleName action on targets was BLOCKED.");
+        }
+      }
+      processedAbilityIds.add(result.abilityId);
+    }
+
+    if (report.length == 0) {
       report.writeln(
-        "• Surprisingly... nothing happened. It was a quiet night.",
+        "😴 Surprisingly... nothing happened. It was a quiet night.",
+      );
+    }
+
+    if (hostReport.length == 0) {
+      hostReport.writeln(
+        "😴 Surprisingly... nothing happened. It was a quiet night.",
       );
     }
     final deathNames = processedVictims
@@ -1338,23 +1600,77 @@ class GameEngine extends ChangeNotifier {
 
     final headlineParts = <String>[];
     if (deathNames.isNotEmpty) {
-      headlineParts.add('${deathNames.length} out (${deathNames.join(', ')})');
+      // Enhanced Death Messages
+      for (final name in deathNames) {
+        headlineParts.add('$name was spiked and died last night');
+      }
     }
+
     if (savedNames.isNotEmpty) {
-      headlineParts.add('${savedNames.length} saved (${savedNames.join(', ')})');
+      // Enhanced Saved Messages
+      for (final name in savedNames) {
+        headlineParts.add(
+          '$name was nearly spiked by the dealers but was saved from a murder on the dance floor',
+        );
+      }
     }
+
     if (lifeDingNames.isNotEmpty) {
-      headlineParts.add('${lifeDingNames.length} shook (${lifeDingNames.join(', ')})');
+      for (final name in lifeDingNames) {
+        headlineParts.add('$name took a hit but survived the night');
+      }
     }
+
     if (_clingerDoubleDeaths.isNotEmpty) {
-      headlineParts.add('hearts broken');
+      for (var d in _clingerDoubleDeaths) {
+        headlineParts.add(
+          "${d['clinger']} died of a broken heart over ${d['obsession']}",
+        );
+      }
     }
 
-    final nightLabel = (dayCount + 1).clamp(1, 99);
-    final headline = headlineParts.isEmpty
-        ? '⚡ Night $nightLabel recap: All quiet — everyone stumbled back alive.'
-        : '⚡ Night $nightLabel recap: ${headlineParts.join(' • ')}';
+    // Add Silenced Status
+    if (silencedToday.isNotEmpty) {
+      for (final p in silencedToday) {
+        headlineParts.add("${p.name} was silenced by the Bouncer");
+      }
+    }
 
+    // Add Sent Home Status (Sober)
+    if (sentHomePlayers.isNotEmpty) {
+      for (final p in sentHomePlayers) {
+        headlineParts.add("${p.name} was sent home early by the Sober");
+      }
+    }
+
+    final nightLabel = dayCount.clamp(1, 99);
+    // Combine with new lines for readability rather than ' • ' joiner
+    // Check if there were ANY actions (not just deaths/saves) by checking if report buffer has content
+    final hasAnyActions = report.length > 0 || headlineParts.isNotEmpty;
+    final headline = !hasAnyActions
+        ? '? Night $nightLabel recap: All quiet — everyone stumbled back alive.'
+        : headlineParts.isNotEmpty
+        ? '? Night $nightLabel Summary:\n • ${headlineParts.join('\n • ')}'
+        : '? Night $nightLabel Summary';
+
+    // Store stats for UI visualization (Reset each night resolution to show ONLY last night's impact)
+    lastNightStats = {
+      'deaths': deathNames.length,
+      'saved': savedNames.length,
+      'injured': lifeDingNames.length,
+      'hearts_broken': _clingerDoubleDeaths.length,
+    };
+
+    // Store private report
+    lastNightHostRecap = "$headline\n\n${hostReport.toString().trimRight()}";
+
+    // Log to Game History for persistence and visibility
+    logAction(
+      "Morning Report (Night $nightLabel)",
+      "$headline\n\n${report.toString().trimRight()}",
+    );
+
+    // Return public report
     final body = report.toString().trimRight();
     return [headline, body].where((s) => s.trim().isNotEmpty).join('\n');
   }
@@ -1372,20 +1688,22 @@ class GameEngine extends ChangeNotifier {
 
   void _handleDramaQueenSwap(PendingReaction reaction) {
     dramaQueenSwapPending = true;
-    dramaQueenMarkedAId ??= nightActions['drama_swap_a'] ?? reaction.sourcePlayer.dramaQueenTargetAId;
-    dramaQueenMarkedBId ??= nightActions['drama_swap_b'] ?? reaction.sourcePlayer.dramaQueenTargetBId;
+    dramaQueenMarkedAId ??=
+        nightActions['drama_swap_a'] ??
+        reaction.sourcePlayer.dramaQueenTargetAId;
+    dramaQueenMarkedBId ??=
+        nightActions['drama_swap_b'] ??
+        reaction.sourcePlayer.dramaQueenTargetBId;
 
-    final String? markedAName =
-        dramaQueenMarkedAId != null
-            ? (_playerMap[dramaQueenMarkedAId] ?? reaction.sourcePlayer).name
-            : null;
-    final String? markedBName =
-        dramaQueenMarkedBId != null
-            ? (_playerMap[dramaQueenMarkedBId] ?? reaction.sourcePlayer).name
-            : null;
+    final String? markedAName = dramaQueenMarkedAId != null
+        ? (_playerMap[dramaQueenMarkedAId] ?? reaction.sourcePlayer).name
+        : null;
+    final String? markedBName = dramaQueenMarkedBId != null
+        ? (_playerMap[dramaQueenMarkedBId] ?? reaction.sourcePlayer).name
+        : null;
 
     final pendingLine = (markedAName != null && markedBName != null)
-        ? "Marked pair: $markedAName ↔ $markedBName."
+        ? "Marked pair: $markedAName ? $markedBName."
         : "No marked pair. Host must choose two players.";
 
     logAction(
@@ -1427,7 +1745,7 @@ class GameEngine extends ChangeNotifier {
 
       logAction(
         "Drama Queen Swap",
-        "Swapped ${record.playerAName} (${record.fromRoleA} → ${record.toRoleA}) with ${record.playerBName} (${record.fromRoleB} → ${record.toRoleB}).",
+        "Swapped ${record.playerAName} (${record.fromRoleA} ? ${record.toRoleA}) with ${record.playerBName} (${record.fromRoleB} ? ${record.toRoleB}).",
       );
       notifyListeners();
       return record;
@@ -1476,7 +1794,9 @@ class GameEngine extends ChangeNotifier {
   }
 
   void _handleTeaSpillerReveal(PendingReaction reaction) {
-    String? targetId = nightActions['tea_spiller_mark'] ?? reaction.sourcePlayer.teaSpillerTargetId;
+    String? targetId =
+        nightActions['tea_spiller_mark'] ??
+        reaction.sourcePlayer.teaSpillerTargetId;
 
     if (targetId != null) {
       try {
@@ -1529,12 +1849,12 @@ class GameEngine extends ChangeNotifier {
           .toList();
 
       for (var clinger in clingers) {
-        clinger.die(dayCount);
+        clinger.die(dayCount, 'clinger_suicide');
         deadPlayerIds.add(clinger.id);
 
         // Add dramatic double death log
         logAction(
-          "💔 DOUBLE DEATH 💔",
+          "?? DOUBLE DEATH ??",
           "OBSESSION OVER! ${clinger.name} (The Clinger) couldn't live without ${victim.name} and has died of a broken heart!",
         );
 
@@ -1553,15 +1873,18 @@ class GameEngine extends ChangeNotifier {
   }
 
   void _assignRoles() {
-    final eligiblePlayers =
-        _playerList.where((p) => p.isEnabled && p.role.id != 'host').toList();
+    final eligiblePlayers = _playerList
+        .where((p) => p.isEnabled && p.role.id != 'host')
+        .toList();
     if (eligiblePlayers.isEmpty) return;
 
     final random = Random();
 
     final dealerRole = roleRepository.getRoleById('dealer');
     if (dealerRole == null) {
-      throw StateError('Dealer role is missing from the role repository.');
+      throw RoleAssignmentException(
+        'Dealer role is missing from the role repository.',
+      );
     }
 
     final partyAnimalRole = roleRepository.getRoleById('party_animal');
@@ -1585,7 +1908,7 @@ class GameEngine extends ChangeNotifier {
       } else if (p.role.id != 'temp') {
         // Party Animals and Dealers can repeat. All others must be unique.
         if (p.role.id != 'party_animal' && !usedUniqueRoleIds.add(p.role.id)) {
-          throw StateError(
+          throw RoleAssignmentException(
             'Duplicate role detected: ${p.role.id}. Only Dealers and Party Animals can repeat.',
           );
         }
@@ -1639,7 +1962,7 @@ class GameEngine extends ChangeNotifier {
       }
 
       if (deck.length < autoPlayers.length) {
-        throw StateError(
+        throw RoleAssignmentException(
           'Not enough unique roles to assign ${autoPlayers.length} player(s). '
           'Add more roles to roles.json or reduce enabled players.',
         );
@@ -1661,7 +1984,11 @@ class GameEngine extends ChangeNotifier {
     }
   }
 
-  void logAction(String title, String description) {
+  void logAction(
+    String title,
+    String description, {
+    GameLogType type = GameLogType.action,
+  }) {
     _gameLog.insert(
       0,
       GameLogEntry(
@@ -1670,6 +1997,7 @@ class GameEngine extends ChangeNotifier {
         title: title,
         description: description,
         timestamp: DateTime.now(),
+        type: type,
       ),
     );
     notifyListeners();
@@ -1794,8 +2122,9 @@ class GameEngine extends ChangeNotifier {
 
       case 'medic':
         final target = resolvePlayer(selections.first);
-        final medic =
-            _playerList.where((p) => p.role.id == 'medic').firstOrNull;
+        final medic = _playerList
+            .where((p) => p.role.id == 'medic')
+            .firstOrNull;
 
         // Medic only wakes at night if they chose PROTECT_DAILY
         // This step should only appear if medicChoice == 'PROTECT_DAILY'
@@ -1820,7 +2149,26 @@ class GameEngine extends ChangeNotifier {
 
       case 'whore':
         final target = resolvePlayer(selections.first);
+
+        // Queue redirect ability
+        abilityResolver.queueAbility(
+          ActiveAbility(
+            abilityId: 'whore_redirect',
+            sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+            targetPlayerIds: [target.id],
+            trigger: AbilityTrigger.nightAction,
+            effect: AbilityEffect.redirect, // Use redirect effect
+            priority: 3,
+            metadata: {
+              'roleName': 'The Whore', // For logging
+              'redirect_type': 'vote_deflection',
+            },
+          ),
+        );
+
+        // Keep legacy map for safety until voting logic is fully refactored
         nightActions['whore_redirect_target'] = target.id;
+
         logAction(
           step.title,
           "Whore selected ${target.name} to deflect votes to.",
@@ -1837,9 +2185,22 @@ class GameEngine extends ChangeNotifier {
           target.minorHasBeenIDd = true;
         }
 
+        // Queue investigate ability
+        abilityResolver.queueAbility(
+          ActiveAbility(
+            abilityId: 'bouncer_check',
+            sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+            targetPlayerIds: [target.id],
+            trigger: AbilityTrigger.nightAction,
+            effect: AbilityEffect.investigate,
+            priority: 4,
+            metadata: {'roleName': 'The Bouncer', 'result': target.alliance},
+          ),
+        );
+
         logAction(
           step.title,
-          "Bouncer I.D.'d ${target.name} → ${target.alliance}.",
+          "Bouncer I.D.'d ${target.name} ? ${target.alliance}.",
         );
         break;
 
@@ -1898,6 +2259,24 @@ class GameEngine extends ChangeNotifier {
       case 'creep':
         final target = resolvePlayer(selections.first);
         nightActions['creep_target'] = target.id;
+
+        // Queue mimic ability
+        abilityResolver.queueAbility(
+          ActiveAbility(
+            abilityId: 'creep_mimic',
+            sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+            targetPlayerIds: [target.id],
+            trigger: AbilityTrigger.nightAction,
+            effect: AbilityEffect.copy,
+            priority: 1, // High priority to ensure mimic happens early
+            metadata: {
+              'roleName': 'The Creep',
+              'mimic_role': target.role.name,
+              'mimic_alliance': target.role.alliance,
+            },
+          ),
+        );
+
         logAction(step.title, "Creep chose to mimic ${target.name}.");
         break;
 
@@ -1916,12 +2295,11 @@ class GameEngine extends ChangeNotifier {
               trigger: AbilityTrigger.nightAction,
               effect: AbilityEffect.kill,
               priority: 4,
+              metadata: {'roleName': 'The Clinger'},
             ),
           );
 
-          final clinger = _playerList.firstWhere(
-            (p) => p.role.id == 'clinger',
-          );
+          final clinger = _playerList.firstWhere((p) => p.role.id == 'clinger');
           clinger.clingerAttackDogUsed = true;
           logAction(
             step.title,
@@ -1931,10 +2309,24 @@ class GameEngine extends ChangeNotifier {
           // Night 0 Setup (Obsession)
           try {
             final clinger = _playerList.firstWhere(
-              (p) => p.role.id == 'clinger' && p.isAlive,
+              (p) => p.role.id == 'clinger',
             );
+            // We set it here for immediate state, but also queue it for persistence/logs
             clinger.clingerPartnerId = target.id;
             nightActions['clinger_obsession'] = target.id;
+
+            abilityResolver.queueAbility(
+              ActiveAbility(
+                abilityId: 'clinger_obsession',
+                sourcePlayerId: clinger.id,
+                targetPlayerIds: [target.id],
+                trigger: AbilityTrigger.startup,
+                effect: AbilityEffect.mark,
+                priority: 0,
+                metadata: {'roleName': 'The Clinger', 'mark_type': 'obsession'},
+              ),
+            );
+
             logAction(
               step.title,
               "Clinger chose ${target.name} as their obsession.",
@@ -1956,6 +2348,22 @@ class GameEngine extends ChangeNotifier {
           if (p1.alliance.contains("Neutral") || p1.alliance.contains("None")) {
             sameTeam = false;
           }
+
+          // Queue ability for record keeping
+          abilityResolver.queueAbility(
+            ActiveAbility(
+              abilityId: 'bartender_check',
+              sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+              targetPlayerIds: [p1.id, p2.id],
+              trigger: AbilityTrigger.nightAction,
+              effect: AbilityEffect.investigate,
+              priority: 5,
+              metadata: {
+                'roleName': 'The Bartender',
+                'result_same_team': sameTeam,
+              },
+            ),
+          );
 
           logAction(
             step.title,
@@ -1979,6 +2387,18 @@ class GameEngine extends ChangeNotifier {
             sourcePlayer.dramaQueenTargetBId = second.id;
           }
 
+          abilityResolver.queueAbility(
+            ActiveAbility(
+              abilityId: 'drama_queen_mark_pair',
+              sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+              targetPlayerIds: [first.id, second.id],
+              trigger: AbilityTrigger.nightAction,
+              effect: AbilityEffect.mark,
+              priority: 3,
+              metadata: {'roleName': 'Drama Queen', 'mark_type': 'swap_pair'},
+            ),
+          );
+
           logAction(
             step.title,
             "Drama Queen marked ${first.name} and ${second.name} for swap on death.",
@@ -1987,11 +2407,26 @@ class GameEngine extends ChangeNotifier {
           final target = resolvePlayer(selections.first);
           dramaQueenMarkedAId = target.id;
           dramaQueenMarkedBId = null;
-          
+
           if (sourcePlayer != null) {
             sourcePlayer.dramaQueenTargetAId = target.id;
             sourcePlayer.dramaQueenTargetBId = null;
           }
+
+          abilityResolver.queueAbility(
+            ActiveAbility(
+              abilityId: 'drama_queen_mark_single',
+              sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+              targetPlayerIds: [target.id],
+              trigger: AbilityTrigger.nightAction,
+              effect: AbilityEffect.mark,
+              priority: 3,
+              metadata: {
+                'roleName': 'Drama Queen',
+                'mark_type': 'swap_partial',
+              },
+            ),
+          );
 
           logAction(
             step.title,
@@ -2003,10 +2438,25 @@ class GameEngine extends ChangeNotifier {
       case 'tea_spiller':
         final target = resolvePlayer(selections.first);
         nightActions['tea_spiller_mark'] = target.id;
-        
+
         if (sourcePlayer != null) {
           sourcePlayer.teaSpillerTargetId = target.id;
         }
+
+        abilityResolver.queueAbility(
+          ActiveAbility(
+            abilityId: 'tea_spiller_mark',
+            sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+            targetPlayerIds: [target.id],
+            trigger: AbilityTrigger.nightAction,
+            effect: AbilityEffect.mark,
+            priority: 3,
+            metadata: {
+              'roleName': 'Tea Spiller',
+              'mark_type': 'reveal_on_death',
+            },
+          ),
+        );
 
         logAction(
           step.title,
@@ -2017,10 +2467,22 @@ class GameEngine extends ChangeNotifier {
       case 'predator':
         final target = resolvePlayer(selections.first);
         nightActions['predator_mark'] = target.id;
-        
+
         if (sourcePlayer != null) {
           sourcePlayer.predatorTargetId = target.id;
         }
+
+        abilityResolver.queueAbility(
+          ActiveAbility(
+            abilityId: 'predator_mark',
+            sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+            targetPlayerIds: [target.id],
+            trigger: AbilityTrigger.nightAction,
+            effect: AbilityEffect.mark,
+            priority: 3,
+            metadata: {'roleName': 'The Predator', 'mark_type': 'retaliation'},
+          ),
+        );
 
         logAction(
           step.title,
@@ -2059,6 +2521,21 @@ class GameEngine extends ChangeNotifier {
       case 'club_manager_act':
         final target = resolvePlayer(selections.first);
 
+        abilityResolver.queueAbility(
+          ActiveAbility(
+            abilityId: 'club_manager_investigate',
+            sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+            targetPlayerIds: [target.id],
+            trigger: AbilityTrigger.nightAction,
+            effect: AbilityEffect.investigate,
+            priority: 5,
+            metadata: {
+              'roleName': 'Club Manager',
+              'result_role': target.role.name,
+            },
+          ),
+        );
+
         logAction(
           step.title,
           "Club Manager viewed ${target.name}'s role: ${target.role.name}",
@@ -2084,6 +2561,7 @@ class GameEngine extends ChangeNotifier {
               trigger: AbilityTrigger.nightAction,
               effect: AbilityEffect.reveal,
               priority: 1,
+              metadata: {'roleName': 'Silver Fox'},
             ),
           );
 
@@ -2092,14 +2570,39 @@ class GameEngine extends ChangeNotifier {
             "Silver Fox chose to force ${target.name} to reveal their role tomorrow.",
           );
         } else {
-          logAction(step.title, "Silver Fox ability already used or no source player.");
+          logAction(
+            step.title,
+            "Silver Fox ability already used or no source player.",
+          );
         }
         break;
 
       case 'wallflower':
         if (selections.isNotEmpty) {
           // Wallflower chose to witness
-          // Check if there's a kill action
+          // Query the nightActions right now for immediate feedback in log
+          String witnessResult = "No murder seen.";
+          if (nightActions.containsKey('kill')) {
+            final victimId = nightActions['kill'];
+            final victim = resolvePlayer(victimId!);
+            witnessResult = "${victim.name} targeted.";
+          }
+
+          abilityResolver.queueAbility(
+            ActiveAbility(
+              abilityId: 'wallflower_witness',
+              sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+              targetPlayerIds: [], // Witnesses the "scene", no specific target
+              trigger: AbilityTrigger.nightAction,
+              effect: AbilityEffect.investigate,
+              priority: 6, // Late priority to see kills
+              metadata: {
+                'roleName': 'The Wallflower',
+                'witness_result': witnessResult,
+              },
+            ),
+          );
+
           if (nightActions.containsKey('kill')) {
             final victimId = nightActions['kill'];
             final victim = resolvePlayer(victimId!);
@@ -2114,6 +2617,18 @@ class GameEngine extends ChangeNotifier {
             );
           }
         } else {
+          // Explicitly log "No Action" so we have a record that they woke up
+          abilityResolver.queueAbility(
+            ActiveAbility(
+              abilityId: 'wallflower_skip',
+              sourcePlayerId: sourcePlayer?.id ?? 'unknown',
+              targetPlayerIds: [],
+              trigger: AbilityTrigger.nightAction,
+              effect: AbilityEffect.investigate, // Dummy effect
+              priority: 6,
+              metadata: {'roleName': 'The Wallflower', 'action': 'skip'},
+            ),
+          );
           logAction(step.title, "Wallflower chose not to witness.");
         }
         break;
@@ -2230,6 +2745,23 @@ class GameEngine extends ChangeNotifier {
           // Add the new taboo name to the list
           if (!sourcePlayer.tabooNames.contains(target.name)) {
             sourcePlayer.tabooNames.add(target.name);
+
+            // Queue ability for status tracking
+            abilityResolver.queueAbility(
+              ActiveAbility(
+                abilityId: 'lightweight_taboo',
+                sourcePlayerId: sourcePlayer.id,
+                targetPlayerIds: [target.id], // The target whose name is taboo
+                trigger: AbilityTrigger.nightAction,
+                effect: AbilityEffect.modify,
+                priority: 0,
+                metadata: {
+                  'roleName': 'The Lightweight',
+                  'taboo_name': target.name,
+                },
+              ),
+            );
+
             logAction(
               step.title,
               "Lightweight now has ${target.name} as a taboo name (Total: ${sourcePlayer.tabooNames.length}).",
@@ -2254,16 +2786,21 @@ class GameEngine extends ChangeNotifier {
   void handleScriptOption(ScriptStep step, String selectedOption) {
     if (step.id == 'second_wind_decision') {
       final option = selectedOption.toLowerCase();
-      bool accepted = option == 'yes' || option == 'true' || option == 'convert';
+      bool accepted =
+          option == 'yes' || option == 'true' || option == 'convert';
 
       final secondWind = players.firstWhere(
         (p) => p.secondWindPendingConversion,
         orElse: () => players.first,
       );
-      
-      if (secondWind.id != players.first.id || secondWind.secondWindPendingConversion) {
+
+      if (secondWind.id != players.first.id ||
+          secondWind.secondWindPendingConversion) {
         if (accepted) {
-          logAction("Second Wind Decision", "Dealers chose to CONVERT Second Wind.");
+          logAction(
+            "Second Wind Decision",
+            "Dealers chose to CONVERT Second Wind.",
+          );
           final dealerRole = roleRepository.getRoleById('dealer');
           if (dealerRole != null) {
             secondWind.role = dealerRole;
@@ -2274,11 +2811,13 @@ class GameEngine extends ChangeNotifier {
             secondWind.initialize();
           }
         } else {
-          logAction("Second Wind Decision", "Dealers chose to KILL Second Wind.");
+          logAction(
+            "Second Wind Decision",
+            "Dealers chose to KILL Second Wind.",
+          );
           secondWind.secondWindRefusedConversion = true;
           secondWind.secondWindPendingConversion = false;
-          // Process death immediately since this acts as the "Kill confirmation" during Day
-          processDeath(secondWind, cause: 'second_wind_failed');
+          // Kill action proceeds as normal in _resolveNightPhase
         }
       }
       notifyListeners();
@@ -2365,6 +2904,24 @@ class GameEngine extends ChangeNotifier {
     await prefs.setInt('gameState_${saveId}_phase', _currentPhase.index);
     await prefs.setInt('gameState_${saveId}_dayCount', dayCount);
     await prefs.setInt('gameState_${saveId}_scriptIndex', _scriptIndex);
+    await prefs.setString(
+      'gameState_${saveId}_lastNightSummary',
+      lastNightSummary,
+    );
+    await prefs.setString(
+      'gameState_${saveId}_lastNightHostRecap',
+      lastNightHostRecap,
+    );
+    await prefs.setString(
+      'gameState_${saveId}_lastNightStats',
+      jsonEncode(lastNightStats),
+    );
+    if (messyBitchGossip != null) {
+      await prefs.setString(
+        'gameState_${saveId}_messyBitchGossip',
+        messyBitchGossip!,
+      );
+    }
 
     // Create save metadata
     final saveMetadata = SavedGame(
@@ -2452,6 +3009,42 @@ class GameEngine extends ChangeNotifier {
 
       dayCount = prefs.getInt('gameState_${saveId}_dayCount') ?? 0;
       _scriptIndex = prefs.getInt('gameState_${saveId}_scriptIndex') ?? 0;
+      lastNightSummary =
+          prefs.getString('gameState_${saveId}_lastNightSummary') ?? '';
+      lastNightHostRecap =
+          prefs.getString('gameState_${saveId}_lastNightHostRecap') ?? '';
+      messyBitchGossip = prefs.getString(
+        'gameState_${saveId}_messyBitchGossip',
+      );
+
+      final statsStr = prefs.getString('gameState_${saveId}_lastNightStats');
+      if (statsStr != null) {
+        lastNightStats = Map<String, int>.from(jsonDecode(statsStr));
+      } else {
+        lastNightStats = {};
+      }
+
+      // Load History & Status Effects
+      final historyStr = prefs.getString('gameState_${saveId}_history');
+      if (historyStr != null) {
+        reactionSystem.loadHistoryFromJson(jsonDecode(historyStr));
+      } else {
+        reactionSystem.clearHistory();
+      }
+
+      final statusStr = prefs.getString('gameState_${saveId}_statusEffects');
+      if (statusStr != null) {
+        statusEffectManager.loadFromJson(jsonDecode(statusStr));
+      } else {
+        statusEffectManager.clearAll();
+      }
+
+      final queueStr = prefs.getString('gameState_${saveId}_abilityQueue');
+      if (queueStr != null) {
+        abilityResolver.loadFromJson(jsonDecode(queueStr));
+      } else {
+        abilityResolver.clear();
+      }
 
       // Reconstruct Script
       if (_currentPhase == GamePhase.night) {
@@ -2512,6 +3105,9 @@ class GameEngine extends ChangeNotifier {
     statusEffectManager.clearAll();
     chainResolver.clear();
     _abilityTargets.clear();
+    lastNightStats.clear();
+    lastNightSummary = '';
+    messyBitchGossip = null;
     notifyListeners();
   }
 
@@ -2535,11 +3131,10 @@ class GameEngine extends ChangeNotifier {
 
     // Check for Predator retaliation
     if (player.role.id == 'predator') {
-      final retaliationTarget = nightActions['predator_mark'] ?? player.predatorTargetId;
+      final retaliationTarget =
+          nightActions['predator_mark'] ?? player.predatorTargetId;
       if (retaliationTarget != null) {
-        final victim =
-            _playerMap[retaliationTarget] ??
-            _playerList.first;
+        final victim = _playerMap[retaliationTarget] ?? _playerList.first;
         if (victim.id == retaliationTarget) {
           processDeath(victim, cause: 'predator_revenge');
           logAction(
@@ -2563,8 +3158,7 @@ class GameEngine extends ChangeNotifier {
     if ((wasDealer || player.role.id == 'whore') &&
         whoreRedirectTargetId != null) {
       final redirectPlayer =
-          _playerMap[whoreRedirectTargetId] ??
-          _playerList.first;
+          _playerMap[whoreRedirectTargetId] ?? _playerList.first;
 
       // If the Whore set a redirection target, and a Dealer or the Whore was voted out...
       // The original target SURVIVES and the redirected TARGET DIES.
@@ -2678,36 +3272,50 @@ class GameEngine extends ChangeNotifier {
       );
     }
 
-    // Game ends if only one dealer and one party animal remain
-    if (dealerCount == 1 && partyAnimalCount == 1 && alivePlayers.length == 2) {
-      return GameEndResult(
-        winner: 'DRAW',
-        message:
-            'Final showdown! One Dealer and one Party Animal remain - it\'s a standoff!',
-      );
-    }
-
-    // Dealers win if they outnumber Party Animals
-    if (dealerCount > partyAnimalCount) {
-      return GameEndResult(
-        winner: 'DEALER',
-        message: 'The Dealers have taken over the club!',
-      );
-    }
-
-    // Check for Messy Bitch solo victory
+    // Check for Messy Bitch solo victory first (absolute win)
     if (messyBitchVictoryAnnounced) {
-      final messyBitch =
-          _playerList.firstWhere(
-            (p) => p.role.id == 'messy_bitch' && p.isAlive,
-            orElse: () => _playerList.first,
-          );
+      final messyBitch = _playerList.firstWhere(
+        (p) => p.role.id == 'messy_bitch' && p.isAlive,
+        orElse: () => _playerList.first,
+      );
       if (messyBitch.role.id == 'messy_bitch') {
         return GameEndResult(
           winner: 'MESSY_BITCH',
           message: '${messyBitch.name} won by spreading all the rumours!',
         );
       }
+    }
+
+    // Game ends if only one dealer and one party animal remain
+    if (dealerCount == 1 && partyAnimalCount == 1 && alivePlayers.length == 2) {
+      return GameEndResult(
+        winner: 'DRAW',
+        message:
+            'Final showdown! One Dealer and one Party Animal remain - it\'s a Standoff!',
+      );
+    }
+
+    // Dealers win if they outnumber Party Animals
+    if (dealerCount > partyAnimalCount) {
+      // Logic Check: If Messy Bitch is alive when Dealers win (last PA dies/outnumbered),
+      // she steals the victory (Survival Win Condition).
+      try {
+        final messyBitch = alivePlayers.firstWhere(
+          (p) => p.role.id == 'messy_bitch',
+        );
+        return GameEndResult(
+          winner: 'MESSY_BITCH',
+          message:
+              '${messyBitch.name} (The Messy Bitch) survived the chaos and steals the win!',
+        );
+      } catch (e) {
+        // No Messy Bitch alive, Dealers win normally
+      }
+
+      return GameEndResult(
+        winner: 'DEALER',
+        message: 'The Dealers have taken over the club!',
+      );
     }
 
     return null; // Game continues
@@ -2719,42 +3327,123 @@ class GameEngine extends ChangeNotifier {
     return _lastResult != null;
   }
 
+  GameEndResult? get lastGameResult => _lastResult;
   String? get winner => _lastResult?.winner;
   String? get winMessage => _lastResult?.message;
 
   void randomizePlayerRole(String playerId) {
-    final player = _playerMap[playerId];
-    if (player == null || roleRepository.roles.isEmpty) return;
+    if (roleRepository.roles.isEmpty) return;
+    final random = Random();
+    final newRole =
+        roleRepository.roles[random.nextInt(roleRepository.roles.length)];
+    updatePlayerRole(playerId, newRole);
+  }
 
-    final enabledCount = _playerList.where((p) => p.isEnabled).length;
-    final recommendedDealers = RoleValidator.recommendedDealerCount(
-      enabledCount,
-    );
-    final currentDealerCount = _playerList
-        .where((p) => p.isEnabled && p.role.id == 'dealer')
-        .length;
-    final isCurrentlyDealer = player.role.id == 'dealer';
-    final dealerCountExcludingSelf =
-        currentDealerCount - (isCurrentlyDealer ? 1 : 0);
-
-    var available = RoleValidator.getAvailableRoles(
-      roleRepository.roles,
-      playerId,
-      _playerList,
-    ).where((r) => r.id != 'temp').toList();
-
-    // If we're already at the recommended dealer count, don't randomly add more Dealers.
-    if (dealerCountExcludingSelf >= recommendedDealers) {
-      final nonDealer = available.where((r) => r.id != 'dealer').toList();
-      if (nonDealer.isNotEmpty) {
-        available = nonDealer;
-      }
+  // Re-enable creating test game
+  Future<void> createTestGame({
+    int roleCount = 23,
+    bool fullRoster = false,
+  }) async {
+    if (roleRepository.roles.isEmpty) {
+      await roleRepository.loadRoles();
     }
 
-    if (available.isEmpty) return;
-    player.role = available[Random().nextInt(available.length)];
-    player.initialize();
-    notifyListeners();
+    resetGame();
+
+    // Add Host
+    Role? hostRole = roleRepository.getRoleById('host');
+    hostRole ??= Role(
+      id: 'host',
+      name: 'The Host',
+      alliance: 'Neutral',
+      type: 'special',
+      description: 'Runs the game.',
+      nightPriority: 0,
+      assetPath: 'Icons/host.png',
+      colorHex: '#FFFFFF',
+    );
+
+    // Check if we need to add host as a player (optional based on architecture)
+    // For now, allow proceeding even if host wasn't in repo
+
+    // Get all unique playable roles
+    final allRoles = roleRepository.roles
+        .where((r) => r.id != 'host' && r.id != 'temp')
+        .toList();
+
+    // Determine target count
+    final targetCount = fullRoster ? allRoles.length : roleCount;
+
+    // List of test names base
+    final testNames = [
+      'Alpha',
+      'Beta',
+      'Gamma',
+      'Delta',
+      'Epsilon',
+      'Zeta',
+      'Eta',
+      'Theta',
+      'Iota',
+      'Kappa',
+      'Lambda',
+      'Mu',
+      'Nu',
+      'Xi',
+      'Omicron',
+      'Pi',
+      'Rho',
+      'Sigma',
+      'Tau',
+      'Upsilon',
+      'Phi',
+      'Chi',
+      'Psi',
+      'Omega',
+      'One',
+      'Two',
+      'Three',
+      'Four',
+      'Five',
+      'Six',
+      'Seven',
+      'Eight',
+      'Nine',
+      'Ten',
+      'Red',
+      'Blue',
+      'Green',
+      'Yellow',
+      'Purple',
+      'Orange',
+      'Pink',
+      'Cyan',
+    ];
+
+    // Fallback role
+    final partyAnimalRole =
+        roleRepository.getRoleById('party_animal') ?? allRoles.first;
+
+    for (int i = 0; i < targetCount; i++) {
+      // Generate name
+      String name;
+      if (i < testNames.length) {
+        name = testNames[i];
+      } else {
+        name = 'Player ${i + 1}';
+      }
+
+      Role assignedRole;
+      if (i < allRoles.length) {
+        // Assign unique role until exhausted
+        assignedRole = allRoles[i];
+      } else {
+        // Fallback to Party Animal once other roles are used
+        assignedRole = partyAnimalRole;
+      }
+
+      addPlayer(name, role: assignedRole);
+    }
   }
 }
 
@@ -2763,5 +3452,5 @@ class GameEndResult {
   final String winner;
   final String message;
 
-  GameEndResult({required this.winner, required this.message});
+  const GameEndResult({required this.winner, required this.message});
 }

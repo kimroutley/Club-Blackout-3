@@ -12,9 +12,12 @@ import '../../models/role.dart';
 import '../../models/player.dart';
 import '../../utils/input_validator.dart';
 import '../../utils/role_validator.dart';
+import '../../utils/game_exceptions.dart';
 import '../styles.dart';
 import '../utils/player_sort.dart';
 import '../widgets/role_assignment_dialog.dart';
+import '../widgets/role_avatar_widget.dart';
+import '../widgets/player_tile.dart';
 import 'game_screen.dart';
 
 class LobbyScreen extends StatefulWidget {
@@ -36,6 +39,10 @@ class _LobbyScreenState extends State<LobbyScreen>
   late Animation<double> _pulseAnimation;
   bool _isPreviousNamesExpanded = false;
 
+  late final TabController _setupTabController;
+  final Set<int> _visitedSetupTabs = {0};
+  GameMode _selectedGameMode = GameMode.custom;
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +54,14 @@ class _LobbyScreenState extends State<LobbyScreen>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    _setupTabController = TabController(length: 3, vsync: this);
+    _setupTabController.addListener(() {
+      if (_setupTabController.indexIsChanging) return;
+      if (_visitedSetupTabs.add(_setupTabController.index)) {
+        if (mounted) setState(() {});
+      }
+    });
   }
 
   @override
@@ -56,6 +71,7 @@ class _LobbyScreenState extends State<LobbyScreen>
     _nameController.dispose();
     _scrollController.dispose();
     _pulseController.dispose();
+    _setupTabController.dispose();
     super.dispose();
   }
 
@@ -100,6 +116,8 @@ class _LobbyScreenState extends State<LobbyScreen>
           );
         }
       });
+    } on GameException catch (e) {
+      _showError(e.message);
     } catch (e) {
       _showError(e.toString().replaceFirst('Invalid argument(s): ', ''));
     }
@@ -132,6 +150,8 @@ class _LobbyScreenState extends State<LobbyScreen>
       widget.gameEngine.addPlayer(hostName, role: hostRole);
       _hostNameController.clear();
       HapticFeedback.mediumImpact();
+    } on GameException catch (e) {
+      _showError(e.message);
     } catch (e) {
       _showError(e.toString().replaceFirst('Invalid argument(s): ', ''));
     }
@@ -154,12 +174,15 @@ class _LobbyScreenState extends State<LobbyScreen>
       await widget.gameEngine.startGame();
 
       // 4. Go
+      if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => GameScreen(gameEngine: widget.gameEngine),
         ),
       );
+    } on GameException catch (e) {
+      _showError(e.message);
     } catch (e) {
       _showError(e.toString());
     }
@@ -186,10 +209,7 @@ class _LobbyScreenState extends State<LobbyScreen>
     );
   }
 
-  void _randomizePlayerRole(Player player) {
-    HapticFeedback.lightImpact();
-    widget.gameEngine.randomizePlayerRole(player.id);
-  }
+  /* Unused method removed: _randomizePlayerRole */
 
   void _showHistoryDialog() => setState(() => _isPreviousNamesExpanded = true);
   void _closeHistoryDialog() =>
@@ -206,33 +226,54 @@ class _LobbyScreenState extends State<LobbyScreen>
       }
 
       HapticFeedback.heavyImpact();
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => RoleAssignmentDialog(
-          gameEngine: widget.gameEngine,
-          players: widget.gameEngine.players,
-          onConfirm: () async {
-            Navigator.of(context).pop();
+      _showRoleAssignmentDialog(startAfterConfirm: true);
+    } on GameException catch (e) {
+      _showError(e.message);
+    } catch (e) {
+      _showError('Failed to start game: $e');
+    }
+  }
+
+  void _showRoleAssignmentDialog({required bool startAfterConfirm}) {
+    final navigator = Navigator.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => RoleAssignmentDialog(
+        gameEngine: widget.gameEngine,
+        players: widget.gameEngine.players,
+        initialMode: _selectedGameMode,
+        onConfirm: () async {
+          navigator.pop();
+
+          if (!startAfterConfirm) {
+            if (mounted) setState(() {});
+            return;
+          }
+
+          try {
             final setupError = _validateRoleCompositionForGameStart();
             if (setupError != null) {
               await _showInvalidSetupDialog(setupError);
               return;
             }
             widget.gameEngine.startGame();
+            if (!mounted) return;
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => GameScreen(gameEngine: widget.gameEngine),
               ),
             );
-          },
-          onCancel: () => Navigator.pop(context),
-        ),
-      );
-    } catch (e) {
-      _showError('Failed to start game: $e');
-    }
+          } on GameException catch (e) {
+            if (mounted) _showError(e.message);
+          } catch (e) {
+            if (mounted) _showError(e.toString());
+          }
+        },
+        onCancel: () => navigator.pop(),
+      ),
+    );
   }
 
   String? _validateRoleCompositionForGameStart() {
@@ -251,8 +292,8 @@ class _LobbyScreenState extends State<LobbyScreen>
   ({int enabled, int dealers, int partyAligned, int medics, int bouncers})
   _roleCountsForSetup() {
     final enabledPlayers = widget.gameEngine.guests
-      .where((p) => p.isEnabled)
-      .toList();
+        .where((p) => p.isEnabled)
+        .toList();
     int dealers = 0, partyAligned = 0, medics = 0, bouncers = 0;
 
     for (final p in enabledPlayers) {
@@ -263,8 +304,9 @@ class _LobbyScreenState extends State<LobbyScreen>
       if (roleId == 'bouncer') bouncers++;
       // Check alliance safely
       if (r.alliance.toLowerCase().contains('party') ||
-          roleId.contains('party'))
+          roleId.contains('party')) {
         partyAligned++;
+      }
     }
     return (
       enabled: enabledPlayers.length,
@@ -340,10 +382,12 @@ class _LobbyScreenState extends State<LobbyScreen>
 
     final players = allPlayers.where((p) => p.role.id != 'host').toList();
     final playerCount = players.length;
+    // Updated max count as per request (allow up to 30)
     final minPlayers = 4;
     final canStart = playerCount >= minPlayers;
-    final progress = (playerCount / minPlayers).clamp(0.0, 1.0);
     final hostExists = hostPlayer != null;
+
+    final setupTabsCompleted = _visitedSetupTabs.length == 3;
 
     return Stack(
       children: [
@@ -352,7 +396,8 @@ class _LobbyScreenState extends State<LobbyScreen>
           child: Image.asset(
             "Backgrounds/Club Blackout App Background.png",
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: Colors.black),
+            errorBuilder: (context, error, stackTrace) =>
+                Container(color: Colors.black),
           ),
         ),
 
@@ -373,75 +418,65 @@ class _LobbyScreenState extends State<LobbyScreen>
                         onClose: _closeHistoryDialog,
                       ),
                     )
-                  : ListView(
-                      controller: _scrollController,
-                      // Extra top padding so the host setup sits below the top menu/app bar
-                      padding: const EdgeInsets.fromLTRB(16, 120, 16, 120),
+                  : Column(
                       children: [
-                        ClubBlackoutTheme.centeredConstrained(
-                          maxWidth: 760,
-                          child: Column(
-                            children: [
-                              // Test Game Button
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 24),
-                                child: TextButton.icon(
-                                  onPressed: _createTestGame,
-                                  icon: const Icon(Icons.bug_report, color: Colors.white38),
-                                  label: const Text(
-                                    'LOAD TEST GAME',
-                                    style: TextStyle(color: Colors.white38),
-                                  ),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.all(16),
-                                    backgroundColor: Colors.white.withOpacity(0.05),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                        // Space for MainScreen AppBar (transparent) + a clean setup header
+                        const SizedBox(height: 84),
+
+                        // Setup Tabs
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: ClubBlackoutTheme.centeredConstrained(
+                            maxWidth: 760,
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: ClubBlackoutTheme.glassmorphism(
+                                color: Colors.black,
+                                borderColor: Colors.white10,
+                                opacity: 0.28,
+                                borderRadius: 18,
+                              ),
+                              child: TabBar(
+                                controller: _setupTabController,
+                                indicatorSize: TabBarIndicatorSize.tab,
+                                dividerColor: Colors.transparent,
+                                labelColor: Colors.black,
+                                unselectedLabelColor: Colors.white70,
+                                indicator: BoxDecoration(
+                                  color: ClubBlackoutTheme.neonBlue,
+                                  borderRadius: BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: ClubBlackoutTheme.neonBlue
+                                          .withOpacity(0.35),
+                                      blurRadius: 18,
+                                      spreadRadius: 1,
                                     ),
-                                  ),
+                                  ],
                                 ),
+                                tabs: const [
+                                  Tab(text: 'GUESTS'),
+                                  Tab(text: 'STYLE'),
+                                  Tab(text: 'ROLES'),
+                                ],
                               ),
-                              if (!hostExists) _buildHostInputSection(),
-                              if (hostPlayer != null) ...[
-                                _buildHostVipCard(hostPlayer!),
-                                const SizedBox(height: 12),
-                              ],
-                              _buildGuestInputSection(canStart),
-                              if (players.isNotEmpty) ...[
-                                const SizedBox(height: 32),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 12,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.people,
-                                        color: ClubBlackoutTheme.neonPink,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'GUEST LIST',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: ClubBlackoutTheme.neonPink,
-                                          letterSpacing: 2,
-                                          shadows: ClubBlackoutTheme.textGlow(
-                                            ClubBlackoutTheme.neonPink,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                              ],
-                              ...players.asMap().entries.map(
-                                (e) => _buildPlayerCard(e.value, e.key),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        Expanded(
+                          child: TabBarView(
+                            controller: _setupTabController,
+                            children: [
+                              _buildGuestsTab(
+                                hostPlayer: hostPlayer,
+                                hostExists: hostExists,
+                                players: players,
+                                canStart: canStart,
                               ),
+                              _buildStyleTab(),
+                              _buildRolesTab(),
                             ],
                           ),
                         ),
@@ -452,9 +487,494 @@ class _LobbyScreenState extends State<LobbyScreen>
         ),
 
         // Final Action
-        if (!_isPreviousNamesExpanded)
+        if (!_isPreviousNamesExpanded && setupTabsCompleted)
           _buildStartButton(playerCount, minPlayers, canStart),
       ],
+    );
+  }
+
+  Widget _buildGuestsTab({
+    required Player? hostPlayer,
+    required bool hostExists,
+    required List<Player> players,
+    required bool canStart,
+  }) {
+    return ListView(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+      children: [
+        ClubBlackoutTheme.centeredConstrained(
+          maxWidth: 760,
+          child: Column(
+            children: [
+              // Test Game Button
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: TextButton.icon(
+                  onPressed: _createTestGame,
+                  icon: const Icon(Icons.bug_report, color: Colors.white38),
+                  label: const Text(
+                    'LOAD TEST GAME',
+                    style: TextStyle(color: Colors.white38),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.all(16),
+                    backgroundColor: Colors.white.withOpacity(0.05),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+              if (!hostExists) _buildHostInputSection(),
+              if (hostPlayer != null) ...[
+                _buildHostVipCard(hostPlayer),
+                const SizedBox(height: 12),
+              ],
+              _buildGuestInputSection(canStart),
+              if (players.isNotEmpty) ...[
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.people,
+                        color: ClubBlackoutTheme.neonPink,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'GUEST LIST',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: ClubBlackoutTheme.neonPink,
+                          letterSpacing: 2,
+                          shadows: ClubBlackoutTheme.textGlow(
+                            ClubBlackoutTheme.neonPink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              ...players.asMap().entries.map(
+                (e) => _buildPlayerCard(e.value, e.key),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStyleTab() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+      children: [
+        ClubBlackoutTheme.centeredConstrained(
+          maxWidth: 760,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildSetupSectionHeader(
+                title: 'GAME STYLE',
+                subtitle:
+                    'Choose a default role distribution style. You can still tweak roles in the next step.',
+                icon: Icons.tune,
+                color: ClubBlackoutTheme.neonOrange,
+              ),
+              const SizedBox(height: 16),
+              _buildGameStyleOption(
+                mode: GameMode.bloodbath,
+                title: 'Bloodbath',
+                description: 'High aggression. More Offensive roles.',
+                icon: Icons.whatshot_rounded,
+                color: ClubBlackoutTheme.neonRed,
+              ),
+              const SizedBox(height: 12),
+              _buildGameStyleOption(
+                mode: GameMode.politicalNightmare,
+                title: 'Political Nightmare',
+                description: 'High deception. More Defensive/Intel roles.',
+                icon: Icons.psychology_rounded,
+                color: ClubBlackoutTheme.neonPurple,
+              ),
+              const SizedBox(height: 12),
+              _buildGameStyleOption(
+                mode: GameMode.freeForAll,
+                title: 'Free For All',
+                description: 'Chaotic mix. Balanced randomness.',
+                icon: Icons.casino_rounded,
+                color: ClubBlackoutTheme.neonBlue,
+              ),
+              const SizedBox(height: 12),
+              _buildGameStyleOption(
+                mode: GameMode.custom,
+                title: 'Custom',
+                description: 'Manual control. You decide everything.',
+                icon: Icons.handyman_rounded,
+                color: ClubBlackoutTheme.neonGreen,
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: ClubBlackoutTheme.glassmorphism(
+                  color: Colors.black,
+                  borderColor: Colors.white10,
+                  opacity: 0.25,
+                  borderRadius: 18,
+                ),
+                child: Text(
+                  'Start is unlocked after you open all setup tabs (Guests → Style → Roles).',
+                  style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRolesTab() {
+    final allRoles =
+        widget.gameEngine.roleRepository.roles
+            .where((r) => r.id != 'host' && r.id != 'temp')
+            .toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
+
+    final setupError = _validateRoleCompositionForGameStart();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+      children: [
+        ClubBlackoutTheme.centeredConstrained(
+          maxWidth: 760,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildSetupSectionHeader(
+                title: 'ROLES',
+                subtitle:
+                    'Preview the roster and optionally pre-assign roles before starting.',
+                icon: Icons.badge,
+                color: ClubBlackoutTheme.neonPink,
+              ),
+              const SizedBox(height: 12),
+              if (setupError == null)
+                _buildStatusBanner(
+                  text: 'Current setup looks valid (based on assigned roles).',
+                  color: ClubBlackoutTheme.neonGreen,
+                  icon: Icons.check_circle_rounded,
+                )
+              else
+                _buildStatusBanner(
+                  text: setupError,
+                  color: ClubBlackoutTheme.neonOrange,
+                  icon: Icons.warning_amber_rounded,
+                ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  _showRoleAssignmentDialog(startAfterConfirm: false);
+                },
+                icon: const Icon(Icons.shuffle_rounded),
+                label: const Text('ASSIGN / EDIT ROLES'),
+                style: ClubBlackoutTheme.neonButtonStyle(
+                  ClubBlackoutTheme.neonPink,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: ClubBlackoutTheme.glassmorphism(
+                  color: Colors.black,
+                  borderColor: Colors.white10,
+                  opacity: 0.25,
+                  borderRadius: 18,
+                ),
+                child: Text(
+                  'Quick requirements: Dealer, Party Animal, Wallflower, and Medic and/or Bouncer. Dealers must not start with majority.',
+                  style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'ROLE GALLERY',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 0.9,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemCount: allRoles.length,
+                itemBuilder: (context, index) {
+                  final role = allRoles[index];
+                  return InkWell(
+                    onTap: () => _showRolePreview(role),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.35),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: role.color.withOpacity(0.35),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          RoleAvatarWidget(role: role, size: 52),
+                          const SizedBox(height: 10),
+                          Text(
+                            role.name.toUpperCase(),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSetupSectionHeader({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(0.35), width: 1.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.8,
+                    shadows: ClubBlackoutTheme.textGlow(color),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner({
+    required String text,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.45)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: Colors.white.withOpacity(0.85)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGameStyleOption({
+    required GameMode mode,
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color color,
+  }) {
+    final isSelected = _selectedGameMode == mode;
+    return InkWell(
+      onTap: () {
+        setState(() => _selectedGameMode = mode);
+        HapticFeedback.selectionClick();
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected ? color : Colors.white10,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.25),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withOpacity(0.18),
+                border: Border.all(color: color.withOpacity(0.6)),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                      shadows: isSelected
+                          ? ClubBlackoutTheme.textGlow(color)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Icon(
+              isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
+              color: isSelected ? color : Colors.white24,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRolePreview(Role role) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: role.color.withOpacity(0.6), width: 2),
+        ),
+        title: Text(
+          role.name.toUpperCase(),
+          style: TextStyle(
+            color: role.color,
+            fontFamily: 'Hyperwave',
+            fontSize: 26,
+            shadows: ClubBlackoutTheme.textGlow(role.color),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RoleAvatarWidget(role: role, size: 72),
+              const SizedBox(height: 16),
+              Text(
+                role.description,
+                style: TextStyle(color: Colors.white.withOpacity(0.85)),
+                textAlign: TextAlign.center,
+              ),
+              if (role.ability != null && role.ability!.trim().isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Text(
+                  role.ability!,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CLOSE', style: TextStyle(color: Colors.white70)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -564,9 +1084,16 @@ class _LobbyScreenState extends State<LobbyScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: ClubBlackoutTheme.neonOrange, width: 2),
-              boxShadow: ClubBlackoutTheme.boxGlow(ClubBlackoutTheme.neonOrange, intensity: 0.8),
+              boxShadow: ClubBlackoutTheme.boxGlow(
+                ClubBlackoutTheme.neonOrange,
+                intensity: 0.8,
+              ),
             ),
-            child: const Icon(Icons.stars, color: ClubBlackoutTheme.neonOrange, size: 30),
+            child: const Icon(
+              Icons.stars,
+              color: ClubBlackoutTheme.neonOrange,
+              size: 30,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -604,7 +1131,9 @@ class _LobbyScreenState extends State<LobbyScreen>
                 letterSpacing: 0.5,
               ),
             ),
-            side: BorderSide(color: ClubBlackoutTheme.neonOrange.withOpacity(0.4)),
+            side: BorderSide(
+              color: ClubBlackoutTheme.neonOrange.withOpacity(0.4),
+            ),
           ),
         ],
       ),
@@ -679,46 +1208,50 @@ class _LobbyScreenState extends State<LobbyScreen>
       ),
     ];
 
-    return DropdownMenu<Role?>(
-      initialSelection: _selectedRole,
-      hintText: 'Assign Role (Optional)',
-      dropdownMenuEntries: allOptions,
-      onSelected: (v) => setState(() => _selectedRole = v),
-      width: 300,
-      inputDecorationTheme: InputDecorationTheme(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: _selectedRole?.color.withOpacity(0.5) ?? Colors.white12,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return DropdownMenu<Role?>(
+          initialSelection: _selectedRole,
+          hintText: 'Assign Role (Optional)',
+          dropdownMenuEntries: allOptions,
+          onSelected: (v) => setState(() => _selectedRole = v),
+          width: constraints.maxWidth,
+          inputDecorationTheme: InputDecorationTheme(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.05),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: _selectedRole?.color.withOpacity(0.5) ?? Colors.white12,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: _selectedRole?.color.withOpacity(0.5) ?? Colors.white12,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: _selectedRole?.color ?? Colors.white,
+                width: 2,
+              ),
+            ),
           ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: _selectedRole?.color.withOpacity(0.5) ?? Colors.white12,
+          menuStyle: MenuStyle(
+            backgroundColor: WidgetStatePropertyAll(Colors.grey[900]),
+            surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
           ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: _selectedRole?.color ?? Colors.white,
-            width: 2,
-          ),
-        ),
-      ),
-      menuStyle: MenuStyle(
-        backgroundColor: WidgetStatePropertyAll(Colors.grey[900]),
-        surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -742,37 +1275,10 @@ class _LobbyScreenState extends State<LobbyScreen>
         ),
         child: PlayerTile(
           player: player,
+          gameEngine: widget.gameEngine,
           onTap: player.role.id == 'host'
               ? null
               : () => _editPlayerRole(player.id, player.role),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRequirementToast(int count, int min) {
-    return Positioned(
-      bottom: 24,
-      left: 24,
-      right: 24,
-      child: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.black87,
-            borderRadius: BorderRadius.circular(35),
-            border: Border.all(color: Colors.white10),
-          ),
-          child: Text(
-            'NEED ${min - count} MORE GUESTS TO START...',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white38,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-              fontSize: 12,
-            ),
-          ),
         ),
       ),
     );
@@ -854,26 +1360,38 @@ class _LobbyScreenState extends State<LobbyScreen>
 
                         // Text Content
                         Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                canStart ? Icons.play_arrow : Icons.person_add,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                canStart
-                                    ? "START GAME"
-                                    : "WAITING FOR GUESTS ($playerCount/$minPlayers)",
-                                style: const TextStyle(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  canStart
+                                      ? Icons.play_arrow
+                                      : Icons.person_add,
                                   color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 2,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 8), // Reduced gap
+                                Flexible(
+                                  child: Text(
+                                    canStart
+                                        ? "START GAME"
+                                        : "ROSTER STATUS ($playerCount/$minPlayers)",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16, // Reduced font size
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing:
+                                          1.5, // Reduced letter spacing
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -1279,131 +1797,6 @@ class _PreviousNamesPanelState extends State<_PreviousNamesPanel> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Inline definition to ensure APK builds if file is missing
-class PlayerTile extends StatelessWidget {
-  final Player player;
-  final VoidCallback? onTap;
-
-  const PlayerTile({super.key, required this.player, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final roleColor = player.role.color;
-    final isHost = player.role.id == 'host';
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F0F0F),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: roleColor.withOpacity(0.3), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: roleColor.withOpacity(0.05),
-              blurRadius: 10,
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              splashColor: roleColor.withOpacity(0.2),
-              highlightColor: roleColor.withOpacity(0.1),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    // Avatar
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: roleColor, width: 2),
-                        boxShadow: ClubBlackoutTheme.circleGlow(
-                          roleColor,
-                          intensity: 0.8,
-                        ),
-                      ),
-                      child: ClipOval(
-                        child: player.role.assetPath.isNotEmpty
-                            ? Image.asset(
-                                player.role.assetPath,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    Icon(Icons.person, color: roleColor),
-                              )
-                            : Icon(Icons.person, color: roleColor),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-
-                    // Info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            player.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              Icon(
-                                isHost ? Icons.stars : Icons.label,
-                                size: 12,
-                                color: roleColor.withOpacity(0.8),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                player.role.name.toUpperCase(),
-                                style: TextStyle(
-                                  color: roleColor.withOpacity(0.8),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Edit Icon
-                    if (!isHost)
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
-                        ),
-                        child: Icon(
-                          Icons.edit,
-                          color: roleColor.withOpacity(0.7),
-                          size: 18,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

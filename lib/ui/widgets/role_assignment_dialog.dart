@@ -5,7 +5,9 @@ import '../../logic/game_engine.dart';
 import '../../models/player.dart';
 import '../../models/role.dart';
 import '../../utils/role_validator.dart';
+import '../../utils/game_exceptions.dart';
 import '../styles.dart';
+import 'role_avatar_widget.dart';
 
 enum GameMode { bloodbath, politicalNightmare, freeForAll, custom }
 
@@ -14,6 +16,7 @@ class RoleAssignmentDialog extends StatefulWidget {
   final List<Player> players;
   final VoidCallback onConfirm;
   final VoidCallback onCancel;
+  final GameMode initialMode;
 
   const RoleAssignmentDialog({
     super.key,
@@ -21,6 +24,7 @@ class RoleAssignmentDialog extends StatefulWidget {
     required this.players,
     required this.onConfirm,
     required this.onCancel,
+    this.initialMode = GameMode.custom,
   });
 
   @override
@@ -41,11 +45,6 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
     return alliance == 'the party animals' ||
         role.id.trim().toLowerCase() == 'party_animal' ||
         startAlliance == 'party_animal';
-  }
-
-  static bool _isNeutral(Role role) {
-    final alliance = role.alliance.trim().toLowerCase();
-    return alliance.startsWith('none') || alliance.contains('neutral');
   }
 
   static bool _isType(Role role, List<String> keywords) {
@@ -76,14 +75,24 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
     final partyAlignedCount = roles.where(_isPartyAligned).length;
     final issues = <String>[];
 
-    if (dealerCount < 1) issues.add('Missing required role: Dealer');
-    if (!hasMedicOrBouncer)
+    if (dealerCount < 1) {
+      issues.add('Missing required role: Dealer');
+    }
+    if (!hasMedicOrBouncer) {
       issues.add('Missing required role: Medic and/or Bouncer');
-    if (!hasPartyAnimal) issues.add('Missing required role: Party Animal');
-    if (!hasWallflower) issues.add('Missing required role: Wallflower');
-    if (partyAlignedCount < 2)
+    }
+    if (!hasPartyAnimal) {
+      issues.add('Missing required role: Party Animal');
+    }
+    if (!hasWallflower) {
+      issues.add('Missing required role: Wallflower');
+    }
+    if (partyAlignedCount < 2) {
       issues.add('Need at least 2 Party Animal-aligned roles');
-    if (bouncerCount > 1) issues.add('Only one Bouncer is allowed.');
+    }
+    if (bouncerCount > 1) {
+      issues.add('Only one Bouncer is allowed.');
+    }
 
     // Prevent trivial setup
     if (dealerCount > (roles.length - dealerCount)) {
@@ -133,6 +142,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
   @override
   void initState() {
     super.initState();
+    _selectedMode = widget.initialMode;
     // Check if any player has a 'temp' role (indicating fresh setup)
     final hasTempRoles = widget.players.any((p) => p.role.id == 'temp');
 
@@ -264,12 +274,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
       'protective',
       'investigative',
     ]);
-    final reactive = getCandidates([
-      'reactive',
-      'chaos',
-      'disruptive',
-      'wild',
-    ]);
+    final reactive = getCandidates(['reactive', 'chaos', 'disruptive', 'wild']);
     final passive = getCandidates(['passive']);
 
     void takeFrom(List<Role> source, int count) {
@@ -318,10 +323,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
           takeFrom(reactive, (remainingSlots * 0.7).round());
           final regular = <Role>[...offensive, ...defensive, ...passive];
           regular.shuffle(random);
-          takeFrom(
-            regular,
-            remainingSlots - ((remainingSlots * 0.7).round()),
-          );
+          takeFrom(regular, remainingSlots - ((remainingSlots * 0.7).round()));
           break;
         case GameMode.custom:
           final mixed = <Role>[
@@ -386,7 +388,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
         } else {
           // If we can't find a perfect candidate, we might have to sacrifice Medic or Second Wind?
           // Fallback: Replace ANY non-dealer, non-dependent role.
-           final fallbackIndex = selected.lastIndexWhere(
+          final fallbackIndex = selected.lastIndexWhere(
             (r) =>
                 r.id != 'dealer' &&
                 r.id != 'ally_cat' &&
@@ -395,10 +397,10 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                 r.id != 'wallflower',
           );
           if (fallbackIndex != -1) {
-             final removed = selected[fallbackIndex];
-             usedUniqueIds.remove(removed.id);
-             selected[fallbackIndex] = bouncerRole;
-             usedUniqueIds.add('bouncer');
+            final removed = selected[fallbackIndex];
+            usedUniqueIds.remove(removed.id);
+            selected[fallbackIndex] = bouncerRole;
+            usedUniqueIds.add('bouncer');
           }
         }
       }
@@ -415,9 +417,9 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
     // (Should be covered by recommendedDealers, but double check)
     final dealerCount = selected.where(_isDealerRole).length;
     if (dealerCount > (playerCount - dealerCount)) {
-        // This is a configuration error if recommendedDealers is broken
-        // Force reduce dealers?
-        // For now, assuming recommendedDealers is correct (max 3 for 15 players).
+      // This is a configuration error if recommendedDealers is broken
+      // Force reduce dealers?
+      // For now, assuming recommendedDealers is correct (max 3 for 15 players).
     }
 
     List<Role> selectedRoles = selected;
@@ -867,38 +869,11 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                                       vertical: 4,
                                     ),
                                     leading: role != null
-                                        ? Container(
-                                            width: 48,
-                                            height: 48,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: role.color,
-                                                width: 2,
-                                              ),
-                                              boxShadow:
-                                                  ClubBlackoutTheme.circleGlow(
-                                                    role.color,
-                                                    intensity: 0.5,
-                                                  ),
-                                            ),
-                                            child: ClipOval(
-                                              child: Image.asset(
-                                                role.assetPath,
-                                                fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (
-                                                      context,
-                                                      error,
-                                                      stackTrace,
-                                                    ) {
-                                                      return Icon(
-                                                        Icons.person,
-                                                        color: role.color,
-                                                      );
-                                                    },
-                                              ),
-                                            ),
+                                        ? RoleAvatarWidget(
+                                            role: role,
+                                            size: 48,
+                                            showGlow: true,
+                                            borderWidth: 2,
                                           )
                                         : const CircleAvatar(
                                             backgroundColor: Colors.white10,
@@ -1017,7 +992,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                               backgroundColor: ClubBlackoutTheme.neonPink,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
+                                horizontal: 16, // Reduced from 24
                                 vertical: 16,
                               ),
                               elevation: 2,
@@ -1040,27 +1015,43 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                         style: TextButton.styleFrom(
                           foregroundColor: ClubBlackoutTheme.neonBlue,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
+                            horizontal: 12, // Reduced from 16
                             vertical: 12,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8), // Reduced from 12
                       FilledButton.icon(
                         onPressed: isValid
                             ? () {
-                                // Apply roles to players
-                                for (var player in widget.players) {
-                                  final role = _playerRoles[player.id];
-                                  if (role != null) {
-                                    widget.gameEngine.updatePlayerRole(
-                                      player.id,
-                                      role,
-                                    );
+                                try {
+                                  // Apply roles to players
+                                  for (var player in widget.players) {
+                                    final role = _playerRoles[player.id];
+                                    if (role != null) {
+                                      widget.gameEngine.updatePlayerRole(
+                                        player.id,
+                                        role,
+                                      );
+                                    }
                                   }
+                                  HapticFeedback.heavyImpact();
+                                  widget.onConfirm();
+                                } on GameException catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.message),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.toString()),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
                                 }
-                                HapticFeedback.heavyImpact();
-                                widget.onConfirm();
                               }
                             : null,
                         style:
@@ -1070,7 +1061,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                               disabledBackgroundColor: Colors.white10,
                               disabledForegroundColor: Colors.white38,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
+                                horizontal: 16, // Reduced from 24
                                 vertical: 16,
                               ),
                               elevation: 2,
@@ -1202,27 +1193,5 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
         ],
       ),
     );
-  }
-
-  /// Validate that all role dependencies are met
-  bool _validateRoleDependencies(List<Role> roles) {
-    final roleIds = roles.map((r) => r.id).toSet();
-
-    // Ally Cat requires Bouncer
-    if (roleIds.contains('ally_cat') && !roleIds.contains('bouncer')) {
-      return false;
-    }
-
-    // Minor requires Bouncer to function properly
-    if (roleIds.contains('minor') && !roleIds.contains('bouncer')) {
-      return false;
-    }
-
-    // Whore requires at least one Dealer
-    if (roleIds.contains('whore') && !roles.any((r) => r.id == 'dealer')) {
-      return false;
-    }
-
-    return true;
   }
 }

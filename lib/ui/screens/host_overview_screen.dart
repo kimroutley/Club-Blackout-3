@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'dart:ui';
 import '../../logic/game_engine.dart';
+import '../../logic/game_state.dart';
+import '../../logic/live_game_stats.dart';
+import '../../logic/game_commentator.dart';
 import '../../models/player.dart';
+import '../../models/game_log_entry.dart';
 import '../styles.dart';
 import '../utils/player_sort.dart';
+
+import '../widgets/player_tile.dart';
 
 class HostOverviewScreen extends StatefulWidget {
   final GameEngine gameEngine;
@@ -35,17 +40,19 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final players =
-      sortedPlayersByDisplayName(widget.gameEngine.guests.toList());
-    final enabledPlayers = players.where((p) => p.isEnabled).length;
-    final alivePlayers = players.where((p) => p.isActive).length;
-    final deadPlayers = enabledPlayers - alivePlayers;
+    // Live Stats
+    final stats = LiveGameStats.fromEngine(widget.gameEngine);
+
+    // Player list for table
+    final players = sortedPlayersByDisplayName(
+      widget.gameEngine.guests.toList(),
+    );
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
-          'HOST OVERVIEW',
+          'HOST DASHBOARD',
           style: TextStyle(
             fontFamily: 'Hyperwave',
             fontSize: 28,
@@ -65,7 +72,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline, color: Colors.white70),
-            tooltip: 'About',
+            tooltip: 'Dashboard Help',
             onPressed: () {
               showDialog(
                 context: context,
@@ -79,7 +86,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                     ),
                   ),
                   title: Text(
-                    'HOST OVERVIEW',
+                    'HOST DASHBOARD',
                     style: TextStyle(
                       fontFamily: 'Hyperwave',
                       fontSize: 24,
@@ -91,12 +98,12 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                     textAlign: TextAlign.center,
                   ),
                   content: const Text(
-                    'This screen provides:\n\n'
-                    '• Quick reference of all players and their roles\n'
-                    '• Special status tracking (lives, obsessions, mimics)\n'
-                    '• Player management (toggle on/off)\n'
-                    '• Game customization controls\n\n'
-                    'Keep this tab private from players!',
+                    'The Host Dashboard is your command center:\n\n'
+                    '• Real-time stats on all factions\n'
+                    '• Detailed log of everything that happened last night\n'
+                    '• Live tracking of pending actions for the current night\n'
+                    '• Quick access to player roles and status management\n\n'
+                    'Hide this screen from players at all times.',
                     style: TextStyle(color: Colors.white70),
                   ),
                   actions: [
@@ -105,7 +112,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                         ClubBlackoutTheme.neonGreen,
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('GOT IT'),
+                      child: const Text('UNDERSTOOD'),
                     ),
                   ],
                 ),
@@ -138,158 +145,618 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 90, 16, 40),
                 children: [
-                // Game Stats
-                _buildGameStats(alivePlayers, deadPlayers),
-                const SizedBox(height: 16),
+                  // 1. Core Game Stats & Phase
+                  _buildGameStats(stats),
+                  const SizedBox(height: 24),
 
-                // Special Status Section
-                _buildSpecialStatusSection(),
-                const SizedBox(height: 16),
+                  // 2. LIVE GAME TRACKER (Cumulative Data)
+                  _buildLiveGameTracker(stats),
+                  const SizedBox(height: 24),
 
-                // Players Table
-                _buildPlayersTable(players),
-                const SizedBox(height: 16),
+                  // 3. LAST NIGHT'S LOG (Detailed)
+                  if (widget.gameEngine.lastNightHostRecap.isNotEmpty) ...[
+                    _buildLastNightLogCard(),
+                    const SizedBox(height: 24),
+                  ],
 
-                // Game Controls
-                _buildGameControls(),
-              ],
+                  // 4. LIVE FEED & PENDING ACTIONS
+                  _buildSpecialStatusSection(),
+                  const SizedBox(height: 24),
+
+                  // 5. ROLE POPULATION (ALIVE)
+                  _buildSectionHeader("ROLE POPULATION", Icons.badge_outlined),
+                  _buildRolePopulationGrid(stats),
+                  const SizedBox(height: 24),
+
+                  // 6. PLAYER ROSTER
+                  _buildSectionHeader("ACTIVE GUESTS", Icons.people_outline),
+                  _buildPlayersTable(players),
+                  const SizedBox(height: 24),
+
+                  // 7. CONTROL PANEL
+                  _buildSectionHeader("HOST CONTROLS", Icons.settings_outlined),
+                  _buildGameControls(),
+                ],
+              ),
             ),
-          ),
           ),
         ],
       ),
     );
   }
 
-  List<Widget> _buildPlayerStatusChips(Player player) {
-    final chips = <Widget>[];
-
-    Widget buildChip(String label, Color color) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: color.withOpacity(0.5), width: 0.5),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 9, // Small font for dense info
-            fontWeight: FontWeight.bold,
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white38, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white38,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+            ),
           ),
-        ),
-      );
-    }
-
-    // Role-specific states
-    if (player.hasRumour) {
-      chips.add(buildChip('RUMOUR', ClubBlackoutTheme.neonPurple));
-    }
-    if (player.soberSentHome) {
-      chips.add(buildChip('SENT HOME', ClubBlackoutTheme.neonBlue));
-    }
-    if (player.clingerPartnerId != null) {
-      final target = widget.gameEngine.players
-          .firstWhere((p) => p.id == player.clingerPartnerId, orElse: () => player);
-      chips.add(buildChip('OBSESSED: ${target.name}', ClubBlackoutTheme.neonPink));
-    }
-    if (player.creepTargetId != null) {
-      final target = widget.gameEngine.players
-          .firstWhere((p) => p.id == player.creepTargetId, orElse: () => player);
-      chips.add(buildChip('CREEPING: ${target.name}', ClubBlackoutTheme.neonGreen));
-    }
-    if (player.clingerFreedAsAttackDog) {
-      chips.add(buildChip('UNLEASHED', ClubBlackoutTheme.neonRed));
-    }
-    if (player.medicChoice != null) {
-      chips.add(buildChip(
-        player.medicChoice == 'PROTECT_DAILY' ? 'MEDIC: PROTECT' : 'MEDIC: REVIVE',
-        ClubBlackoutTheme.neonBlue,
-      ));
-    }
-    if (player.idCheckedByBouncer) {
-      chips.add(buildChip('CHECKED', Colors.grey));
-    }
-    if (player.silencedDay == widget.gameEngine.dayCount) {
-      chips.add(buildChip('SILENCED', Colors.white));
-    }
-    if (player.minorHasBeenIDd) {
-      chips.add(buildChip('MINOR ID\'D', ClubBlackoutTheme.neonOrange));
-    }
-    if (player.secondWindConverted) {
-      chips.add(buildChip('CONVERTED', ClubBlackoutTheme.neonOrange));
-    } else if (player.secondWindPendingConversion) {
-      chips.add(buildChip('PENDING CONV', ClubBlackoutTheme.neonOrange));
-    }
-    if (player.joinsNextNight) {
-      chips.add(buildChip('LATE JOIN', ClubBlackoutTheme.neonGreen));
-    }
-
-    return chips;
+        ],
+      ),
+    );
   }
 
-  Widget _buildGameStats(int alive, int dead) {
+  Widget _buildLiveGameTracker(LiveGameStats stats) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: ClubBlackoutTheme.glassmorphism(
+        color: Colors.black,
+        borderColor: ClubBlackoutTheme.neonBlue.withOpacity(0.3),
+        opacity: 0.5,
+        borderRadius: 24,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'LIVE GAME TRACKER',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              _buildStatBadge(
+                Icons.analytics_outlined,
+                'REAL-TIME DATA',
+                ClubBlackoutTheme.neonBlue,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildLargeStat('TOTAL', '${stats.totalPlayers}', Colors.white70),
+              _buildLargeStat(
+                'ALIVE',
+                '${stats.aliveCount}',
+                ClubBlackoutTheme.neonGreen,
+              ),
+              _buildLargeStat(
+                'DEAD',
+                '${stats.deadCount}',
+                ClubBlackoutTheme.neonRed,
+                onTap: _showDeadPlayersDialog,
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Divider(color: Colors.white10),
+          ),
+          const Text(
+            "FACTION SPREAD (ALIVE)",
+            style: TextStyle(
+              color: Colors.white38,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildFactionStat(
+                'DEALERS',
+                stats.dealerAliveCount,
+                ClubBlackoutTheme.neonRed,
+              ),
+              const SizedBox(width: 12),
+              _buildFactionStat(
+                'INNOCENTS',
+                stats.partyAliveCount,
+                ClubBlackoutTheme.neonBlue,
+              ),
+              const SizedBox(width: 12),
+              _buildFactionStat(
+                'NEUTRALS',
+                stats.neutralAliveCount,
+                ClubBlackoutTheme.neonPurple,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLargeStat(
+    String label,
+    String value,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              color: color,
+              shadows: ClubBlackoutTheme.textGlow(color, intensity: 0.5),
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: Colors.white38,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFactionStat(String name, int count, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 8,
+                color: color.withOpacity(0.7),
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLastNightLogCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: ClubBlackoutTheme.glassmorphism(
+        color: Colors.black,
+        borderColor: ClubBlackoutTheme.neonPurple.withOpacity(0.3),
+        opacity: 0.5,
+        borderRadius: 24,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.history_edu, color: ClubBlackoutTheme.neonPurple),
+              const SizedBox(width: 12),
+              const Text(
+                "LAST NIGHT'S LOG",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Text(
+              widget.gameEngine.lastNightHostRecap,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatBadge(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGameStats(LiveGameStats stats) {
+    final commentary = GameCommentator.generateCommentary(
+      stats,
+      widget.gameEngine.dayCount,
+    );
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: ClubBlackoutTheme.glassmorphism(
-        color: Colors.black,
-        borderColor: ClubBlackoutTheme.neonGreen.withOpacity(0.4),
-        opacity: 0.6,
+        color: ClubBlackoutTheme.neonPurple,
+        borderColor: ClubBlackoutTheme.neonPurple.withOpacity(0.4),
+        opacity: 0.15,
         borderRadius: 24,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          _buildStatItem(
-            Icons.nightlight_round,
-            'Night ${widget.gameEngine.dayCount}',
-            ClubBlackoutTheme.neonPurple,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: ClubBlackoutTheme.neonPurple.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: ClubBlackoutTheme.neonPurple.withOpacity(0.5),
+                  ),
+                ),
+                child: Text(
+                  widget.gameEngine.currentPhase == GamePhase.night
+                      ? 'PHASE: NIGHT ${widget.gameEngine.dayCount}'
+                      : 'PHASE: DAY ${widget.gameEngine.dayCount}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'monospace',
+                    fontSize: 14,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              _buildStatBadge(
+                widget.gameEngine.currentPhase == GamePhase.night
+                    ? Icons.dark_mode
+                    : Icons.light_mode,
+                widget.gameEngine.currentPhase.name.toUpperCase(),
+                widget.gameEngine.currentPhase == GamePhase.night
+                    ? ClubBlackoutTheme.neonPurple
+                    : ClubBlackoutTheme.neonOrange,
+              ),
+            ],
           ),
-          _buildVerticalDivider(),
-          _buildStatItem(
-            Icons.favorite,
-            '$alive Alive',
-            ClubBlackoutTheme.neonGreen,
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.chat_bubble_outline,
+                  color: ClubBlackoutTheme.neonPink,
+                  size: 16,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '"$commentary"',
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontStyle: FontStyle.italic,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          _buildVerticalDivider(),
-          _buildStatItem(Icons.close, '$dead Dead', ClubBlackoutTheme.neonRed),
         ],
       ),
     );
   }
 
-  Widget _buildVerticalDivider() {
-    return Container(height: 40, width: 1, color: Colors.white12);
+  void _showDeadPlayersDialog() {
+    final deadPlayers = widget.gameEngine.players
+        .where((p) => !p.isAlive)
+        .toList();
+
+    // Sort by death day (descending - most recent first)
+    deadPlayers.sort((a, b) => (b.deathDay ?? 0).compareTo(a.deathDay ?? 0));
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF151515),
+      isScrollControlled: true,
+      showDragHandle: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        builder: (context, scrollController) => Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.sentiment_very_dissatisfied,
+                    color: ClubBlackoutTheme.neonRed,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'THE GRAVEYARD',
+                        style: TextStyle(
+                          fontFamily: 'Hyperwave', // Use branding font
+                          fontSize: 28,
+                          color: ClubBlackoutTheme.neonRed,
+                          shadows: ClubBlackoutTheme.textGlow(
+                            ClubBlackoutTheme.neonRed,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${deadPlayers.length} CASUALTIES',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // List
+            Expanded(
+              child: deadPlayers.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 64,
+                            color: Colors.white10,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            "No casualties yet...",
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      itemCount: deadPlayers.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final player = deadPlayers[index];
+                        return _buildDeadPlayerTile(player);
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _buildStatItem(IconData icon, String label, Color color) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
+  Widget _buildDeadPlayerTile(Player player) {
+    final reason = _formatDeathReason(player.deathReason);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 50,
+          height: 50,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
             shape: BoxShape.circle,
-            border: Border.all(color: color.withOpacity(0.5), width: 1.5),
-            boxShadow: ClubBlackoutTheme.circleGlow(color, intensity: 0.5),
+            border: Border.all(color: Colors.white24),
+            image: DecorationImage(
+              image: AssetImage(player.role.assetPath),
+              fit: BoxFit.cover,
+              colorFilter: ColorFilter.mode(
+                Colors.black.withOpacity(0.5), // Desaturate/dim dead players
+                BlendMode.darken,
+              ),
+            ),
           ),
-          child: Icon(icon, color: color, size: 24),
+          child: Center(
+            child: Icon(
+              Icons.close,
+              color: ClubBlackoutTheme.neonRed.withOpacity(0.8),
+              size: 28,
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
+        title: Text(
+          player.name,
+          style: const TextStyle(
             color: Colors.white,
-            fontSize: 14,
             fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+            decoration: TextDecoration.lineThrough,
+            decorationColor: Colors.white38,
           ),
         ),
-      ],
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: player.role.color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    player.role.name.toUpperCase(),
+                    style: TextStyle(
+                      color: player.role.color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Died Day ${player.deathDay ?? "?"}',
+                  style: const TextStyle(color: Colors.white38, fontSize: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              reason,
+              style: TextStyle(color: Colors.red[200], fontSize: 13),
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  String _formatDeathReason(String? reason) {
+    switch (reason) {
+      case 'vote':
+        return 'Voted out by the group';
+      case 'night_kill':
+        return 'Murdered by The Dealers';
+      case 'dealer_kill':
+        return 'Killed by a Dealer';
+      case 'spoke_taboo_name':
+        return 'Spoke a taboo name (Lightweight)';
+      case 'vote_deflected':
+        return 'Hit by deflected vote (Whore)';
+      case 'predator_revenge':
+        return 'Taken down by The Predator';
+      case 'messy_bitch_rampage':
+        return 'Killed in Messy Bitch\'s rampage';
+      case 'messy_bitch_special_kill':
+        return 'Killed by Messy Bitch (rampage)';
+      case 'clinger_suicide':
+        return 'Died of heartbreak (Clinger)';
+      case 'attack_dog_kill':
+        return 'Killed by Attack Dog (Clinger)';
+      case 'bomb':
+        return 'Caught in an explosion';
+      case 'debug_kill_all':
+        return 'Debug kill';
+      default:
+        // Handle ability-based deaths
+        if (reason != null && reason.contains('ability_')) {
+          return 'Killed by special ability';
+        }
+        return reason != null ? 'Cause: $reason' : 'Cause unknown';
+    }
   }
 
   Widget _buildSpecialStatusSection() {
@@ -312,23 +779,24 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     final silenced = widget.gameEngine.players
         .where(
           (p) =>
-              p.silencedDay == widget.gameEngine.dayCount ||
-              p.blockedKillNight == widget.gameEngine.dayCount,
+              p.isAlive &&
+              (p.silencedDay == widget.gameEngine.dayCount ||
+                  p.blockedKillNight == widget.gameEngine.dayCount),
         )
         .toList();
     final sentHome = widget.gameEngine.players
-        .where((p) => p.soberSentHome)
+        .where((p) => p.isAlive && p.soberSentHome)
         .toList();
-    
+
     // Pending/Active Night Actions
     final dealerTargetId = widget.gameEngine.nightActions['kill'];
     final roofiTargetId = widget.gameEngine.nightActions['roofi'];
     final bouncerTargetId = widget.gameEngine.nightActions['bouncer_check'];
     final medicTargetId = widget.gameEngine.nightActions['protect'];
-    
+
     // Helper to get player by ID
-    Player? getP(String? id) => id != null 
-        ? widget.gameEngine.players.where((p) => p.id == id).firstOrNull 
+    Player? getP(String? id) => id != null
+        ? widget.gameEngine.players.where((p) => p.id == id).firstOrNull
         : null;
 
     final protected = getP(medicTargetId); // Medic target for tonight
@@ -336,803 +804,555 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     final roofiTarget = getP(roofiTargetId);
     final bouncerTarget = getP(bouncerTargetId);
 
-    final lastNightLog = widget.gameEngine.gameLog
-        .where((e) => e.turn >= widget.gameEngine.dayCount - 1)
+    final recentLogs = widget.gameEngine.gameLog
+        .where((e) => e.type != GameLogType.script)
         .toList();
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: ClubBlackoutTheme.glassmorphism(
-        color: ClubBlackoutTheme.neonOrange,
-        borderColor: ClubBlackoutTheme.neonOrange.withOpacity(0.6),
-        opacity: 0.1,
-        borderRadius: 24,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. PENDING ACTIONS & LIVE EFFECTS
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: ClubBlackoutTheme.glassmorphism(
+            color: Colors.black,
+            borderColor: ClubBlackoutTheme.neonOrange.withOpacity(0.3),
+            opacity: 0.5,
+            borderRadius: 24,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.visibility,
-                color: ClubBlackoutTheme.neonBlue,
-                size: 24,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'LIVE FEED & PENDING',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  _buildStatBadge(
+                    Icons.sensors,
+                    'LIVE TRACKING',
+                    ClubBlackoutTheme.neonOrange,
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Text(
-                'LIVE GAME STATE',
-                style: TextStyle(
-                  fontFamily: 'Hyperwave',
-                  fontSize: 20,
-                  color: ClubBlackoutTheme.neonBlue,
-                  shadows: ClubBlackoutTheme.textGlow(
+              const SizedBox(height: 20),
+
+              // LIVE ACTIONS (Only show if in Night phase or actions exist)
+              if (dealerTarget != null ||
+                  roofiTarget != null ||
+                  bouncerTarget != null ||
+                  protected != null) ...[
+                const Text(
+                  "ACTIVE TARGETS THIS NIGHT",
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (dealerTarget != null)
+                  _buildLiveActionRow(
+                    Icons.dangerous,
+                    "DEALERS HUNTING",
+                    dealerTarget.name,
+                    ClubBlackoutTheme.neonRed,
+                  ),
+                if (roofiTarget != null)
+                  _buildLiveActionRow(
+                    Icons.block,
+                    "ROOFI PARALYZING",
+                    roofiTarget.name,
+                    Colors.grey,
+                  ),
+                if (bouncerTarget != null)
+                  _buildLiveActionRow(
+                    Icons.search,
+                    "BOUNCER ID'ING",
+                    bouncerTarget.name,
                     ClubBlackoutTheme.neonBlue,
                   ),
-                  letterSpacing: 1,
+                if (protected != null)
+                  _buildLiveActionRow(
+                    Icons.security,
+                    "MEDIC PROTECTING",
+                    protected.name,
+                    ClubBlackoutTheme.neonGreen,
+                  ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(color: Colors.white10),
                 ),
-              ),
+              ],
+
+              // PERSISTENT STATUS EFFECTS
+              if (silenced.isNotEmpty ||
+                  sentHome.isNotEmpty ||
+                  clinger != null ||
+                  creep != null) ...[
+                const Text(
+                  "ACTIVE STATUS EFFECTS",
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (silenced.isNotEmpty)
+                  _buildStatusEffectRow(
+                    Icons.mic_off,
+                    "SILENCED",
+                    silenced.map((p) => p.name).join(", "),
+                    Colors.grey,
+                  ),
+                if (sentHome.isNotEmpty)
+                  _buildStatusEffectRow(
+                    Icons.home,
+                    "SENT HOME",
+                    sentHome.map((p) => p.name).join(", "),
+                    Colors.amber,
+                  ),
+                if (clinger != null) _buildClingerRow(clinger),
+                if (creep != null) _buildCreepStatus(creep),
+                if (allyCat != null) _buildMultiLifeStatus(allyCat),
+                if (seasonedDrinker != null)
+                  _buildMultiLifeStatus(seasonedDrinker),
+                if (dramaPending || lastDramaSwap != null)
+                  _buildDramaQueenStatus(
+                    pending: dramaPending,
+                    lastSwap: lastDramaSwap,
+                  ),
+              ] else if (dealerTarget == null &&
+                  roofiTarget == null &&
+                  bouncerTarget == null &&
+                  protected == null)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      "No active targets or effects found.",
+                      style: TextStyle(
+                        color: Colors.white24,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 24),
 
-          // 1. Permanent Roles
-          _buildClingerRow(clinger),
-          if (creep != null) _buildCreepStatus(creep),
-          if (allyCat != null) _buildMultiLifeStatus(allyCat),
-          if (seasonedDrinker != null) _buildMultiLifeStatus(seasonedDrinker),
-          if (dramaPending || lastDramaSwap != null)
-            _buildDramaQueenStatus(
-              pending: dramaPending,
-              lastSwap: lastDramaSwap,
-            ),
-
-          const Divider(color: Colors.white24, height: 24),
-
-          // 2. LIVE NIGHT ACTIONS (Pending Resolution)
-          if (dealerTarget != null || roofiTarget != null || bouncerTarget != null || protected != null || sentHome.isNotEmpty) ...[
-             const Text(
-              "PENDING NIGHT ACTIONS (Live)",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
+        // 2. RECENT ACTIVITY LOG
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: ClubBlackoutTheme.glassmorphism(
+            color: Colors.black,
+            borderColor: Colors.white10,
+            opacity: 0.4,
+            borderRadius: 24,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'RECENT ACTIVITY',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  letterSpacing: 1.0,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            if (dealerTarget != null)
-              _buildStatItem(Icons.dangerous, "Dealers Hunting: ${dealerTarget.name}", ClubBlackoutTheme.neonRed),
-            if (roofiTarget != null)
-              _buildStatItem(Icons.block, "Roofi Targeting: ${roofiTarget.name}", Colors.grey),
-            if (bouncerTarget != null)
-              _buildStatItem(Icons.verified_user, "Bouncer ID'ing: ${bouncerTarget.name}", ClubBlackoutTheme.neonBlue),
-            if (protected != null)
-               _buildStatItem(Icons.medical_services, "Medic Protecting: ${protected.name}", Colors.green),
-            if (sentHome.isNotEmpty)
-              ...sentHome.map((p) => _buildStatItem(Icons.no_drinks, "Sober Sent Home: ${p.name}", Colors.blue)),
-             const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 16),
+              if (recentLogs.isEmpty)
+                const Text(
+                  "Waiting for drama...",
+                  style: TextStyle(
+                    color: Colors.white24,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                  ),
+                )
+              else
+                ...recentLogs.reversed
+                    .take(6)
+                    .map(
+                      (log) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 2),
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _getLogColor(log.type),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    log.title.toUpperCase(),
+                                    style: TextStyle(
+                                      color: _getLogColor(
+                                        log.type,
+                                      ).withOpacity(0.8),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  Text(
+                                    log.details,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              "D${log.turn}",
+                              style: const TextStyle(
+                                color: Colors.white24,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-          // 3. Active Temporary Effects (Resolved Previous Night)
-          if (silenced.isNotEmpty) ...[
-            const Text(
-              "SILENCED (Roofi - Active)",
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            ...silenced.map(
-              (p) => Text(
-                "• ${p.name} (${p.role.name})",
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          if (sentHome.isNotEmpty) ...[
-            const Text(
-              "SENT HOME (Sober - Active)",
-              style: TextStyle(
-                color: Colors.amber,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            ...sentHome.map(
-              (p) => Text(
-                "• ${p.name} (${p.role.name})",
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
+  Color _getLogColor(GameLogType type) {
+    switch (type) {
+      case GameLogType.action:
+        return ClubBlackoutTheme.neonBlue;
+      case GameLogType.system:
+        return ClubBlackoutTheme.neonRed;
+      case GameLogType.script:
+        return ClubBlackoutTheme.neonGreen;
+    }
+  }
 
-          const Divider(color: Colors.white24, height: 24),
-
-          // 4. Recent Action Log (Last Night + Today)
-          const Text(
-            "RECENT ACTIONS",
+  Widget _buildLiveActionRow(
+    IconData icon,
+    String label,
+    String target,
+    Color color,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 8),
+          Text(
+            "$label:",
             style: TextStyle(
-              color: Colors.white54,
+              color: color.withOpacity(0.7),
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            target,
+            style: const TextStyle(
+              color: Colors.white,
               fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
-          if (lastNightLog.isEmpty)
-            const Text(
-              "No actions yet...",
-              style: TextStyle(
-                color: Colors.white30,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ...lastNightLog
-              .take(5)
-              .map(
-                (log) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "• ",
-                        style: TextStyle(color: ClubBlackoutTheme.neonOrange),
-                      ),
-                      Expanded(
-                        child: Text(
-                          log.details,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ), // Smaller text for log
-                    ],
-                  ),
-                ),
-              ),
         ],
       ),
     );
   }
 
-  Widget _buildClingerRow(Player? clinger) {
-    String? partnerId = clinger?.clingerPartnerId;
-    if (partnerId == null && widget.gameEngine.nightActions.containsKey('clinger_obsession')) {
-       partnerId = widget.gameEngine.nightActions['clinger_obsession'];
-    }
-
-    final partner = partnerId != null
-        ? widget.gameEngine.players
-            .where((p) => p.id == partnerId)
-            .firstOrNull
-        : null;
-
+  Widget _buildStatusEffectRow(
+    IconData icon,
+    String label,
+    String targets,
+    Color color,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: (clinger?.role.color ?? Colors.grey).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                  color: (clinger?.role.color ?? Colors.grey).withOpacity(0.5)),
-            ),
-            child: Text(
-              'CLINGER',
-              style: TextStyle(
-                color: clinger?.role.color ?? Colors.grey,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 8),
+          Text(
+            "$label:",
+            style: TextStyle(
+              color: color.withOpacity(0.7),
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(width: 8),
-          Icon(Icons.arrow_forward, color: Colors.white54, size: 16),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Expanded(
-            child: clinger != null
-                ? Text(
-                    partner != null
-                        ? '${clinger.name} → Obsessed with ${partner.name} (${partner.role.name})'
-                        : '${clinger.name} → No obsession selected yet',
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                  )
-                : const Text(
-                    '(Not in this game)',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-          ),
-          if (clinger != null && clinger.clingerFreedAsAttackDog)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: ClubBlackoutTheme.neonRed.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: ClubBlackoutTheme.neonRed),
-              ),
-              child: Text(
-                'ATTACK DOG',
-                style: TextStyle(
-                  color: ClubBlackoutTheme.neonRed,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+            child: Text(
+              targets,
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+              overflow: TextOverflow.ellipsis,
             ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRolePopulationGrid(LiveGameStats stats) {
+    // Sort roles by count or importance
+    final entries = stats.roleCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: ClubBlackoutTheme.glassmorphism(
+        color: Colors.black,
+        borderColor: Colors.white10,
+        opacity: 0.3,
+        borderRadius: 24,
+      ),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: entries.map((entry) {
+          final role = widget.gameEngine.roleRepository.getRoleById(entry.key);
+          final color = role?.color ?? Colors.white;
+
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${entry.value}x',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  role?.name.toUpperCase() ?? entry.key.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildClingerRow(Player clinger) {
+    final partner = clinger.clingerPartnerId != null
+        ? widget.gameEngine.players.firstWhere(
+            (p) => p.id == clinger.clingerPartnerId,
+            orElse: () => clinger,
+          )
+        : null;
+
+    return _buildStatusEffectRow(
+      Icons.favorite,
+      "CLINGER",
+      partner != null
+          ? "${clinger.name} → ${partner.name}"
+          : "${clinger.name} (No partner)",
+      ClubBlackoutTheme.neonPink,
     );
   }
 
   Widget _buildCreepStatus(Player creep) {
-    String? targetId = creep.creepTargetId;
-    if (targetId == null && widget.gameEngine.nightActions.containsKey('creep_target')) {
-       targetId = widget.gameEngine.nightActions['creep_target'];
-    }
-
-    final target = targetId != null
-        ? widget.gameEngine.players
-              .where((p) => p.id == targetId)
-              .firstOrNull
+    final target = creep.creepTargetId != null
+        ? widget.gameEngine.players.firstWhere(
+            (p) => p.id == creep.creepTargetId,
+            orElse: () => creep,
+          )
         : null;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: creep.role.color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: creep.role.color.withOpacity(0.5)),
-            ),
-            child: Text(
-              'CREEP',
-              style: TextStyle(
-                color: creep.role.color,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Icon(Icons.arrow_forward, color: Colors.white54, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              target != null
-                  ? '${creep.name} → Mimicking ${target.name} (${target.role.name})'
-                  : '${creep.name} → No target selected yet',
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-            ),
-          ),
-        ],
-      ),
+    return _buildStatusEffectRow(
+      Icons.masks,
+      "CREEP",
+      target != null
+          ? "${creep.name} mimicking ${target.role.name}"
+          : "${creep.name} (No target)",
+      Colors.purple,
     );
   }
 
   Widget _buildMultiLifeStatus(Player player) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: player.role.color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: player.role.color.withOpacity(0.5)),
-            ),
-            child: Text(
-              player.role.name.toUpperCase(),
-              style: TextStyle(
-                color: player.role.color,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Icon(Icons.favorite, color: ClubBlackoutTheme.neonRed, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            '${player.lives} ${player.lives == 1 ? 'Life' : 'Lives'} Remaining',
-            style: TextStyle(
-              color: player.lives > 1
-                  ? ClubBlackoutTheme.neonGreen
-                  : ClubBlackoutTheme.neonOrange,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+    return _buildStatusEffectRow(
+      Icons.health_and_safety,
+      player.role.name.toUpperCase(),
+      "${player.name} (${player.lives} lives remaining)",
+      ClubBlackoutTheme.neonGreen,
     );
   }
 
   Widget _buildDramaQueenStatus({
     required bool pending,
-    required DramaQueenSwapRecord? lastSwap,
+    DramaQueenSwapRecord? lastSwap,
   }) {
-    Player? resolve(String? id) {
-      if (id == null) return null;
-      return widget.gameEngine.players.where((p) => p.id == id).firstOrNull;
+    if (pending) {
+      return _buildStatusEffectRow(
+        Icons.swap_horiz,
+        "DRAMA QUEEN",
+        "Swap pending (host must select 2 players)",
+        ClubBlackoutTheme.neonPurple,
+      );
+    } else if (lastSwap != null) {
+      return _buildStatusEffectRow(
+        Icons.swap_horiz,
+        "DRAMA QUEEN",
+        "Last swap: ${lastSwap.fromRoleA} ↔ ${lastSwap.toRoleA}",
+        ClubBlackoutTheme.neonPurple,
+      );
     }
-
-    final markedA = resolve(widget.gameEngine.dramaQueenMarkedAId);
-    final markedB = resolve(widget.gameEngine.dramaQueenMarkedBId);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: ClubBlackoutTheme.neonBlue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ClubBlackoutTheme.neonBlue.withOpacity(0.5)),
-        boxShadow: ClubBlackoutTheme.circleGlow(
-          ClubBlackoutTheme.neonBlue,
-          intensity: 0.2,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.auto_fix_high,
-                color: ClubBlackoutTheme.neonBlue,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'DRAMA QUEEN',
-                style: TextStyle(
-                  color: ClubBlackoutTheme.neonBlue,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.6,
-                ),
-              ),
-              if (pending) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: ClubBlackoutTheme.neonPurple.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'PENDING SWAP',
-                    style: TextStyle(
-                      color: ClubBlackoutTheme.neonPurple,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (pending)
-            Text(
-              markedA != null && markedB != null
-                  ? 'Awaiting swap: ${markedA.name} ↔ ${markedB.name}.'
-                  : 'Awaiting swap: no marked pair; host chooses any two players.',
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-            ),
-          if (lastSwap != null) ...[
-            if (pending) const SizedBox(height: 4),
-            Text(
-              'Last swap: ${lastSwap.playerAName} (${lastSwap.fromRoleA} → ${lastSwap.toRoleA}) with ${lastSwap.playerBName} (${lastSwap.fromRoleB} → ${lastSwap.toRoleB}).',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-          ],
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildPlayersTable(List<Player> players) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 8),
-          child: Row(
-            children: [
-              Icon(Icons.people, color: ClubBlackoutTheme.neonPink, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'PLAYER ROSTER',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: ClubBlackoutTheme.neonPink,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-        ),
-        ...players.map((player) => _buildPlayerCard(player)),
-      ],
-    );
-  }
-
-  Widget _buildPlayerCard(Player player) {
-    // Material 3 Card Style
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 2,
-      shadowColor: player.role.color.withOpacity(0.3),
-      color: player.isEnabled
-          ? (player.isAlive
-                ? const Color(0xFF1E1E1E)
-                : Colors.black.withOpacity(0.6))
-          : Colors.black.withOpacity(0.4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: player.isEnabled
-              ? player.role.color.withOpacity(0.4)
-              : Colors.white10,
-          width: 1,
-        ),
+    return Container(
+      decoration: ClubBlackoutTheme.glassmorphism(
+        color: Colors.black,
+        borderColor: Colors.white10,
+        opacity: 0.3,
+        borderRadius: 24,
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            // Avatar
-            Stack(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: player.role.color.withOpacity(
-                        player.isEnabled ? 1 : 0.3,
-                      ),
-                      width: 2,
-                    ),
-                    boxShadow: player.isEnabled
-                        ? ClubBlackoutTheme.circleGlow(
-                            player.role.color,
-                            intensity: 0.5,
-                          )
-                        : [],
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      player.role.assetPath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          Icon(Icons.person, color: player.role.color),
-                    ),
-                  ),
-                ),
-                if (!player.isAlive && player.isEnabled)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.close,
-                        color: ClubBlackoutTheme.neonRed,
-                        size: 32,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(width: 16),
-
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    player.name,
-                    style: TextStyle(
-                      color: player.isEnabled ? Colors.white : Colors.white38,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      decoration: (!player.isAlive && player.isEnabled)
-                          ? TextDecoration.lineThrough
-                          : null,
-                      decorationColor: ClubBlackoutTheme.neonRed,
-                      decorationThickness: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: player.role.color.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          player.role.name.toUpperCase(),
-                          style: TextStyle(
-                            color: player.role.color,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      if (player.lives > 1) ...[
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.favorite,
-                          color: ClubBlackoutTheme.neonRed,
-                          size: 10,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'x${player.lives}',
-                          style: TextStyle(
-                            color: ClubBlackoutTheme.neonOrange,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (player.statusEffects.isNotEmpty ||
-                      player.hasRumour ||
-                      player.soberSentHome ||
-                      player.clingerPartnerId != null ||
-                      player.creepTargetId != null ||
-                      player.clingerFreedAsAttackDog ||
-                      player.medicChoice != null ||
-                      player.idCheckedByBouncer ||
-                      player.silencedDay == widget.gameEngine.dayCount ||
-                      player.minorHasBeenIDd ||
-                      player.secondWindConverted ||
-                      player.secondWindPendingConversion) ...[
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: _buildPlayerStatusChips(player),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            // Controls
-            Column(
-              children: [
-                Switch(
-                  value: player.isEnabled,
-                  activeColor: ClubBlackoutTheme.neonGreen,
-                  inactiveThumbColor: Colors.white24,
-                  onChanged: (value) {
-                    HapticFeedback.lightImpact();
-                    setState(() {
-                      player.isEnabled = value;
-                    });
-                  },
-                ),
-                Text(
-                  player.isEnabled ? 'ACTIVE' : 'DISABLED',
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: player.isEnabled
-                        ? ClubBlackoutTheme.neonGreen
-                        : Colors.white24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+      child: Column(
+        children: players.map<Widget>((player) {
+          return PlayerTile(
+            player: player,
+            gameEngine: widget.gameEngine,
+            isCompact: false,
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _buildGameControls() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            ClubBlackoutTheme.neonPurple.withOpacity(0.2),
-            Colors.transparent,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: ClubBlackoutTheme.neonPurple.withOpacity(0.5),
-          width: 2,
-        ),
+      padding: const EdgeInsets.all(24),
+      decoration: ClubBlackoutTheme.glassmorphism(
+        color: Colors.black,
+        borderColor: Colors.white10,
+        opacity: 0.3,
+        borderRadius: 24,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.tune, color: ClubBlackoutTheme.neonPurple, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'GAME CONTROLS',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: ClubBlackoutTheme.neonPurple,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('BACK TO GAME'),
+            style: ClubBlackoutTheme.neonButtonStyle(
+              ClubBlackoutTheme.neonGreen,
+            ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildControlButton(
-                  icon: Icons.refresh,
-                  label: 'Revive All',
-                  color: ClubBlackoutTheme.neonGreen,
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(
-                            color: ClubBlackoutTheme.neonGreen.withOpacity(0.5),
-                            width: 2,
-                          ),
-                        ),
-                        title: Text(
-                          'REVIVE ALL PLAYERS?',
-                          style: TextStyle(color: ClubBlackoutTheme.neonGreen),
-                          textAlign: TextAlign.center,
-                        ),
-                        content: const Text(
-                          'This will mark all players as alive and reset their lives.',
-                          style: TextStyle(color: Colors.white70),
-                          textAlign: TextAlign.center,
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('CANCEL'),
-                          ),
-                          FilledButton(
-                            onPressed: () {
-                              setState(() {
-                                for (var player in widget.gameEngine.players) {
-                                  player.isAlive = true;
-                                  player.initialize();
-                                }
-                              });
-                              Navigator.pop(context);
-                              HapticFeedback.mediumImpact();
-                            },
-                            child: const Text('REVIVE ALL'),
-                          ),
-                        ],
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: ClubBlackoutTheme.neonRed,
+                      width: 2,
+                    ),
+                  ),
+                  title: Text(
+                    'SAVE GAME?',
+                    style: TextStyle(
+                      color: ClubBlackoutTheme.neonRed,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  content: const Text(
+                    'Save current game state to continue later?',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'CANCEL',
+                        style: TextStyle(color: Colors.white54),
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildControlButton(
-                  icon: Icons.warning,
-                  label: 'Kill All',
-                  color: ClubBlackoutTheme.neonRed,
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(
-                            color: ClubBlackoutTheme.neonRed.withOpacity(0.5),
-                            width: 2,
-                          ),
-                        ),
-                        title: Text(
-                          'KILL ALL PLAYERS?',
-                          style: TextStyle(color: ClubBlackoutTheme.neonRed),
-                          textAlign: TextAlign.center,
-                        ),
-                        content: const Text(
-                          'This will mark all players as dead.',
-                          style: TextStyle(color: Colors.white70),
-                          textAlign: TextAlign.center,
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('CANCEL'),
-                          ),
-                          FilledButton(
-                            onPressed: () {
-                              setState(() {
-                                for (var player in widget.gameEngine.players) {
-                                  player.isAlive = false;
-                                }
-                              });
-                              Navigator.pop(context);
-                              HapticFeedback.heavyImpact();
-                            },
-                            child: const Text('KILL ALL'),
-                          ),
-                        ],
+                    ),
+                    FilledButton(
+                      onPressed: () async {
+                        await widget.gameEngine.saveGame('autosave');
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Game saved successfully!'),
+                              backgroundColor: ClubBlackoutTheme.neonGreen,
+                            ),
+                          );
+                        }
+                      },
+                      style: ClubBlackoutTheme.neonButtonStyle(
+                        ClubBlackoutTheme.neonGreen,
                       ),
-                    );
-                  },
+                      child: const Text('SAVE'),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              );
+            },
+            icon: const Icon(Icons.save),
+            label: const Text('SAVE GAME'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white70,
+              side: const BorderSide(color: Colors.white24),
+            ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildControlButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.5), width: 2),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

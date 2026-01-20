@@ -46,7 +46,6 @@ class Alliances {
   static const String partyAnimals = 'The Party Animals';
 }
 
-
 /// Represents a single night action by a role.
 class NightAction {
   final String roleId;
@@ -100,11 +99,21 @@ class NightResolver {
     final messages = <String, String>{};
 
     // Find all active actions by type
-    final soberActions = actions.where((a) => a.roleId == RoleIds.sober).toList();
-    final roofiActions = actions.where((a) => a.roleId == RoleIds.roofi).toList();
-    final medicActions = actions.where((a) => a.roleId == RoleIds.medic).toList();
-    final bouncerActions = actions.where((a) => a.roleId == RoleIds.bouncer).toList();
-    final dealerActions = actions.where((a) => a.roleId == RoleIds.dealer).toList();
+    final soberActions = actions
+        .where((a) => a.roleId == RoleIds.sober)
+        .toList();
+    final roofiActions = actions
+        .where((a) => a.roleId == RoleIds.roofi)
+        .toList();
+    final medicActions = actions
+        .where((a) => a.roleId == RoleIds.medic)
+        .toList();
+    final bouncerActions = actions
+        .where((a) => a.roleId == RoleIds.bouncer)
+        .toList();
+    final dealerActions = actions
+        .where((a) => a.roleId == RoleIds.dealer)
+        .toList();
 
     // Track which players are sent home (protected and blocked)
     final sentHomeIds = <String>{};
@@ -144,13 +153,17 @@ class NightResolver {
     for (final action in dealerActions) {
       if (action.targetId != null && action.actionType == 'kill') {
         final targetId = action.targetId!;
-        
+
         // Check if any dealer was sent home by Sober
         // Note: Uses isActive which includes joinsNextNight check. This is intentional
         // because players joining next night shouldn't participate in current night actions.
-        final dealersInGame = players.where((p) => p.role.id == RoleIds.dealer && p.isActive);
-        final anyDealerSentHome = dealersInGame.any((d) => sentHomeIds.contains(d.id));
-        
+        final dealersInGame = players.where(
+          (p) => p.role.id == RoleIds.dealer && p.isActive,
+        );
+        final anyDealerSentHome = dealersInGame.any(
+          (d) => sentHomeIds.contains(d.id),
+        );
+
         if (anyDealerSentHome) {
           // If a dealer was sent home, no kills happen
           messages[targetId] = 'Kill blocked (Dealer sent home by Sober)';
@@ -204,16 +217,22 @@ class NightResolver {
   /// Check if dealers have reached parity (or majority) with party animals.
   ///
   /// Returns true if dealers win, false otherwise.
-  /// 
+  ///
   /// Note: Uses player.alliance property which can change during the game
   /// (e.g., Second Wind conversion, Creep inheritance). This ensures victory
   /// checks reflect the current game state, not the original role assignments.
   bool checkDealerVictory(List<Player> players) {
-    final alivePlayers = players.where((p) => p.isAlive && p.isEnabled).toList();
-    
-    final dealerCount = alivePlayers.where((p) => p.alliance == Alliances.dealers).length;
-    final partyAnimalCount = alivePlayers.where((p) => p.alliance == Alliances.partyAnimals).length;
-    
+    final alivePlayers = players
+        .where((p) => p.isAlive && p.isEnabled)
+        .toList();
+
+    final dealerCount = alivePlayers
+        .where((p) => p.alliance == Alliances.dealers)
+        .length;
+    final partyAnimalCount = alivePlayers
+        .where((p) => p.alliance == Alliances.partyAnimals)
+        .length;
+
     // Dealers win if they reach parity or majority
     return dealerCount > 0 && dealerCount >= partyAnimalCount;
   }
@@ -221,14 +240,20 @@ class NightResolver {
   /// Check if party animals have won (all dealers dead).
   ///
   /// Returns true if party animals win, false otherwise.
-  /// 
+  ///
   /// Note: Uses player.alliance property which can change during the game.
   bool checkPartyAnimalVictory(List<Player> players) {
-    final alivePlayers = players.where((p) => p.isAlive && p.isEnabled).toList();
-    
-    final dealerCount = alivePlayers.where((p) => p.alliance == Alliances.dealers).length;
-    final partyAnimalCount = alivePlayers.where((p) => p.alliance == Alliances.partyAnimals).length;
-    
+    final alivePlayers = players
+        .where((p) => p.isAlive && p.isEnabled)
+        .toList();
+
+    final dealerCount = alivePlayers
+        .where((p) => p.alliance == Alliances.dealers)
+        .length;
+    final partyAnimalCount = alivePlayers
+        .where((p) => p.alliance == Alliances.partyAnimals)
+        .length;
+
     // Party Animals win if all dealers are dead and at least one party animal is alive
     return dealerCount == 0 && partyAnimalCount > 0;
   }
@@ -242,7 +267,5 @@ class NightResolver {
     } catch (e) {
       return null;
     }
-    
-    return null;
   }
 }

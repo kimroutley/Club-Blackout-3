@@ -3,6 +3,7 @@ import '../styles.dart';
 
 class PhaseCard extends StatelessWidget {
   final String phaseName;
+  final String? subtitle;
   final Color phaseColor;
   final IconData phaseIcon;
   final bool isActive;
@@ -10,6 +11,7 @@ class PhaseCard extends StatelessWidget {
   const PhaseCard({
     super.key,
     required this.phaseName,
+    this.subtitle,
     required this.phaseColor,
     required this.phaseIcon,
     this.isActive = false,
@@ -52,10 +54,7 @@ class PhaseCard extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: phaseColor,
-                width: 3,
-              ),
+              border: Border.all(color: phaseColor, width: 3),
               gradient: RadialGradient(
                 colors: [
                   phaseColor.withOpacity(0.3),
@@ -71,11 +70,7 @@ class PhaseCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(
-              phaseIcon,
-              size: 80,
-              color: phaseColor,
-            ),
+            child: Icon(phaseIcon, size: 80, color: phaseColor),
           ),
           const SizedBox(height: 24),
           Text(
@@ -95,14 +90,22 @@ class PhaseCard extends StatelessWidget {
             width: 150,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  phaseColor,
-                  Colors.transparent,
-                ],
+                colors: [Colors.transparent, phaseColor, Colors.transparent],
               ),
             ),
           ),
+          if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              subtitle!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.35,
+                color: Colors.white.withOpacity(0.85),
+              ),
+            ),
+          ],
         ],
       ),
     );

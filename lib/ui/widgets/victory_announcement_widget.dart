@@ -11,7 +11,7 @@ void showVictoryAnnouncement(
   VoidCallback? onComplete,
 }) {
   SoundService().playVictory();
-  
+
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -37,7 +37,8 @@ class VictoryAnnouncementDialog extends StatefulWidget {
   });
 
   @override
-  State<VictoryAnnouncementDialog> createState() => _VictoryAnnouncementDialogState();
+  State<VictoryAnnouncementDialog> createState() =>
+      _VictoryAnnouncementDialogState();
 }
 
 class _VictoryAnnouncementDialogState extends State<VictoryAnnouncementDialog>
@@ -69,29 +70,25 @@ class _VictoryAnnouncementDialogState extends State<VictoryAnnouncementDialog>
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _fadeController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _scaleController,
-        curve: Curves.elasticOut,
-      ),
+      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
     );
 
     // Generate confetti particles
     final random = math.Random();
     for (int i = 0; i < 50; i++) {
-      _confetti.add(ConfettiParticle(
-        x: random.nextDouble(),
-        y: -0.1 - (random.nextDouble() * 0.3),
-        rotation: random.nextDouble() * math.pi * 2,
-        color: _getRandomColor(random),
-        size: 8 + random.nextDouble() * 12,
-      ));
+      _confetti.add(
+        ConfettiParticle(
+          x: random.nextDouble(),
+          y: -0.1 - (random.nextDouble() * 0.3),
+          rotation: random.nextDouble() * math.pi * 2,
+          color: _getRandomColor(random),
+          size: 8 + random.nextDouble() * 12,
+        ),
+      );
     }
 
     // Start animations
@@ -128,7 +125,7 @@ class _VictoryAnnouncementDialogState extends State<VictoryAnnouncementDialog>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Stack(
@@ -146,7 +143,7 @@ class _VictoryAnnouncementDialogState extends State<VictoryAnnouncementDialog>
               );
             },
           ),
-          
+
           // Main content
           Center(
             child: AnimatedBuilder(
@@ -168,7 +165,9 @@ class _VictoryAnnouncementDialogState extends State<VictoryAnnouncementDialog>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: ClubBlackoutTheme.neonOrange.withOpacity(0.5),
+                            color: ClubBlackoutTheme.neonOrange.withOpacity(
+                              0.5,
+                            ),
                             blurRadius: 30,
                             spreadRadius: 5,
                           ),
@@ -183,7 +182,9 @@ class _VictoryAnnouncementDialogState extends State<VictoryAnnouncementDialog>
                             height: 100,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: ClubBlackoutTheme.neonOrange.withOpacity(0.2),
+                              color: ClubBlackoutTheme.neonOrange.withOpacity(
+                                0.2,
+                              ),
                               border: Border.all(
                                 color: ClubBlackoutTheme.neonOrange,
                                 width: 3,
@@ -194,10 +195,7 @@ class _VictoryAnnouncementDialogState extends State<VictoryAnnouncementDialog>
                               ),
                             ),
                             child: const Center(
-                              child: Text(
-                                '🏆',
-                                style: TextStyle(fontSize: 50),
-                              ),
+                              child: Text('🏆', style: TextStyle(fontSize: 50)),
                             ),
                           ),
 
@@ -238,32 +236,39 @@ class _VictoryAnnouncementDialogState extends State<VictoryAnnouncementDialog>
                                 color: const Color(0xFF1a1a2e),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: ClubBlackoutTheme.neonOrange.withOpacity(0.3),
+                                  color: ClubBlackoutTheme.neonOrange
+                                      .withOpacity(0.3),
                                 ),
                               ),
                               child: Column(
                                 children: [
                                   Text(
                                     'WINNERS',
-                                    style: ClubBlackoutTheme.primaryFont.copyWith(
-                                      fontSize: 16,
-                                      color: ClubBlackoutTheme.neonOrange,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.5,
-                                    ),
+                                    style: ClubBlackoutTheme.primaryFont
+                                        .copyWith(
+                                          fontSize: 16,
+                                          color: ClubBlackoutTheme.neonOrange,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                        ),
                                   ),
                                   const SizedBox(height: 12),
-                                  ...widget.winners.map((name) => Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    child: Text(
-                                      name,
-                                      style: ClubBlackoutTheme.primaryFont.copyWith(
-                                        fontSize: 18,
-                                        color: Colors.white,
+                                  ...widget.winners.map(
+                                    (name) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4,
                                       ),
-                                      textAlign: TextAlign.center,
+                                      child: Text(
+                                        name,
+                                        style: ClubBlackoutTheme.primaryFont
+                                            .copyWith(
+                                              fontSize: 18,
+                                              color: Colors.white,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                      ),
                                     ),
-                                  )),
+                                  ),
                                 ],
                               ),
                             ),
@@ -274,10 +279,14 @@ class _VictoryAnnouncementDialogState extends State<VictoryAnnouncementDialog>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: ClubBlackoutTheme.neonOrange.withOpacity(0.1),
+                              color: ClubBlackoutTheme.neonOrange.withOpacity(
+                                0.1,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: ClubBlackoutTheme.neonOrange.withOpacity(0.3),
+                                color: ClubBlackoutTheme.neonOrange.withOpacity(
+                                  0.3,
+                                ),
                               ),
                             ),
                             child: Text(
@@ -296,12 +305,14 @@ class _VictoryAnnouncementDialogState extends State<VictoryAnnouncementDialog>
                           // Close button
                           SizedBox(
                             width: double.infinity,
-                            child: ElevatedButton(
+                            child: FilledButton(
                               onPressed: _close,
-                              style: ElevatedButton.styleFrom(
+                              style: FilledButton.styleFrom(
                                 backgroundColor: ClubBlackoutTheme.neonOrange,
                                 foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -350,10 +361,7 @@ class ConfettiPainter extends CustomPainter {
   final List<ConfettiParticle> particles;
   final double progress;
 
-  ConfettiPainter({
-    required this.particles,
-    required this.progress,
-  });
+  ConfettiPainter({required this.particles, required this.progress});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -364,13 +372,13 @@ class ConfettiPainter extends CustomPainter {
 
       final x = particle.x * size.width;
       final y = particle.y * size.height + (progress * size.height * 1.2);
-      
+
       if (y > size.height) continue;
 
       canvas.save();
       canvas.translate(x, y);
       canvas.rotate(particle.rotation + (progress * math.pi * 4));
-      
+
       final rect = Rect.fromCenter(
         center: Offset.zero,
         width: particle.size,

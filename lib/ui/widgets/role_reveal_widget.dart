@@ -14,7 +14,7 @@ void showRoleReveal(
   VoidCallback? onComplete,
 }) {
   SoundService().playRoleReveal();
-  
+
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -78,24 +78,15 @@ class _RoleRevealDialogState extends State<RoleRevealDialog>
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _fadeController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _scaleController,
-        curve: Curves.elasticOut,
-      ),
+      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
     );
 
     _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _glowController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
 
     // Start animations in sequence
@@ -128,36 +119,45 @@ class _RoleRevealDialogState extends State<RoleRevealDialog>
     return Dialog(
       backgroundColor: Colors.transparent,
       child: AnimatedBuilder(
-        animation: Listenable.merge([_fadeAnimation, _scaleAnimation, _glowAnimation]),
+        animation: Listenable.merge([
+          _fadeAnimation,
+          _scaleAnimation,
+          _glowAnimation,
+        ]),
         builder: (context, child) {
           return Opacity(
             opacity: _fadeAnimation.value,
             child: Transform.scale(
               scale: _scaleAnimation.value,
               child: SingleChildScrollView(
-                child: Column( // Main layout column
+                child: Column(
+                  // Main layout column
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // The Receipt Card
+                    // The Character Card
                     Container(
                       constraints: const BoxConstraints(maxWidth: 400),
                       // Add glow to the wrapper if desired, mimicking the old style but around the card
                       decoration: BoxDecoration(
-                         borderRadius: BorderRadius.circular(12),
-                         boxShadow: [
-                            BoxShadow(
-                              color: widget.role.color.withOpacity(0.2 + (_glowAnimation.value * 0.3)),
-                              blurRadius: 20 + (_glowAnimation.value * 10),
-                              spreadRadius: 2,
-                            )
-                         ]
+                        borderRadius: BorderRadius.circular(
+                          16,
+                        ), // Match new ID Card radius
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.role.color.withOpacity(
+                              0.2 + (_glowAnimation.value * 0.3),
+                            ),
+                            blurRadius: 20 + (_glowAnimation.value * 10),
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                       child: RoleCardWidget(
                         role: widget.role,
                         playerName: widget.playerName,
                       ),
                     ),
-                    
+
                     if (widget.subtitle != null) ...[
                       const SizedBox(height: 16),
                       Text(
@@ -166,7 +166,9 @@ class _RoleRevealDialogState extends State<RoleRevealDialog>
                           fontSize: 16,
                           color: widget.role.color,
                           fontStyle: FontStyle.italic,
-                          shadows: [Shadow(color: widget.role.color, blurRadius: 10)]
+                          shadows: [
+                            Shadow(color: widget.role.color, blurRadius: 10),
+                          ],
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -183,9 +185,9 @@ class _RoleRevealDialogState extends State<RoleRevealDialog>
                     Container(
                       constraints: const BoxConstraints(maxWidth: 400),
                       width: double.infinity,
-                      child: ElevatedButton(
+                      child: FilledButton(
                         onPressed: _close,
-                        style: ElevatedButton.styleFrom(
+                        style: FilledButton.styleFrom(
                           backgroundColor: widget.role.color,
                           foregroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(vertical: 16),

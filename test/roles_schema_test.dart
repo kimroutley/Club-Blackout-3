@@ -1,6 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/services.dart';
 
 void main() {
   group('roles.json schema validation', () {
@@ -23,7 +23,11 @@ void main() {
 
     test('all roles have required fields', () {
       final roles = rolesData['roles'] as List;
-      expect(roles, isNotEmpty, reason: 'roles.json must contain at least one role');
+      expect(
+        roles,
+        isNotEmpty,
+        reason: 'roles.json must contain at least one role',
+      );
 
       for (final role in roles) {
         final roleMap = role as Map<String, dynamic>;
@@ -31,29 +35,101 @@ void main() {
 
         // Required fields
         expect(roleMap, contains('id'), reason: 'Role must have id field');
-        expect(roleMap, contains('name'), reason: 'Role $roleId must have name field');
-        expect(roleMap, contains('alliance'), reason: 'Role $roleId must have alliance field');
-        expect(roleMap, contains('type'), reason: 'Role $roleId must have type field');
-        expect(roleMap, contains('description'), reason: 'Role $roleId must have description field');
-        expect(roleMap, contains('night_priority'), reason: 'Role $roleId must have night_priority field');
-        expect(roleMap, contains('asset_path'), reason: 'Role $roleId must have asset_path field');
-        expect(roleMap, contains('color_hex'), reason: 'Role $roleId must have color_hex field');
+        expect(
+          roleMap,
+          contains('name'),
+          reason: 'Role $roleId must have name field',
+        );
+        expect(
+          roleMap,
+          contains('alliance'),
+          reason: 'Role $roleId must have alliance field',
+        );
+        expect(
+          roleMap,
+          contains('type'),
+          reason: 'Role $roleId must have type field',
+        );
+        expect(
+          roleMap,
+          contains('description'),
+          reason: 'Role $roleId must have description field',
+        );
+        expect(
+          roleMap,
+          contains('night_priority'),
+          reason: 'Role $roleId must have night_priority field',
+        );
+        expect(
+          roleMap,
+          contains('asset_path'),
+          reason: 'Role $roleId must have asset_path field',
+        );
+        expect(
+          roleMap,
+          contains('color_hex'),
+          reason: 'Role $roleId must have color_hex field',
+        );
 
         // Type validation
-        expect(roleMap['id'], isA<String>(), reason: 'Role id must be a string');
-        expect(roleMap['name'], isA<String>(), reason: 'Role $roleId name must be a string');
-        expect(roleMap['alliance'], isA<String>(), reason: 'Role $roleId alliance must be a string');
-        expect(roleMap['type'], isA<String>(), reason: 'Role $roleId type must be a string');
-        expect(roleMap['description'], isA<String>(), reason: 'Role $roleId description must be a string');
-        expect(roleMap['night_priority'], isA<int>(), reason: 'Role $roleId night_priority must be an integer');
-        expect(roleMap['asset_path'], isA<String>(), reason: 'Role $roleId asset_path must be a string');
-        expect(roleMap['color_hex'], isA<String>(), reason: 'Role $roleId color_hex must be a string');
+        expect(
+          roleMap['id'],
+          isA<String>(),
+          reason: 'Role id must be a string',
+        );
+        expect(
+          roleMap['name'],
+          isA<String>(),
+          reason: 'Role $roleId name must be a string',
+        );
+        expect(
+          roleMap['alliance'],
+          isA<String>(),
+          reason: 'Role $roleId alliance must be a string',
+        );
+        expect(
+          roleMap['type'],
+          isA<String>(),
+          reason: 'Role $roleId type must be a string',
+        );
+        expect(
+          roleMap['description'],
+          isA<String>(),
+          reason: 'Role $roleId description must be a string',
+        );
+        expect(
+          roleMap['night_priority'],
+          isA<int>(),
+          reason: 'Role $roleId night_priority must be an integer',
+        );
+        expect(
+          roleMap['asset_path'],
+          isA<String>(),
+          reason: 'Role $roleId asset_path must be a string',
+        );
+        expect(
+          roleMap['color_hex'],
+          isA<String>(),
+          reason: 'Role $roleId color_hex must be a string',
+        );
 
         // Non-empty validation
         expect(roleMap['id'], isNotEmpty, reason: 'Role id must not be empty');
-        expect(roleMap['name'], isNotEmpty, reason: 'Role $roleId name must not be empty');
-        expect(roleMap['alliance'], isNotEmpty, reason: 'Role $roleId alliance must not be empty');
-        expect(roleMap['type'], isNotEmpty, reason: 'Role $roleId type must not be empty');
+        expect(
+          roleMap['name'],
+          isNotEmpty,
+          reason: 'Role $roleId name must not be empty',
+        );
+        expect(
+          roleMap['alliance'],
+          isNotEmpty,
+          reason: 'Role $roleId alliance must not be empty',
+        );
+        expect(
+          roleMap['type'],
+          isNotEmpty,
+          reason: 'Role $roleId type must not be empty',
+        );
       }
     });
 
@@ -65,7 +141,11 @@ void main() {
         final roleMap = role as Map<String, dynamic>;
         final id = roleMap['id'] as String;
 
-        expect(ids, isNot(contains(id)), reason: 'Duplicate role ID found: $id');
+        expect(
+          ids,
+          isNot(contains(id)),
+          reason: 'Duplicate role ID found: $id',
+        );
         ids.add(id);
       }
     });
@@ -104,19 +184,38 @@ void main() {
         expect(
           hexColorPattern.hasMatch(colorHex),
           isTrue,
-          reason: 'Role $roleId color_hex must be valid hex color format (#RRGGBB)',
+          reason:
+              'Role $roleId color_hex must be valid hex color format (#RRGGBB)',
         );
       }
     });
 
     test('required roles exist (dealer, party_animal, medic, bouncer)', () {
       final roles = rolesData['roles'] as List;
-      final roleIds = roles.map((r) => (r as Map<String, dynamic>)['id'] as String).toSet();
+      final roleIds = roles
+          .map((r) => (r as Map<String, dynamic>)['id'] as String)
+          .toSet();
 
-      expect(roleIds, contains('dealer'), reason: 'roles.json must include dealer role');
-      expect(roleIds, contains('party_animal'), reason: 'roles.json must include party_animal role');
-      expect(roleIds, contains('medic'), reason: 'roles.json must include medic role');
-      expect(roleIds, contains('bouncer'), reason: 'roles.json must include bouncer role');
+      expect(
+        roleIds,
+        contains('dealer'),
+        reason: 'roles.json must include dealer role',
+      );
+      expect(
+        roleIds,
+        contains('party_animal'),
+        reason: 'roles.json must include party_animal role',
+      );
+      expect(
+        roleIds,
+        contains('medic'),
+        reason: 'roles.json must include medic role',
+      );
+      expect(
+        roleIds,
+        contains('bouncer'),
+        reason: 'roles.json must include bouncer role',
+      );
     });
 
     test('optional fields have correct types when present', () {
@@ -143,7 +242,11 @@ void main() {
             reason: 'Role $roleId choices must be a list',
           );
           for (final choice in roleMap['choices'] as List) {
-            expect(choice, isA<String>(), reason: 'Role $roleId choices must contain strings');
+            expect(
+              choice,
+              isA<String>(),
+              reason: 'Role $roleId choices must contain strings',
+            );
           }
         }
 
@@ -182,18 +285,21 @@ void main() {
       for (final role in roles) {
         final roleMap = role as Map<String, dynamic>;
         final roleId = roleMap['id'] as String;
-        final hasBinaryChoice = roleMap['has_binary_choice_at_start'] as bool? ?? false;
+        final hasBinaryChoice =
+            roleMap['has_binary_choice_at_start'] as bool? ?? false;
 
         if (hasBinaryChoice) {
           expect(
             roleMap,
             contains('choices'),
-            reason: 'Role $roleId with has_binary_choice_at_start=true must have choices array',
+            reason:
+                'Role $roleId with has_binary_choice_at_start=true must have choices array',
           );
           expect(
             (roleMap['choices'] as List).length,
             greaterThanOrEqualTo(2),
-            reason: 'Role $roleId with binary choice must have at least 2 choices',
+            reason:
+                'Role $roleId with binary choice must have at least 2 choices',
           );
         }
       }

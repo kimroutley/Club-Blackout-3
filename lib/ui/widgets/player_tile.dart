@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/player.dart';
+import '../../logic/game_engine.dart';
+import '../../logic/player_status_resolver.dart';
 import '../styles.dart';
+import 'host_player_status_card.dart';
 
 class PlayerTile extends StatelessWidget {
   final Player player;
@@ -8,6 +11,7 @@ class PlayerTile extends StatelessWidget {
   final VoidCallback? onTap;
   final int? voteCount;
   final bool isCompact;
+  final GameEngine? gameEngine;
 
   const PlayerTile({
     super.key,
@@ -16,18 +20,61 @@ class PlayerTile extends StatelessWidget {
     this.onTap,
     this.voteCount,
     this.isCompact = false,
+    this.gameEngine,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (!isCompact && gameEngine != null) {
+      // Use standard consistent tile design
+      return HostPlayerStatusCard(
+        player: player,
+        gameEngine: gameEngine!,
+        showControls: false, // Never show controls in player lists
+        isSelected: isSelected,
+        onTap: onTap,
+        trailing: voteCount != null
+            ? Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: player.role.color.withOpacity(0.5),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  '$voteCount',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              )
+            : null,
+      );
+    }
+
     final color = player.role.color;
-    
+
     if (isCompact) {
+      // Resolve statuses for compact view
+      final statuses = gameEngine != null
+          ? PlayerStatusResolver.resolveStatus(player, gameEngine!)
+          : <PlayerStatusDisplay>[];
+
       return Card(
         margin: EdgeInsets.zero,
         elevation: isSelected ? 4 : 1,
-        color: isSelected 
-            ? color.withOpacity(0.15) 
+        color: isSelected
+            ? color.withOpacity(0.15)
             : Colors.black.withOpacity(0.5),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -53,13 +100,18 @@ class PlayerTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: color, width: 2),
-                    boxShadow: isSelected 
+                    boxShadow: isSelected
                         ? ClubBlackoutTheme.circleGlow(color, intensity: 0.8)
                         : ClubBlackoutTheme.circleGlow(color, intensity: 0.3),
                   ),
                   child: ClipOval(
                     child: player.role.assetPath.isNotEmpty
-                        ? Image.asset(player.role.assetPath, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.person, color: color, size: 48))
+                        ? Image.asset(
+                            player.role.assetPath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Icon(Icons.person, color: color, size: 48),
+                          )
                         : Icon(Icons.person, color: color, size: 48),
                   ),
                 ),
@@ -71,15 +123,42 @@ class PlayerTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    height: 1.1,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (statuses.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 2,
+                    children: statuses
+                        .map(
+                          (s) => Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: s.color,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: s.color.withOpacity(0.8),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
                 if (voteCount != null) ...[
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
@@ -108,15 +187,28 @@ class PlayerTile extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.25) : Colors.black.withOpacity(0.8),
+          color: isSelected
+              ? color.withOpacity(0.25)
+              : Colors.black.withOpacity(0.8),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? color : color.withOpacity(0.6),
             width: isSelected ? 3 : 2, // Thicker borders
           ),
-          boxShadow: isSelected 
-              ? [BoxShadow(color: color.withOpacity(0.4), blurRadius: 15, spreadRadius: 1)] 
-              : [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 5)],
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.4),
+                    blurRadius: 15,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 5,
+                  ),
+                ],
         ),
         child: Row(
           children: [
@@ -126,13 +218,25 @@ class PlayerTile extends StatelessWidget {
               height: 72, // Increased from 56
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: color, width: 3), // Bolder Icon Border
+                border: Border.all(
+                  color: color,
+                  width: 3,
+                ), // Bolder Icon Border
                 boxShadow: ClubBlackoutTheme.circleGlow(color, intensity: 0.8),
               ),
               child: ClipOval(
                 child: player.role.assetPath.isNotEmpty
-                    ? Image.asset(player.role.assetPath, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.person, color: color, size: 40))
-                    : Icon(Icons.person, color: color, size: 40), // Increased from 32
+                    ? Image.asset(
+                        player.role.assetPath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Icon(Icons.person, color: color, size: 40),
+                      )
+                    : Icon(
+                        Icons.person,
+                        color: color,
+                        size: 40,
+                      ), // Increased from 32
               ),
             ),
             const SizedBox(width: 16),
@@ -153,7 +257,10 @@ class PlayerTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(6),
@@ -174,11 +281,16 @@ class PlayerTile extends StatelessWidget {
             // Vote Count (if applicable)
             if (voteCount != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8)],
+                  boxShadow: [
+                    BoxShadow(color: color.withOpacity(0.5), blurRadius: 8),
+                  ],
                 ),
                 child: Text(
                   '$voteCount',

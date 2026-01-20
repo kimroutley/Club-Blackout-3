@@ -12,7 +12,7 @@ class MainScreen extends StatefulWidget {
   const MainScreen({super.key, required this.gameEngine});
 
   @override
-  _MainScreenState createState() => _MainScreenState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
@@ -29,7 +29,7 @@ class _MainScreenState extends State<MainScreen> {
     switch (index) {
       case 0:
         return HomeScreen(
-          gameEngine: widget.gameEngine, 
+          gameEngine: widget.gameEngine,
           onNavigateToLobby: () => _onItemTapped(1),
           onNavigateToGuides: () => _onItemTapped(2),
         );
@@ -39,7 +39,7 @@ class _MainScreenState extends State<MainScreen> {
         return GuidesScreen(gameEngine: widget.gameEngine);
       default:
         return HomeScreen(
-          gameEngine: widget.gameEngine, 
+          gameEngine: widget.gameEngine,
           onNavigateToLobby: () => _onItemTapped(1),
           onNavigateToGuides: () => _onItemTapped(2),
         );
@@ -50,7 +50,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     String title = 'CLUB BLACKOUT';
     Color titleColor = ClubBlackoutTheme.neonBlue;
-    
+
     switch (_selectedIndex) {
       case 1:
         title = 'GUEST LIST';

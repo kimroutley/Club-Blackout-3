@@ -5,13 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:math';
-import 'package:club_blackout/ui/widgets/role_card_widget.dart';
 import '../../logic/game_engine.dart';
 import '../../logic/game_state.dart';
+import '../../utils/game_exceptions.dart';
 import '../../logic/ability_system.dart';
 import '../../models/script_step.dart';
 import '../../models/player.dart';
-import '../../models/role.dart';
 import '../styles.dart';
 import '../utils/player_sort.dart';
 import '../widgets/game_drawer.dart';
@@ -20,6 +19,7 @@ import '../widgets/interactive_script_card.dart';
 import '../widgets/phase_card.dart';
 import '../widgets/player_tile.dart';
 import '../widgets/role_reveal_widget.dart';
+import '../widgets/night_phase_player_tile.dart';
 
 class GameScreen extends StatefulWidget {
   final GameEngine gameEngine;
@@ -47,6 +47,8 @@ class _GameScreenState extends State<GameScreen>
       false; // Avoid firing snacks before first activation edge
   Timer? _scrollDebounceTimer;
 
+  bool _autoOpenedDayDialog = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +58,20 @@ class _GameScreenState extends State<GameScreen>
       if (mounted) {
         setState(() {});
         _scrollToStep(widget.gameEngine.currentScriptIndex);
+
+        // UX: After the last night action, go straight into Day Phase dialog.
+        if (newPhase == GamePhase.day && !_autoOpenedDayDialog) {
+          _autoOpenedDayDialog = true;
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _showDaySceneDialog();
+          });
+        }
+
+        // Reset guard when leaving day.
+        if (newPhase != GamePhase.day) {
+          _autoOpenedDayDialog = false;
+        }
       }
     };
 
@@ -76,6 +92,44 @@ class _GameScreenState extends State<GameScreen>
         );
       }
     };
+  }
+
+  void _showDaySceneDialog() {
+    final navigator = Navigator.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => DaySceneDialog(
+        gameEngine: widget.gameEngine,
+        selectedNavIndex: 0,
+        onNavigate: (index) {
+          navigator.pop(); // close dialog
+          if (index == 0) {
+            navigator.pop(); // return to previous screen (home)
+          }
+        },
+        onGameLogTap: () {
+          navigator.pop(); // close dialog
+          _showLog();
+        },
+        onComplete: () {
+          // Advance through all remaining day phase steps
+          int safety = 0;
+          do {
+            widget.gameEngine.advanceScript();
+            safety++;
+          } while (safety < 10 &&
+              widget.gameEngine.currentPhase == GamePhase.day &&
+              widget.gameEngine.currentScriptStep != null &&
+              widget.gameEngine.currentScriptStep!.isNight == false);
+          _scrollToBottom();
+        },
+        onGameEnd: (winner, message) {
+          navigator.pop(); // Close dialog
+          _showGameEndDialog(winner, message);
+        },
+      ),
+    );
   }
 
   @override
@@ -173,264 +227,327 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _advanceScript() {
-    final step = widget.gameEngine.currentScriptStep;
-    if (step != null &&
-        (step.actionType == ScriptActionType.selectPlayer ||
-            step.actionType == ScriptActionType.selectTwoPlayers)) {
-      if (step.id == 'day_vote' && _voteCounts.isNotEmpty) {
-        final votedPlayers = _voteCounts.entries
-            .where((e) => e.value >= 2)
-            .toList();
-        if (votedPlayers.isNotEmpty) {
-          votedPlayers.sort((a, b) => b.value.compareTo(a.value));
-          final mostVoted = votedPlayers.first;
-          final maxVotes = mostVoted.value;
-          final topVoters = votedPlayers
-              .where((e) => e.value == maxVotes)
+    try {
+      final step = widget.gameEngine.currentScriptStep;
+      if (step != null &&
+          (step.actionType == ScriptActionType.selectPlayer ||
+              step.actionType == ScriptActionType.selectTwoPlayers)) {
+        if (step.id == 'day_vote' && _voteCounts.isNotEmpty) {
+          final votedPlayers = _voteCounts.entries
+              .where((e) => e.value >= 2)
               .toList();
+          if (votedPlayers.isNotEmpty) {
+            votedPlayers.sort((a, b) => b.value.compareTo(a.value));
+            final mostVoted = votedPlayers.first;
+            final maxVotes = mostVoted.value;
+            final topVoters = votedPlayers
+                .where((e) => e.value == maxVotes)
+                .toList();
 
-          if (topVoters.length > 1) {
-            // Tie handled silently (logged via engine if needed)
-            widget.gameEngine.logAction(
-              "Voting",
-              "Vote tie! No one is eliminated.",
+            if (topVoters.length > 1) {
+              // Tie handled silently (logged via engine if needed)
+              widget.gameEngine.logAction(
+                "Voting",
+                "Vote tie! No one is eliminated.",
+              );
+
+              _voteCounts.clear();
+              widget.gameEngine.advanceScript();
+              setState(() => _currentSelection.clear());
+              _scrollToBottom();
+              _prewarmNextStepScroll();
+              return;
+            }
+            final playerId = mostVoted.key;
+            final player = widget.gameEngine.players.firstWhere(
+              (p) => p.id == playerId,
             );
-
+            final wasDealer = widget.gameEngine.voteOutPlayer(playerId);
             _voteCounts.clear();
-            widget.gameEngine.advanceScript();
-            setState(() => _currentSelection.clear());
-            _scrollToBottom();
-            _prewarmNextStepScroll();
-            return;
-          }
-          final playerId = mostVoted.key;
-          final player = widget.gameEngine.players.firstWhere(
-            (p) => p.id == playerId,
-          );
-          final wasDealer = widget.gameEngine.voteOutPlayer(playerId);
-          _voteCounts.clear();
-          Player? victim = player;
+            Player? victim = player;
 
-          // Check if victim survived (e.g. Second Wind)
-          // If they are alive and have pending conversion, it's Second Wind.
-          final bool survivedVote =
-              victim.isAlive && victim.secondWindPendingConversion;
+            // Check if victim survived (e.g. Second Wind)
+            // If they are alive and have pending conversion, it's Second Wind.
+            final bool survivedVote =
+                victim.isAlive && victim.secondWindPendingConversion;
 
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: survivedVote
-                      ? Colors.amber
-                      : (wasDealer
-                            ? ClubBlackoutTheme.neonGreen.withOpacity(0.6)
-                            : ClubBlackoutTheme.neonRed.withOpacity(0.6)),
-                  width: 2,
-                ),
-              ),
-              title: Row(
-                children: [
-                  Icon(
-                    survivedVote
-                        ? Icons.auto_awesome
-                        : (wasDealer ? Icons.check_circle : Icons.cancel),
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
                     color: survivedVote
                         ? Colors.amber
                         : (wasDealer
-                              ? ClubBlackoutTheme.neonGreen
-                              : ClubBlackoutTheme.neonRed),
-                    size: 28,
+                              ? ClubBlackoutTheme.neonGreen.withOpacity(0.6)
+                              : ClubBlackoutTheme.neonRed.withOpacity(0.6)),
+                    width: 2,
                   ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'VOTE RESULT',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
-                  ),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (survivedVote) ...[
-                    const Text(
-                      "SECOND WIND!",
-                      style: TextStyle(
-                        color: Colors.amber,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      "${victim?.name ?? 'The target'} refuses to die!",
-                      style: const TextStyle(color: Colors.white, fontSize: 18),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "The Dealers must decide their fate.",
-                      style: TextStyle(color: Colors.amber),
-                    ),
-                  ] else ...[
-                    Text(
-                      player.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      wasDealer
-                          ? 'The group has successfully eliminated a Dealer!'
-                          : 'The Party Animals have lost an innocent member.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  ],
-
-                  // ADDED: Reactive Role Notification (Only if they actually died)
-                  if (!survivedVote &&
-                      victim != null &&
-                      (victim.role.id == 'tea_spiller' ||
-                          victim.role.id == 'predator' ||
-                          victim.role.id == 'drama_queen')) ...[
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.2),
-                        border: Border.all(color: Colors.amber),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: [
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.warning_amber_rounded,
-                                color: Colors.amber,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                "REACTIVE ROLE",
-                                style: TextStyle(
-                                  color: Colors.amber,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "This player was a ${victim?.role.name ?? 'mystery role'}.\nOpen the Action Menu (FAB) immediately to trigger their retaliation ability!",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              actions: [
-                FilledButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    if (widget.gameEngine.checkWinConditions()) {
-                      final winner = widget.gameEngine.winner;
-                      final message = widget.gameEngine.winMessage;
-                      _showGameEndDialog(winner!, message!);
-                    } else {
-                      widget.gameEngine.advanceScript();
-                      setState(() => _currentSelection.clear());
-                      _scrollToBottom();
-                      _prewarmNextStepScroll();
-                    }
-                  },
-                  style: ClubBlackoutTheme.neonButtonStyle(
-                    wasDealer
-                        ? ClubBlackoutTheme.neonGreen
-                        : ClubBlackoutTheme.neonRed,
-                  ),
-                  child: const Text('CONTINUE'),
                 ),
-              ],
-            ),
-          );
-          return;
+                title: Row(
+                  children: [
+                    Icon(
+                      survivedVote
+                          ? Icons.auto_awesome
+                          : (wasDealer ? Icons.check_circle : Icons.cancel),
+                      color: survivedVote
+                          ? Colors.amber
+                          : (wasDealer
+                                ? ClubBlackoutTheme.neonGreen
+                                : ClubBlackoutTheme.neonRed),
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'VOTE RESULT',
+                      style: TextStyle(color: Colors.white, fontSize: 20),
+                    ),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (survivedVote) ...[
+                      const Text(
+                        "SECOND WIND!",
+                        style: TextStyle(
+                          color: Colors.amber,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "${victim?.name ?? 'The target'} refuses to die!",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        "The Dealers must decide their fate.",
+                        style: TextStyle(color: Colors.amber),
+                      ),
+                    ] else ...[
+                      Text(
+                        player.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        wasDealer
+                            ? 'The group has successfully eliminated a Dealer!'
+                            : 'The Party Animals have lost an innocent member.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
+
+                    // ADDED: Reactive Role Notification (Only if they actually died)
+                    if (!survivedVote &&
+                        victim != null &&
+                        (victim.role.id == 'tea_spiller' ||
+                            victim.role.id == 'predator' ||
+                            victim.role.id == 'drama_queen')) ...[
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.2),
+                          border: Border.all(color: Colors.amber),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: Colors.amber,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  "REACTIVE ROLE",
+                                  style: TextStyle(
+                                    color: Colors.amber,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "This player was a ${victim?.role.name ?? 'mystery role'}.\nOpen the Action Menu (FAB) immediately to trigger their retaliation ability!",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                actions: [
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      try {
+                        if (widget.gameEngine.checkWinConditions()) {
+                          final winner = widget.gameEngine.winner;
+                          final message = widget.gameEngine.winMessage;
+                          _showGameEndDialog(winner!, message!);
+                        } else {
+                          widget.gameEngine.advanceScript();
+                          setState(() => _currentSelection.clear());
+                          _scrollToBottom();
+                          _prewarmNextStepScroll();
+                        }
+                      } on GameException catch (e) {
+                        _showError(e.message);
+                      } catch (e) {
+                        _showError(e.toString());
+                      }
+                    },
+                    style: ClubBlackoutTheme.neonButtonStyle(
+                      wasDealer
+                          ? ClubBlackoutTheme.neonGreen
+                          : ClubBlackoutTheme.neonRed,
+                    ),
+                    child: const Text('CONTINUE'),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
         }
+
+        _executeNightAction(step);
       }
 
-      _executeNightAction(step);
+      widget.gameEngine.advanceScript();
+      setState(() {
+        _currentSelection.clear();
+      });
+      _scrollToBottom();
+      _prewarmNextStepScroll();
+    } on GameException catch (e) {
+      _showError(e.message);
+    } catch (e) {
+      _showError("An unexpected error occurred: $e");
     }
+  }
 
-    widget.gameEngine.advanceScript();
-    setState(() {
-      _currentSelection.clear();
-    });
-    _scrollToBottom();
-    _prewarmNextStepScroll();
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Error', style: TextStyle(color: Colors.redAccent)),
+        content: Text(message, style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _executeNightAction(ScriptStep step) {
     if (_currentSelection.isEmpty) return;
 
+    // 1. Comprehensive Logging for "Game Log" & Host Transparency
+    // This ensures every tap of the green tick is recorded.
+    final selectedNames = _currentSelection
+        .map(
+          (id) => widget.gameEngine.players.firstWhere((p) => p.id == id).name,
+        )
+        .join(', ');
+
+    widget.gameEngine.logAction(
+      "Action Confirmed: ${step.title}",
+      "Host selected: $selectedNames",
+    );
+
+    // 2. Store Action in Engine
     if (step.actionType == ScriptActionType.selectTwoPlayers) {
       widget.gameEngine.nightActions[step.id] = _currentSelection.toList();
     } else {
       widget.gameEngine.nightActions[step.id] = _currentSelection.first;
 
-      // Bouncer ID check - show result dialog
+      final targetId = _currentSelection.first;
+      final target = widget.gameEngine.players.firstWhere(
+        (p) => p.id == targetId,
+      );
+
+      // 3. Specific Role Logic & Host Status Documentation
       if (step.roleId == 'bouncer' &&
           step.actionType == ScriptActionType.selectPlayer) {
-        final targetId = _currentSelection.first;
-        final target = widget.gameEngine.players.firstWhere(
-          (p) => p.id == targetId,
-        );
+        // Add visual status for Host Overview
+        if (!target.statusEffects.contains('Checked by Bouncer')) {
+          target.statusEffects.add('Checked by Bouncer');
+        }
 
         if (target.role.id == 'minor' && !target.minorHasBeenIDd) {
           target.minorHasBeenIDd = true;
           widget.gameEngine.logAction(
-            'Bouncer Check',
+            'Bouncer Mechanic',
             'Bouncer checked The Minor (${target.name}). Minor loses immunity.',
           );
         }
 
-        // Dealer or criminal alliance = nod (yes)
+        // Dealer check dialog
         final isDealerAlly =
             target.role.alliance == 'criminal' || target.role.id == 'dealer';
         _showBouncerConfirmation(target, isDealerAlly);
       } else if (step.id == 'creep_act') {
-        // Just store selection - reveal happens in next step
-      } else if (step.id == 'clinger_obsession') {
-        // Just store selection - reveal happens in next step
-      } else if (step.id == 'sober_act') {
-        final targetId = _currentSelection.first;
-        final target = widget.gameEngine.players.firstWhere(
-          (p) => p.id == targetId,
+        // Log explicitly for transparency
+        widget.gameEngine.logAction(
+          'Creep Act',
+          'The Creep is mimicking ${target.name} (${target.role.name})',
         );
+        if (!target.statusEffects.contains('Mimicked by Creep')) {
+          target.statusEffects.add('Mimicked by Creep');
+        }
+      } else if (step.id == 'clinger_obsession') {
+        widget.gameEngine.logAction(
+          'Clinger Act',
+          'The Clinger is obsessed with ${target.name}',
+        );
+        // Note: Clinger obsession is usually secret, but Host needs to know.
+        if (!target.statusEffects.contains('Clinger Obsession')) {
+          target.statusEffects.add('Clinger Obsession');
+        }
+      } else if (step.id == 'sober_act') {
         target.soberSentHome = true;
         target.soberAbilityUsed = true;
+
+        // Host Overview Status
+        if (!target.statusEffects.contains('Sent Home')) {
+          target.statusEffects.add('Sent Home');
+        }
+
         widget.gameEngine.logAction(
-          'Sober',
-          '${target.name} was sent home and will not participate tonight',
+          'Sober Mechanic',
+          '${target.name} was sent home and will removed from script tonight.',
         );
 
-        // Rebuild script immediately to remove the target's turn
+        // Rebuild script immediately to remove the target's turn if they haven't acted
         widget.gameEngine.rebuildNightScript();
       } else if (step.roleId == 'club_manager') {
-        final targetId = _currentSelection.first;
-        final target = widget.gameEngine.players.firstWhere(
-          (p) => p.id == targetId,
-        );
         widget.gameEngine.logAction(
           'Club Manager',
           'Club Manager viewed ${target.name}\'s role.',
@@ -631,12 +748,8 @@ class _GameScreenState extends State<GameScreen>
           ),
         ),
         child: const Text(
-          'You are now bound to this player. You will vote exactly as they vote. If they die, you die.',
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.white70,
-            height: 1.4,
-          ),
+          'They are now bound to this player. They must vote exactly as their object of obsession votes. If the obsession dies, the Clinger dies.',
+          style: TextStyle(fontSize: 13, color: Colors.white70, height: 1.4),
           textAlign: TextAlign.center,
         ),
       ),
@@ -722,7 +835,7 @@ class _GameScreenState extends State<GameScreen>
           FilledButton(
             onPressed: () => Navigator.pop(context),
             style: ClubBlackoutTheme.neonButtonStyle(Colors.orange),
-            child: const Text("I UNDERSTAND"),
+            child: const Text("CLOSE"),
           ),
         ],
       ),
@@ -1102,172 +1215,6 @@ class _GameScreenState extends State<GameScreen>
         ),
         content: Text(
           "${target.name} has been revived!",
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontSize: 18),
-        ),
-        actions: [
-          Center(
-            child: FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Icon(Icons.check),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSoberAbility() {
-    try {
-      final sober = widget.gameEngine.players.firstWhere(
-        (p) => p.role.id == 'sober' && p.isActive && !p.soberAbilityUsed,
-      );
-
-      final validTargets = sortedPlayersByDisplayName(
-        widget.gameEngine.players
-            .where((p) => p.isActive && p.id != sober.id)
-            .toList(),
-      );
-
-      showDialog(
-        context: context,
-        builder: (context) => Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 500),
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.blueAccent, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blueAccent.withOpacity(0.4),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.no_drinks, size: 60, color: Colors.blueAccent),
-                const SizedBox(height: 16),
-                const Text(
-                  'SOBER SEND-HOME',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueAccent,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Choose one player to send home for the night. They cannot be killed or use abilities toniught.',
-                  style: TextStyle(fontSize: 14, color: Colors.white70),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 300),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: validTargets.map((player) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.pop(context);
-                              _useSoberAbility(sober, player);
-                            },
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: Colors.blueAccent.withOpacity(0.5),
-                                  width: 1.5,
-                                ),
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.blueAccent.withOpacity(0.2),
-                                    Colors.blueAccent.withOpacity(0.05),
-                                  ],
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    player.name,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.arrow_forward,
-                                    color: Colors.white70,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                IconButton.filled(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                  style: IconButton.styleFrom(backgroundColor: Colors.white12),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } catch (e) {
-      debugPrint("Error showing Sober ability: $e");
-    }
-  }
-
-  void _useSoberAbility(Player sober, Player target) {
-    setState(() {
-      sober.soberAbilityUsed = true;
-      target.soberSentHome = true;
-    });
-
-    widget.gameEngine.logAction(
-      'Sober Ability',
-      'Sober sent ${target.name} home! They are safe/blocked tonight.',
-    );
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: Colors.blueAccent, width: 2),
-        ),
-        title: const Icon(
-          Icons.check_circle,
-          color: Colors.blueAccent,
-          size: 50,
-        ),
-        content: Text(
-          "${target.name} has been sent home.",
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.white, fontSize: 18),
         ),
@@ -1767,6 +1714,7 @@ class _GameScreenState extends State<GameScreen>
                       .map(
                         (player) => PlayerTile(
                           player: player,
+                          gameEngine: widget.gameEngine,
                           onTap: () {
                             Navigator.pop(context);
                             _executeAttackDogKill(clinger, player);
@@ -1786,7 +1734,7 @@ class _GameScreenState extends State<GameScreen>
 
   void _executeAttackDogKill(Player clinger, Player victim) {
     clinger.clingerAttackDogUsed = true;
-    victim.isAlive = false;
+    widget.gameEngine.processDeath(victim, cause: 'attack_dog_kill');
     widget.gameEngine.logAction(
       'Attack Dog Kill',
       '${clinger.name} (attack dog) killed ${victim.name}!',
@@ -1798,147 +1746,6 @@ class _GameScreenState extends State<GameScreen>
     showDialog(
       context: context,
       builder: (context) => _GameLogDialog(gameEngine: widget.gameEngine),
-    );
-  }
-
-  Future<void> _showLateJoinerDialog() async {
-    if (widget.gameEngine.currentPhase == GamePhase.lobby) return;
-
-    final availableRoles = widget.gameEngine.availableRolesForNewPlayer();
-    if (availableRoles.isEmpty) return;
-
-    final nameController = TextEditingController();
-    Role? selectedRole;
-    bool randomRole = true;
-
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Add Player For Next Night'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Player Name'),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Checkbox(
-                    value: randomRole,
-                    onChanged: (v) => setState(() {
-                      randomRole = v ?? false;
-                      if (randomRole) selectedRole = null;
-                    }),
-                  ),
-                  const Text('Random role'),
-                ],
-              ),
-              if (!randomRole)
-                DropdownMenu<Role>(
-                  initialSelection: selectedRole,
-                  dropdownMenuEntries: availableRoles
-                      .map((r) => DropdownMenuEntry(value: r, label: r.name))
-                      .toList(),
-                  onSelected: (r) => setState(() => selectedRole = r),
-                  width: 300,
-                  inputDecorationTheme: InputDecorationTheme(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.white12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.white12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.white,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  menuStyle: MenuStyle(
-                    backgroundColor: WidgetStatePropertyAll(Colors.grey[900]),
-                    surfaceTintColor: WidgetStatePropertyAll(
-                      Colors.transparent,
-                    ),
-                    shape: WidgetStatePropertyAll(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final name = nameController.text.trim();
-                if (name.isEmpty) return;
-                final role = randomRole
-                    ? availableRoles[Random().nextInt(availableRoles.length)]
-                    : selectedRole;
-                if (role == null) return;
-                final newPlayer = widget.gameEngine.addPlayerDuringDay(
-                  name,
-                  role: role,
-                );
-                Navigator.pop(context);
-                _showRoleRevealCard(newPlayer.role, newPlayer.name);
-                this.setState(() {});
-              },
-              child: const Text('ADD'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showRoleRevealCard(Role role, String playerName) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 500),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: SingleChildScrollView(
-                  child: RoleCardWidget(role: role, playerName: playerName),
-                ),
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                style: FilledButton.styleFrom(
-                  backgroundColor: role.color,
-                  foregroundColor: Colors.black,
-                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                child: const Text('I UNDERSTAND'),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -1991,7 +1798,7 @@ class _GameScreenState extends State<GameScreen>
                     widget.gameEngine.advanceScript();
                     setState(() {});
                   },
-                  child: const Text('I UNDERSTAND'),
+                  child: const Text('CONFIRM'),
                 ),
               ],
             ),
@@ -2034,7 +1841,7 @@ class _GameScreenState extends State<GameScreen>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'You are mimicking: ${target.name}',
+                  'Mimicking: ${target.name}',
                   style: const TextStyle(fontSize: 20),
                 ),
                 const SizedBox(height: 8),
@@ -2049,7 +1856,7 @@ class _GameScreenState extends State<GameScreen>
                     widget.gameEngine.advanceScript();
                     setState(() {});
                   },
-                  child: const Text('I UNDERSTAND'),
+                  child: const Text('CONFIRM'),
                 ),
               ],
             ),
@@ -2232,61 +2039,6 @@ class _GameScreenState extends State<GameScreen>
           currentStep = steps[safeIndex];
         }
 
-        final hasMessyBitch = widget.gameEngine.players.any(
-          (p) => p.role.id == 'messy_bitch',
-        );
-        final hasLightweight = widget.gameEngine.players.any(
-          (p) => p.role.id == 'lightweight' && p.isActive,
-        );
-        final hasClingerToFree = widget.gameEngine.players.any(
-          (p) =>
-              p.role.id == 'clinger' &&
-              p.isActive &&
-              p.clingerPartnerId != null &&
-              !p.clingerAttackDogUsed,
-        );
-        final hasSecondWindConversion = widget.gameEngine.players.any(
-          (p) =>
-              p.role.id == 'second_wind' &&
-              p.secondWindPendingConversion &&
-              !p.secondWindConverted,
-        );
-        final hasSilverFox = false; // Silver Fox disabled
-        final hasTeaSpiller = widget.gameEngine.players.any(
-          (p) => p.role.id == 'tea_spiller',
-        );
-        final hasPredator = widget.gameEngine.players.any(
-          (p) => p.role.id == 'predator',
-        );
-        final hasDramaQueen = widget.gameEngine.dramaQueenSwapPending;
-        final hasMedic = widget.gameEngine.players.any(
-          (p) =>
-              p.role.id == 'medic' &&
-              p.isActive &&
-              p.medicChoice == 'REVIVE' &&
-              !p.hasReviveToken,
-        );
-        final hasSober = widget.gameEngine.players.any(
-          (p) => p.role.id == 'sober' && p.isActive && !p.soberAbilityUsed,
-        );
-        final hasBouncer = widget.gameEngine.players.any(
-          (p) =>
-              p.role.id == 'bouncer' && p.isActive && !p.bouncerAbilityRevoked,
-        );
-
-        final hasAnyAbility =
-            hasMessyBitch ||
-            hasLightweight ||
-            hasClingerToFree ||
-            hasSecondWindConversion ||
-            hasSilverFox ||
-            hasTeaSpiller ||
-            hasPredator ||
-            hasDramaQueen ||
-            hasMedic ||
-            hasSober ||
-            hasBouncer;
-
         return Scaffold(
           drawer: GameDrawer(
             gameEngine: widget.gameEngine,
@@ -2316,15 +2068,7 @@ class _GameScreenState extends State<GameScreen>
             ),
             title: const Text('CLUB BLACKOUT'),
             centerTitle: true,
-            actions: [
-              if (!isWaiting &&
-                  currentStep != null &&
-                  widget.gameEngine.currentPhase == GamePhase.day)
-                IconButton(
-                  onPressed: _showLateJoinerDialog,
-                  icon: const Icon(Icons.person_add),
-                ),
-            ],
+            actions: const [],
           ),
           body: Stack(
             children: [
@@ -2365,7 +2109,10 @@ class _GameScreenState extends State<GameScreen>
                             key: key,
                             phaseName: step.isNight
                                 ? 'PARTY TIME!'
-                                : 'THE CLUB HAS CLOSED',
+                                : 'CLUB IS CLOSED',
+                            subtitle: step.id == 'club_closed'
+                                ? step.readAloudText
+                                : null,
                             phaseColor: step.isNight
                                 ? ClubBlackoutTheme.neonPurple
                                 : ClubBlackoutTheme.neonOrange,
@@ -2402,6 +2149,8 @@ class _GameScreenState extends State<GameScreen>
                                   role?.color ?? ClubBlackoutTheme.neonOrange,
                               role: role,
                               playerName: player?.name,
+                              player: player,
+                              gameEngine: widget.gameEngine,
                             ),
                             if (isLast && step.id == 'day_vote')
                               _buildVotingGrid(step),
@@ -2411,7 +2160,7 @@ class _GameScreenState extends State<GameScreen>
                                     step.actionType ==
                                         ScriptActionType.selectTwoPlayers) &&
                                 step.id != 'day_vote')
-                              _buildPlayerSelectionGrid(step),
+                              _buildPlayerSelectionList(step),
                             if (isLast &&
                                 step.actionType ==
                                     ScriptActionType.toggleOption)
@@ -2421,8 +2170,7 @@ class _GameScreenState extends State<GameScreen>
                                     ScriptActionType.binaryChoice)
                               _buildBinaryChoice(step),
                             if (isLast &&
-                                step.actionType ==
-                                    ScriptActionType.showInfo)
+                                step.actionType == ScriptActionType.showInfo)
                               _buildShowInfoAction(step),
                           ],
                         );
@@ -2460,31 +2208,6 @@ class _GameScreenState extends State<GameScreen>
                 ),
 
               if (_abilityFabExpanded) _buildAbilityFabMenu(),
-              // Dedicated FAB toggle anchored bottom-right so it is always reachable (day or night)
-              if (!isWaiting && hasAnyAbility)
-                Positioned(
-                  bottom: 100,
-                  right: 20,
-                  child: hasSecondWindConversion
-                      ? _PulsingFab(
-                          onPressed: () => setState(
-                            () => _abilityFabExpanded = !_abilityFabExpanded,
-                          ),
-                          isExpanded: _abilityFabExpanded,
-                        )
-                      : FloatingActionButton(
-                          heroTag: 'ability_toggle',
-                          backgroundColor: ClubBlackoutTheme.neonPurple,
-                          onPressed: () => setState(
-                            () => _abilityFabExpanded = !_abilityFabExpanded,
-                          ),
-                          child: Icon(
-                            _abilityFabExpanded
-                                ? Icons.close
-                                : Icons.settings_remote,
-                          ),
-                        ),
-                ),
               if (_rumourMillExpanded)
                 Positioned.fill(child: _buildRumourMillPanel()),
             ],
@@ -2495,27 +2218,132 @@ class _GameScreenState extends State<GameScreen>
   }
 
   Widget _buildFloatingActionBar(ScriptStep step) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton.filled(
-          onPressed: widget.gameEngine.regressScript,
-          icon: const Icon(Icons.arrow_back),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.white12,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.all(16),
+    // Hide forward button during player selection steps
+    final isSelectionStep =
+        (step.actionType == ScriptActionType.selectPlayer ||
+            step.actionType == ScriptActionType.selectTwoPlayers) &&
+        step.id != 'day_vote';
+
+    // Recalculate ability availability for the FAB visibility
+    final hasMessyBitch = widget.gameEngine.players.any(
+      (p) => p.role.id == 'messy_bitch',
+    );
+    final hasLightweight = widget.gameEngine.players.any(
+      (p) => p.role.id == 'lightweight' && p.isActive,
+    );
+    final hasClingerToFree = widget.gameEngine.players.any(
+      (p) =>
+          p.role.id == 'clinger' &&
+          p.isActive &&
+          p.clingerPartnerId != null &&
+          !p.clingerAttackDogUsed,
+    );
+    final hasSecondWindConversion = widget.gameEngine.players.any(
+      (p) =>
+          p.role.id == 'second_wind' &&
+          p.secondWindPendingConversion &&
+          !p.secondWindConverted,
+    );
+    final hasTeaSpiller = widget.gameEngine.players.any(
+      (p) => p.role.id == 'tea_spiller',
+    );
+    final hasPredator = widget.gameEngine.players.any(
+      (p) => p.role.id == 'predator',
+    );
+    final hasDramaQueen = widget.gameEngine.dramaQueenSwapPending;
+    final hasMedic = widget.gameEngine.players.any(
+      (p) =>
+          p.role.id == 'medic' &&
+          p.isActive &&
+          p.medicChoice == 'REVIVE' &&
+          !p.hasReviveToken,
+    );
+    final hasSober = widget.gameEngine.players.any(
+      (p) => p.role.id == 'sober' && p.isActive && !p.soberAbilityUsed,
+    );
+    final hasBouncer = widget.gameEngine.players.any(
+      (p) => p.role.id == 'bouncer' && p.isActive && !p.bouncerAbilityRevoked,
+    );
+
+    final hasAnyAbility =
+        hasMessyBitch ||
+        hasLightweight ||
+        hasClingerToFree ||
+        hasSecondWindConversion ||
+        hasTeaSpiller ||
+        hasPredator ||
+        hasDramaQueen ||
+        hasMedic ||
+        hasSober ||
+        hasBouncer;
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 600),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 1. Back Button
+          IconButton.filled(
+            onPressed: widget.gameEngine.regressScript,
+            icon: const Icon(Icons.arrow_back),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white12,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.all(12),
+            ),
           ),
-        ),
-        FilledButton(
-          onPressed: _advanceScript,
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.all(16),
-            shape: const CircleBorder(),
-          ),
-          child: const Icon(Icons.arrow_forward), // Icon only
-        ),
-      ],
+
+          // 2. FAB Menu Toggle (Black App Icon with Pink Glow)
+          if (hasAnyAbility)
+            GestureDetector(
+              onTap: () =>
+                  setState(() => _abilityFabExpanded = !_abilityFabExpanded),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut,
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: _abilityFabExpanded
+                      ? [
+                          BoxShadow(
+                            color: Colors.pinkAccent.withOpacity(0.8),
+                            blurRadius: 25,
+                            spreadRadius: 4,
+                          ),
+                          BoxShadow(
+                            color: Colors.pink.withOpacity(0.4),
+                            blurRadius: 40,
+                            spreadRadius: 8,
+                          ),
+                        ]
+                      : [],
+                ),
+                child: Image.asset(
+                  'Icons/Club Blackout App BLACK icon.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+
+          // 3. Forward Button (or Spacer)
+          if (!isSelectionStep)
+            FilledButton(
+              onPressed: _advanceScript,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+                shape: const CircleBorder(),
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Icon(Icons.arrow_forward), // Icon only
+            )
+          else
+            const SizedBox(
+              width: 48,
+            ), // Balance alignment if forward button is hidden
+        ],
+      ),
     );
   }
 
@@ -2537,6 +2365,7 @@ class _GameScreenState extends State<GameScreen>
               Expanded(
                 child: PlayerTile(
                   player: player,
+                  gameEngine: widget.gameEngine,
                   voteCount: votes,
                   onTap: () =>
                       setState(() => _voteCounts[player.id] = votes + 1),
@@ -2567,7 +2396,7 @@ class _GameScreenState extends State<GameScreen>
     );
   }
 
-  Widget _buildPlayerSelectionGrid(ScriptStep step) {
+  Widget _buildPlayerSelectionList(ScriptStep step) {
     // Exclude players sent home by Sober from selection
     final players = sortedPlayersByDisplayName(
       widget.gameEngine.players
@@ -2576,25 +2405,69 @@ class _GameScreenState extends State<GameScreen>
     );
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      child: GridView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+      child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 1.1,
-          mainAxisSpacing: 6,
-          crossAxisSpacing: 6,
-        ),
         itemCount: players.length,
         itemBuilder: (context, index) {
           final p = players[index];
           final isSelected = _currentSelection.contains(p.id);
-          return PlayerTile(
+
+          String stats = '';
+          if (p.role.id == 'clinger' && p.clingerPartnerId != null) {
+            final partner = widget.gameEngine.players.firstWhere(
+              (pl) => pl.id == p.clingerPartnerId,
+              orElse: () => p,
+            );
+            stats = 'Obsession: ${partner.name}';
+          } else if (p.role.id == 'creep' && p.creepTargetId != null) {
+            final target = widget.gameEngine.players.firstWhere(
+              (pl) => pl.id == p.creepTargetId,
+              orElse: () => p,
+            );
+            stats = 'Mimicking: ${target.role.name}';
+          } else if (p.role.id == 'tea_spiller' &&
+              p.teaSpillerTargetId != null) {
+            final target = widget.gameEngine.players.firstWhere(
+              (pl) => pl.id == p.teaSpillerTargetId,
+              orElse: () => p,
+            );
+            stats = 'Target: ${target.name}';
+          } else if (p.role.id == 'predator' && p.predatorTargetId != null) {
+            final prey = widget.gameEngine.players.firstWhere(
+              (pl) => pl.id == p.predatorTargetId,
+              orElse: () => p,
+            );
+            stats = 'Prey: ${prey.name}';
+          }
+
+          return NightPhasePlayerTile(
             player: p,
             isSelected: isSelected,
-            onTap: () => _onPlayerSelected(p.id),
-            isCompact: true,
+            gameEngine: widget.gameEngine,
+            statsText: stats,
+            onTap: () {
+              // Standard selection toggle
+              _onPlayerSelected(p.id);
+            },
+            onConfirm: () {
+              // Validation for 2-player selection
+              if (step.actionType == ScriptActionType.selectTwoPlayers) {
+                if (_currentSelection.length != 2) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please select exactly 2 players.'),
+                      backgroundColor: Colors.redAccent,
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                  return;
+                }
+              }
+              // Advance script on confirmation
+              _advanceScript();
+            },
           );
         },
       ),
@@ -2847,156 +2720,159 @@ class _GameScreenState extends State<GameScreen>
   }
 
   Widget _buildAbilityFabMenu() {
-    Widget roleIcon(String roleId) {
-      try {
-        final p = widget.gameEngine.players.firstWhere(
-          (player) => player.role.id == roleId,
-        );
-        if (p.role.assetPath.isNotEmpty) {
-          return ClipOval(
-            child: Image.asset(p.role.assetPath, fit: BoxFit.cover),
-          );
-        }
-      } catch (_) {}
-      return const Icon(Icons.help);
-    }
-
     return Positioned(
       bottom: 100,
-      right: 20,
-      child: Column(
-        children: [
-          // Messy Bitch -> Rumour Mill (Info/Tool) - Active when Alive
-          if (widget.gameEngine.players.any(
-            (p) => p.role.id == 'messy_bitch' && p.isActive,
-          ))
-            FloatingActionButton(
-              heroTag: 'fab_messy',
-              onPressed: () => setState(() => _rumourMillExpanded = true),
-              child: roleIcon('messy_bitch'),
-            ),
-          const SizedBox(height: 12),
-
-          // Clinger -> Attack Dog (Manual Activation) - Active when Linked
-          if (widget.gameEngine.players.any(
-            (p) =>
-                p.role.id == 'clinger' &&
-                p.isActive &&
-                p.clingerPartnerId != null &&
-                !p.clingerAttackDogUsed,
-          ))
-            FloatingActionButton(
-              heroTag: 'fab_clinger',
-              onPressed: _showAttackDogConversion,
-              child: roleIcon('clinger'),
-            ),
-          const SizedBox(height: 12),
-
-          // Second Wind -> Conversion (Manual Activation) - Active Pending
-          if (widget.gameEngine.players.any(
-            (p) =>
-                p.role.id == 'second_wind' &&
-                p.secondWindPendingConversion &&
-                !p.secondWindConverted,
-          ))
-            FloatingActionButton(
-              heroTag: 'fab_secondwind',
-              onPressed: _showSecondWindConversion,
-              child: roleIcon('second_wind'),
-            ),
-          const SizedBox(height: 12),
-
-          // Silver Fox disabled (host request)
-          const SizedBox(height: 12),
-
-          // Lightweight -> Taboo List (Info) - Active when Alive
-          if (widget.gameEngine.players.any(
-            (p) => p.role.id == 'lightweight' && p.isActive,
-          ))
-            FloatingActionButton(
-              heroTag: 'fab_lightweight',
-              onPressed: _showTabooList,
-              child: roleIcon('lightweight'),
-            ),
-          const SizedBox(height: 12),
-
-          // Tea Spiller -> Reveal (Death Reaction) - ONLY ACTIVE WHEN DEAD
-          if (widget.gameEngine.players.any(
-            (p) =>
-                p.role.id == 'tea_spiller' &&
-                widget.gameEngine.deadPlayerIds.contains(p.id),
-          ))
-            FloatingActionButton(
-              heroTag: 'fab_tea_spiller',
-              onPressed: _showTeaSpillerRevealDialog,
-              child: roleIcon('tea_spiller'),
-            ),
-          const SizedBox(height: 12),
-
-          // Predator -> Retaliation (Death Reaction) - ONLY ACTIVE WHEN DEAD
-          if (widget.gameEngine.players.any(
-            (p) =>
-                p.role.id == 'predator' &&
-                widget.gameEngine.deadPlayerIds.contains(p.id),
-          ))
-            FloatingActionButton(
-              heroTag: 'fab_predator',
-              onPressed: _showPredatorRetaliationDialog,
-              child: roleIcon('predator'),
-            ),
-          const SizedBox(height: 12),
-
-          // Drama Queen -> Swap (Death Reaction) - Active while pending
-          if (widget.gameEngine.dramaQueenSwapPending)
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: ClubBlackoutTheme.neonBlue.withOpacity(0.7),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
+      left: 0,
+      right: 0,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Messy Bitch -> Rumour Mill (Info/Tool) - Active when Alive
+            if (widget.gameEngine.players.any(
+              (p) => p.role.id == 'messy_bitch' && p.isActive,
+            ))
+              _buildNeonFabParam(
+                roleId: 'messy_bitch',
+                onPressed: () => setState(() => _rumourMillExpanded = true),
               ),
-              child: FloatingActionButton(
-                heroTag: 'fab_drama_queen',
-                backgroundColor: ClubBlackoutTheme.neonBlue,
-                foregroundColor: Colors.black,
+
+            // Clinger -> Attack Dog (Manual Activation) - Active when Linked
+            if (widget.gameEngine.players.any(
+              (p) =>
+                  p.role.id == 'clinger' &&
+                  p.isActive &&
+                  p.clingerPartnerId != null &&
+                  !p.clingerAttackDogUsed,
+            ))
+              _buildNeonFabParam(
+                roleId: 'clinger',
+                onPressed: _showAttackDogConversion,
+              ),
+
+            // Second Wind -> Conversion (Manual Activation) - Active Pending
+            if (widget.gameEngine.players.any(
+              (p) =>
+                  p.role.id == 'second_wind' &&
+                  p.secondWindPendingConversion &&
+                  !p.secondWindConverted,
+            ))
+              _buildNeonFabParam(
+                roleId: 'second_wind',
+                onPressed: _showSecondWindConversion,
+              ),
+
+            // Silver Fox disabled (host request)
+
+            // Lightweight -> Taboo List (Info) - Active when Alive
+            if (widget.gameEngine.players.any(
+              (p) => p.role.id == 'lightweight' && p.isActive,
+            ))
+              _buildNeonFabParam(
+                roleId: 'lightweight',
+                onPressed: _showTabooList,
+              ),
+
+            // Tea Spiller -> Reveal (Death Reaction) - ONLY ACTIVE WHEN DEAD
+            if (widget.gameEngine.players.any(
+              (p) =>
+                  p.role.id == 'tea_spiller' &&
+                  widget.gameEngine.deadPlayerIds.contains(p.id),
+            ))
+              _buildNeonFabParam(
+                roleId: 'tea_spiller',
+                onPressed: _showTeaSpillerRevealDialog,
+              ),
+
+            // Predator -> Retaliation (Death Reaction) - ONLY ACTIVE WHEN DEAD
+            if (widget.gameEngine.players.any(
+              (p) =>
+                  p.role.id == 'predator' &&
+                  widget.gameEngine.deadPlayerIds.contains(p.id),
+            ))
+              _buildNeonFabParam(
+                roleId: 'predator',
+                onPressed: _showPredatorRetaliationDialog,
+              ),
+
+            // Drama Queen -> Swap (Death Reaction) - Active while pending
+            if (widget.gameEngine.dramaQueenSwapPending)
+              _buildNeonFabParam(
+                roleId: 'drama_queen',
                 onPressed: _showDramaQueenSwapDialog,
-                child: roleIcon('drama_queen'),
               ),
-            ),
-          const SizedBox(height: 12),
 
-          // Medic -> Revive (Manual Activation - if Mode Correct) - Active when Alive
-          if (widget.gameEngine.players.any(
-            (p) =>
-                p.role.id == 'medic' &&
-                p.isActive &&
-                p.medicChoice == 'REVIVE' &&
-                !p.hasReviveToken,
-          ))
-            FloatingActionButton(
-              heroTag: 'fab_medic',
-              onPressed: _showMedicReviveDialog,
-              child: roleIcon('medic'),
-            ),
-          const SizedBox(height: 12),
+            // Medic -> Revive (Manual Activation - if Mode Correct) - Active when Alive
+            if (widget.gameEngine.players.any(
+              (p) =>
+                  p.role.id == 'medic' &&
+                  p.isActive &&
+                  p.medicChoice == 'REVIVE' &&
+                  !p.hasReviveToken,
+            ))
+              _buildNeonFabParam(
+                roleId: 'medic',
+                onPressed: _showMedicReviveDialog,
+              ),
 
-          // Bouncer -> Confront Roofi (Manual Activation)
-          if (widget.gameEngine.players.any(
-            (p) =>
-                p.role.id == 'bouncer' &&
-                p.isActive &&
-                !p.bouncerAbilityRevoked,
-          ))
-            FloatingActionButton(
-              heroTag: 'fab_bouncer',
-              onPressed: _showBouncerConfrontDialog,
-              child: roleIcon('bouncer'),
-            ),
-        ],
+            // Bouncer -> Confront Roofi (Manual Activation)
+            if (widget.gameEngine.players.any(
+              (p) =>
+                  p.role.id == 'bouncer' &&
+                  p.isActive &&
+                  !p.bouncerAbilityRevoked,
+            ))
+              _buildNeonFabParam(
+                roleId: 'bouncer',
+                onPressed: _showBouncerConfrontDialog,
+              ),
+
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNeonFabParam({
+    required String roleId,
+    required VoidCallback onPressed,
+  }) {
+    final player = widget.gameEngine.players.firstWhere(
+      (p) => p.role.id == roleId,
+      orElse: () => widget.gameEngine.players.first,
+    );
+    final color = player.role.color;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _abilityFabExpanded = false);
+          onPressed();
+        },
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.6),
+                blurRadius: 15,
+                spreadRadius: 2,
+              ),
+            ],
+            border: Border.all(color: color, width: 2),
+          ),
+          child: ClipOval(
+            child: player.role.assetPath.isNotEmpty
+                ? Image.asset(player.role.assetPath, fit: BoxFit.cover)
+                : Icon(Icons.help, color: color),
+          ),
+        ),
       ),
     );
   }
@@ -3107,8 +2983,8 @@ class _GameScreenState extends State<GameScreen>
             ),
           ),
           const SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
+          FilledButton(
+            style: FilledButton.styleFrom(
               backgroundColor: ClubBlackoutTheme.neonGreen,
               foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -3143,12 +3019,12 @@ class _GameScreenState extends State<GameScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              "Suspect someone of being The Roofi? Select them to intervene.",
+              "Does the Bouncer suspect someone? Select their target.",
               style: TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 16),
             const Text(
-              "⚠️ RISK: If you are wrong, you lose your I.D. checking ability forever.",
+              "⚠️ RISK: If Bouncer is wrong, they lose their I.D. checking ability forever.",
               style: TextStyle(color: Colors.redAccent, fontSize: 13),
             ),
             const SizedBox(height: 16),
@@ -3493,6 +3369,7 @@ class _GameScreenState extends State<GameScreen>
                           final player = alivePlayers[index];
                           final isSelected = selected.contains(player.id);
                           return PlayerTile(
+                            gameEngine: widget.gameEngine,
                             player: player,
                             isCompact: true,
                             isSelected: isSelected,
@@ -3662,12 +3539,16 @@ class _GameScreenState extends State<GameScreen>
                   _showLog();
                 },
                 onComplete: () {
-                  // Advance past 'day_discuss'
-                  widget.gameEngine.advanceScript();
-                  // If next is 'day_vote', advance past that too since dialog handled it
-                  if (widget.gameEngine.currentScriptStep?.id == 'day_vote') {
+                  // Advance through all remaining day phase steps (summary, discussion, vote)
+                  // The dialog handles them together as one cohesive day phase
+                  int safety = 0;
+                  do {
                     widget.gameEngine.advanceScript();
-                  }
+                    safety++;
+                  } while (safety < 10 &&
+                      widget.gameEngine.currentPhase == GamePhase.day &&
+                      widget.gameEngine.currentScriptStep != null &&
+                      widget.gameEngine.currentScriptStep!.isNight == false);
                   _scrollToBottom();
                 },
                 onGameEnd: (winner, message) {

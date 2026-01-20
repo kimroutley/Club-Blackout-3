@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+export 'utils/role_extensions.dart';
 
 class ClubBlackoutTheme {
   static const Color backgroundBlack = Color(0xFF000000);
@@ -34,7 +35,7 @@ class ClubBlackoutTheme {
   static const EdgeInsets paddingAll16 = EdgeInsets.all(spacing16);
   static const EdgeInsets paddingAll24 = EdgeInsets.all(spacing24);
   static const EdgeInsets paddingAll32 = EdgeInsets.all(spacing32);
-  
+
   static const EdgeInsets cardPadding = EdgeInsets.all(spacing16);
   static const EdgeInsets dialogPadding = EdgeInsets.all(spacing24);
   static const EdgeInsets screenPadding = EdgeInsets.symmetric(
@@ -50,57 +51,58 @@ class ClubBlackoutTheme {
   static const TextStyle primaryFont = TextStyle(fontFamily: 'Hyperwave');
 
   static TextStyle get headingStyle => const TextStyle(
-        fontFamily: 'Hyperwave',
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 2,
-      );
+    fontFamily: 'Hyperwave',
+    fontSize: 24,
+    fontWeight: FontWeight.bold,
+    letterSpacing: 2,
+  );
 
   // Enhanced glow effects
-  static List<Shadow> iconGlow(Color color, {double intensity = 1.0}) => textGlow(color, intensity: intensity);
-  
+  static List<Shadow> iconGlow(Color color, {double intensity = 1.0}) =>
+      textGlow(color, intensity: intensity);
+
   static List<Shadow> textGlow(Color color, {double intensity = 1.0}) => [
-        Shadow(color: color, blurRadius: 8 * intensity),
-        Shadow(color: color.withOpacity(0.8), blurRadius: 16 * intensity),
-        Shadow(color: color.withOpacity(0.5), blurRadius: 24 * intensity),
-      ];
+    Shadow(color: color, blurRadius: 8 * intensity),
+    Shadow(color: color.withOpacity(0.8), blurRadius: 16 * intensity),
+    Shadow(color: color.withOpacity(0.5), blurRadius: 24 * intensity),
+  ];
 
   static List<BoxShadow> boxGlow(Color color, {double intensity = 1.0}) => [
-        BoxShadow(
-          color: color.withOpacity((0.6 * intensity).clamp(0.0, 1.0)),
-          blurRadius: 12,
-          spreadRadius: 2,
-        ),
-        BoxShadow(
-          color: color.withOpacity((0.4 * intensity).clamp(0.0, 1.0)),
-          blurRadius: 24,
-          spreadRadius: 4,
-        ),
-        BoxShadow(
-          color: color.withOpacity((0.2 * intensity).clamp(0.0, 1.0)),
-          blurRadius: 32,
-          spreadRadius: 0,
-        ),
-      ];
+    BoxShadow(
+      color: color.withOpacity((0.6 * intensity).clamp(0.0, 1.0)),
+      blurRadius: 12,
+      spreadRadius: 2,
+    ),
+    BoxShadow(
+      color: color.withOpacity((0.4 * intensity).clamp(0.0, 1.0)),
+      blurRadius: 24,
+      spreadRadius: 4,
+    ),
+    BoxShadow(
+      color: color.withOpacity((0.2 * intensity).clamp(0.0, 1.0)),
+      blurRadius: 32,
+      spreadRadius: 0,
+    ),
+  ];
 
   // Circular glow without square shadow
   static List<BoxShadow> circleGlow(Color color, {double intensity = 1.0}) => [
-        BoxShadow(
-          color: color.withOpacity(0.6 * intensity),
-          blurRadius: 10,
-          spreadRadius: 0,
-        ),
-        BoxShadow(
-          color: color.withOpacity(0.35 * intensity),
-          blurRadius: 20,
-          spreadRadius: 0,
-        ),
-        BoxShadow(
-          color: color.withOpacity(0.18 * intensity),
-          blurRadius: 32,
-          spreadRadius: 0,
-        ),
-      ];
+    BoxShadow(
+      color: color.withOpacity(0.6 * intensity),
+      blurRadius: 10,
+      spreadRadius: 0,
+    ),
+    BoxShadow(
+      color: color.withOpacity(0.35 * intensity),
+      blurRadius: 20,
+      spreadRadius: 0,
+    ),
+    BoxShadow(
+      color: color.withOpacity(0.18 * intensity),
+      blurRadius: 32,
+      spreadRadius: 0,
+    ),
+  ];
 
   /// Centers content and constrains width for better readability on tablets/web.
   static Widget centeredConstrained({
@@ -144,11 +146,7 @@ class ClubBlackoutTheme {
     return LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [
-        color1,
-        color2,
-        color1.withOpacity(0.7),
-      ],
+      colors: [color1, color2, color1.withOpacity(0.7)],
       stops: const [0.0, 0.5, 1.0],
     );
   }
@@ -168,17 +166,15 @@ class ClubBlackoutTheme {
         letterSpacing: 1.2,
       ),
     ).copyWith(
-      overlayColor: MaterialStateProperty.resolveWith<Color?>(
-        (states) {
-          if (states.contains(MaterialState.pressed)) {
-            return color.withOpacity(0.3);
-          }
-          if (states.contains(MaterialState.hovered)) {
-            return color.withOpacity(0.1);
-          }
-          return null;
-        },
-      ),
+      overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(MaterialState.pressed)) {
+          return color.withOpacity(0.3);
+        }
+        if (states.contains(MaterialState.hovered)) {
+          return color.withOpacity(0.1);
+        }
+        return null;
+      }),
     );
   }
 
@@ -192,11 +188,7 @@ class ClubBlackoutTheme {
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          Colors.black,
-          const Color(0xFF0A0A0A),
-          Colors.black,
-        ],
+        colors: [Colors.black, const Color(0xFF0A0A0A), Colors.black],
       ),
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(color: glowColor.withOpacity(0.6), width: 2),

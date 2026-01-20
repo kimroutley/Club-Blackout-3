@@ -2,6 +2,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import '../../logic/game_engine.dart';
+import '../../logic/game_state.dart';
 import '../../utils/app_version.dart';
 import '../screens/game_screen.dart';
 import '../screens/host_overview_screen.dart';
@@ -93,14 +94,16 @@ class GameDrawer extends StatelessWidget {
                                 color: ClubBlackoutTheme.neonPink,
                                 width: 2,
                               ),
-                              boxShadow: ClubBlackoutTheme.circleGlow(ClubBlackoutTheme.neonPink),
+                              boxShadow: ClubBlackoutTheme.circleGlow(
+                                ClubBlackoutTheme.neonPink,
+                              ),
                             ),
                             child: ClipOval(
                               /*child: Image.asset(
                                 'Icons/Club Blackout App BLACK icon.png',
                                 fit: BoxFit.cover,
                                 errorBuilder: (c, o, s) => Icon(
-                                  Icons.nightlife,
+                                  Icons.shield,
                                   color: ClubBlackoutTheme.neonPink,
                                   size: 28,
                                 ),
@@ -118,28 +121,36 @@ class GameDrawer extends StatelessWidget {
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                'CLUB CLUB\nBLACKOUT',
+                                'CLUB\nBLACKOUT',
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                   height: 1.1,
                                   color: ClubBlackoutTheme.neonPink,
-                                  shadows: ClubBlackoutTheme.textGlow(ClubBlackoutTheme.neonPink),
+                                  shadows: ClubBlackoutTheme.textGlow(
+                                    ClubBlackoutTheme.neonPink,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      if (gameEngine != null && gameEngine!.players.isNotEmpty) ...[
+                      if (gameEngine != null &&
+                          gameEngine!.players.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: ClubBlackoutTheme.neonBlue.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: ClubBlackoutTheme.neonBlue.withOpacity(0.5),
+                              color: ClubBlackoutTheme.neonBlue.withOpacity(
+                                0.5,
+                              ),
                               width: 1,
                             ),
                           ),
@@ -152,12 +163,15 @@ class GameDrawer extends StatelessWidget {
                                 size: 16,
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                '${gameEngine!.players.length} Players',
-                                style: TextStyle(
-                                  color: ClubBlackoutTheme.neonBlue,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                              Flexible(
+                                child: Text(
+                                  '${gameEngine!.players.length} Players',
+                                  style: TextStyle(
+                                    color: ClubBlackoutTheme.neonBlue,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -167,12 +181,15 @@ class GameDrawer extends StatelessWidget {
                                 size: 16,
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                'Night ${gameEngine!.dayCount}',
-                                style: TextStyle(
-                                  color: ClubBlackoutTheme.neonGreen,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                              Flexible(
+                                child: Text(
+                                  '${gameEngine!.currentPhase == GamePhase.day ? "Day" : "Night"} ${gameEngine!.dayCount}',
+                                  style: TextStyle(
+                                    color: ClubBlackoutTheme.neonGreen,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -250,7 +267,8 @@ class GameDrawer extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => HostOverviewScreen(gameEngine: gameEngine!),
+                                builder: (_) =>
+                                    HostOverviewScreen(gameEngine: gameEngine!),
                               ),
                             );
                           },
@@ -269,7 +287,9 @@ class GameDrawer extends StatelessWidget {
                                   gradient: LinearGradient(
                                     colors: [
                                       Colors.transparent,
-                                      ClubBlackoutTheme.neonGreen.withOpacity(0.5),
+                                      ClubBlackoutTheme.neonGreen.withOpacity(
+                                        0.5,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -291,7 +311,9 @@ class GameDrawer extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
-                                        ClubBlackoutTheme.neonGreen.withOpacity(0.5),
+                                        ClubBlackoutTheme.neonGreen.withOpacity(
+                                          0.5,
+                                        ),
                                         Colors.transparent,
                                       ],
                                     ),
@@ -313,7 +335,8 @@ class GameDrawer extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => GameScreen(gameEngine: gameEngine!),
+                                  builder: (_) =>
+                                      GameScreen(gameEngine: gameEngine!),
                                 ),
                               );
                             } else {
@@ -321,9 +344,20 @@ class GameDrawer extends StatelessWidget {
                                 context: context,
                                 builder: (_) => AlertDialog(
                                   backgroundColor: Colors.black,
-                                  title: const Text('No Active Game', style: TextStyle(color: Colors.white)),
-                                  content: const Text('Start a new game from the Lobby.', style: TextStyle(color: Colors.white70)),
-                                  actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+                                  title: const Text(
+                                    'No Active Game',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  content: const Text(
+                                    'Start a new game from the Lobby.',
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
                                 ),
                               );
                             }
@@ -433,10 +467,7 @@ class GameDrawer extends StatelessWidget {
             ? LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                colors: [
-                  color.withOpacity(0.2),
-                  color.withOpacity(0.05),
-                ],
+                colors: [color.withOpacity(0.2), color.withOpacity(0.05)],
               )
             : null,
         border: isSelected
@@ -456,7 +487,9 @@ class GameDrawer extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isSelected ? color.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                    color: isSelected
+                        ? color.withOpacity(0.2)
+                        : Colors.white.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelected ? color : Colors.white.withOpacity(0.1),
@@ -476,7 +509,9 @@ class GameDrawer extends StatelessWidget {
                     style: TextStyle(
                       color: isSelected ? color : Colors.white70,
                       fontSize: 15,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -524,10 +559,7 @@ class GameDrawer extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: color.withOpacity(0.3),
-                width: 1,
-              ),
+              border: Border.all(color: color.withOpacity(0.3), width: 1),
             ),
             child: Row(
               children: [
@@ -586,7 +618,10 @@ class GameDrawer extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL', style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'CANCEL',
+              style: TextStyle(color: Colors.white54),
+            ),
           ),
           FilledButton(
             onPressed: () {
@@ -596,9 +631,13 @@ class GameDrawer extends StatelessWidget {
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
             style: ButtonStyle(
-              backgroundColor: MaterialStateProperty.all(Colors.amber.withOpacity(0.2)),
+              backgroundColor: MaterialStateProperty.all(
+                Colors.amber.withOpacity(0.2),
+              ),
               foregroundColor: MaterialStateProperty.all(Colors.amber),
-              side: MaterialStateProperty.all(const BorderSide(color: Colors.amber, width: 1.5)),
+              side: MaterialStateProperty.all(
+                const BorderSide(color: Colors.amber, width: 1.5),
+              ),
             ),
             child: const Text('RESET'),
           ),
@@ -612,24 +651,41 @@ class GameDrawer extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: Text('CHANGELOG', style: ClubBlackoutTheme.headingStyle.copyWith(color: ClubBlackoutTheme.neonBlue)),
+        title: Text(
+          'CHANGELOG',
+          style: ClubBlackoutTheme.headingStyle.copyWith(
+            color: ClubBlackoutTheme.neonBlue,
+          ),
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView(
             shrinkWrap: true,
             children: const [
-              Text('- **v1.2.0 (Jan 2026)**: Interactive Gameplay Script, Enhanced Lobby UI.', style: TextStyle(color: Colors.white70)),
+              Text(
+                '- **v1.2.0 (Jan 2026)**: Interactive Gameplay Script, Enhanced Lobby UI.',
+                style: TextStyle(color: Colors.white70),
+              ),
               SizedBox(height: 12),
-              Text('- **v1.1.0 (Dec 2025)**: Added Messy Bitch & Clinger Abilities, Game Log, Save/Load Feature (Beta).', style: TextStyle(color: Colors.white70)),
+              Text(
+                '- **v1.1.0 (Dec 2025)**: Added Messy Bitch & Clinger Abilities, Game Log, Save/Load Feature (Beta).',
+                style: TextStyle(color: Colors.white70),
+              ),
               SizedBox(height: 12),
-              Text('- **v1.0.0 (Nov 2025)**: Initial Release with core game mechanics and 10+ roles.', style: TextStyle(color: Colors.white70)),
+              Text(
+                '- **v1.0.0 (Nov 2025)**: Initial Release with core game mechanics and 10+ roles.',
+                style: TextStyle(color: Colors.white70),
+              ),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('CLOSE', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+            child: Text(
+              'CLOSE',
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            ),
           ),
         ],
       ),
@@ -637,7 +693,8 @@ class GameDrawer extends StatelessWidget {
   }
 
   Future<void> _showSaveGameDialog(BuildContext context) async {
-    final gameEngine = this.gameEngine; // Use a local variable to avoid nullable checks
+    final gameEngine =
+        this.gameEngine; // Use a local variable to avoid nullable checks
     if (gameEngine == null) return;
 
     String saveName = '';
@@ -647,25 +704,41 @@ class GameDrawer extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: Text('SAVE GAME', style: ClubBlackoutTheme.headingStyle.copyWith(color: ClubBlackoutTheme.neonBlue)),
+        title: Text(
+          'SAVE GAME',
+          style: ClubBlackoutTheme.headingStyle.copyWith(
+            color: ClubBlackoutTheme.neonBlue,
+          ),
+        ),
         content: TextField(
           controller: controller,
           onChanged: (value) => saveName = value,
           decoration: InputDecoration(
             hintText: 'Enter save name',
             hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: ClubBlackoutTheme.neonBlue.withOpacity(0.5))),
-            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: ClubBlackoutTheme.neonBlue)),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: ClubBlackoutTheme.neonBlue.withOpacity(0.5),
+              ),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: ClubBlackoutTheme.neonBlue),
+            ),
           ),
           style: const TextStyle(color: Colors.white),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('CANCEL', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+            child: Text(
+              'CANCEL',
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            ),
           ),
           FilledButton(
-            style: ElevatedButton.styleFrom(backgroundColor: ClubBlackoutTheme.neonBlue),
+            style: FilledButton.styleFrom(
+              backgroundColor: ClubBlackoutTheme.neonBlue,
+            ),
             onPressed: () async {
               if (saveName.isNotEmpty) {
                 await gameEngine.saveGame(saveName);
@@ -695,11 +768,21 @@ class GameDrawer extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: Text('LOAD GAME', style: ClubBlackoutTheme.headingStyle.copyWith(color: ClubBlackoutTheme.neonPurple)),
+        title: Text(
+          'LOAD GAME',
+          style: ClubBlackoutTheme.headingStyle.copyWith(
+            color: ClubBlackoutTheme.neonPurple,
+          ),
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: saves.isEmpty
-              ? Center(child: Text('No saved games found.', style: TextStyle(color: Colors.white.withOpacity(0.7))))
+              ? Center(
+                  child: Text(
+                    'No saved games found.',
+                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  ),
+                )
               : ListView.builder(
                   shrinkWrap: true,
                   itemCount: saves.length,
@@ -729,26 +812,51 @@ class GameDrawer extends StatelessWidget {
                         color: Colors.black.withOpacity(0.7),
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         child: ListTile(
-                          title: Text(save.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          title: Text(
+                            save.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('${save.alivePlayers}/${save.totalPlayers} Players Alive - Day ${save.dayCount} (${save.currentPhase})', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
-                              Text(dateStr, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+                              Text(
+                                '${save.alivePlayers}/${save.totalPlayers} Players Alive - Day ${save.dayCount} (${save.currentPhase})',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                dateStr,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.5),
+                                  fontSize: 10,
+                                ),
+                              ),
                             ],
                           ),
-                          trailing: Icon(Icons.chevron_right, color: ClubBlackoutTheme.neonPurple),
+                          trailing: Icon(
+                            Icons.chevron_right,
+                            color: ClubBlackoutTheme.neonPurple,
+                          ),
                           onTap: () async {
                             Navigator.pop(context);
                             final loaded = await gameEngine.loadGame(save.id);
                             if (context.mounted && loaded) {
                               HapticFeedback.mediumImpact();
-                              if (ModalRoute.of(context)?.settings.name != '/game') {
+                              if (ModalRoute.of(context)?.settings.name !=
+                                  '/game') {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => GameScreen(gameEngine: gameEngine),
-                                    settings: const RouteSettings(name: '/game'),
+                                    builder: (_) =>
+                                        GameScreen(gameEngine: gameEngine),
+                                    settings: const RouteSettings(
+                                      name: '/game',
+                                    ),
                                   ),
                                 );
                               }
@@ -757,9 +865,19 @@ class GameDrawer extends StatelessWidget {
                                 context: context,
                                 builder: (_) => AlertDialog(
                                   backgroundColor: Colors.black,
-                                  title: const Text('Error', style: TextStyle(color: Colors.red)),
-                                  content: const Text('Failed to load game data.'),
-                                  actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+                                  title: const Text(
+                                    'Error',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                  content: const Text(
+                                    'Failed to load game data.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
                                 ),
                               );
                             }
@@ -776,18 +894,26 @@ class GameDrawer extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(context); // Close dialog
               HapticFeedback.heavyImpact();
-              await gameEngine.createTestGame(roleCount: 20);
-              
+              await gameEngine.createTestGame(fullRoster: true);
+
               if (context.mounted) {
                 // Return to lobby to see the new roster
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
               }
             },
-            child: Text('TEST', style: TextStyle(color: Colors.white.withOpacity(0.1))),
+            child: Text(
+              'TEST',
+              style: TextStyle(color: Colors.white.withOpacity(0.1)),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('CLOSE', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+            child: Text(
+              'CLOSE',
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            ),
           ),
         ],
       ),

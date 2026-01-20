@@ -14,7 +14,7 @@ void showDeathAnnouncement(
   VoidCallback? onComplete,
 }) {
   SoundService().playDeath();
-  
+
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -43,7 +43,8 @@ class DeathAnnouncementDialog extends StatefulWidget {
   });
 
   @override
-  State<DeathAnnouncementDialog> createState() => _DeathAnnouncementDialogState();
+  State<DeathAnnouncementDialog> createState() =>
+      _DeathAnnouncementDialogState();
 }
 
 class _DeathAnnouncementDialogState extends State<DeathAnnouncementDialog>
@@ -75,24 +76,15 @@ class _DeathAnnouncementDialogState extends State<DeathAnnouncementDialog>
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _fadeController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _scaleController,
-        curve: Curves.easeOutBack,
-      ),
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeOutBack),
     );
 
     _pulseAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _pulseController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
     // Start animations
@@ -121,7 +113,11 @@ class _DeathAnnouncementDialogState extends State<DeathAnnouncementDialog>
     return Dialog(
       backgroundColor: Colors.transparent,
       child: AnimatedBuilder(
-        animation: Listenable.merge([_fadeAnimation, _scaleAnimation, _pulseAnimation]),
+        animation: Listenable.merge([
+          _fadeAnimation,
+          _scaleAnimation,
+          _pulseAnimation,
+        ]),
         builder: (context, child) {
           return Opacity(
             opacity: _fadeAnimation.value,
@@ -167,10 +163,7 @@ class _DeathAnnouncementDialogState extends State<DeathAnnouncementDialog>
                           ),
                         ),
                         child: const Center(
-                          child: Text(
-                            '💀',
-                            style: TextStyle(fontSize: 50),
-                          ),
+                          child: Text('💀', style: TextStyle(fontSize: 50)),
                         ),
                       ),
                     ),
@@ -249,9 +242,9 @@ class _DeathAnnouncementDialogState extends State<DeathAnnouncementDialog>
                     // Close button
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
+                      child: FilledButton(
                         onPressed: _close,
-                        style: ElevatedButton.styleFrom(
+                        style: FilledButton.styleFrom(
                           backgroundColor: ClubBlackoutTheme.crimsonRed,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),

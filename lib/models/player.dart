@@ -12,15 +12,19 @@ class Player {
 
   // Specific role state
   bool idCheckedByBouncer = false;
-  String? medicChoice; // "PROTECT_DAILY" or "RESUSCITATE_ONCE" - permanent choice made at Night 0 setup
-  bool hasReviveToken = false; // True if medic has used their one-time revive ability
+  String?
+  medicChoice; // "PROTECT_DAILY" or "RESUSCITATE_ONCE" - permanent choice made at Night 0 setup
+  bool hasReviveToken =
+      false; // True if medic has used their one-time revive ability
   String? creepTargetId; // For The Creep to store who they are mimicking
   bool hasRumour = false; // For Messy Bitch
-  bool messyBitchKillUsed = false; // Messy Bitch's special kill after win condition
-  
+  bool messyBitchKillUsed =
+      false; // Messy Bitch's special kill after win condition
+
   // Additional role states for new mechanics
   String? clingerPartnerId; // The Clinger's linked partner
-  bool clingerFreedAsAttackDog = false; // Clinger freed by being called "controller"
+  bool clingerFreedAsAttackDog =
+      false; // Clinger freed by being called "controller"
   bool clingerAttackDogUsed = false; // Attack dog ability used
   List<String> tabooNames = []; // Lightweight's forbidden names
   bool minorHasBeenIDd = false; // Minor death protection flag
@@ -34,10 +38,17 @@ class Player {
   int? deathDay; // Day count when player died (for medic revive time limit)
   // Roofi/Bouncer mechanics
   int? silencedDay; // If set to D, player is silenced during Day D
-  int? blockedKillNight; // If set to N, this Dealer cannot kill on Night N (single-dealer case)
-  bool roofiAbilityRevoked = false; // Roofi lost ability due to Bouncer challenge
-  bool bouncerAbilityRevoked = false; // Bouncer lost ID ability due to failed challenge
-  bool bouncerHasRoofiAbility = false; // Bouncer gained Roofi ability from successful challenge
+  int?
+  blockedKillNight; // If set to N, this Dealer cannot kill on Night N (single-dealer case)
+  bool roofiAbilityRevoked =
+      false; // Roofi lost ability due to Bouncer challenge
+  bool bouncerAbilityRevoked =
+      false; // Bouncer lost ID ability due to failed challenge
+  bool bouncerHasRoofiAbility =
+      false; // Bouncer gained Roofi ability from successful challenge
+
+  // Death metadata
+  String? deathReason; // The cause of death (Vote, Night Kill, etc.)
 
   // Persistent Reactive Targets (persist across Day phase for death reactions)
   String? teaSpillerTargetId;
@@ -51,7 +62,7 @@ class Player {
     required this.role,
     this.isAlive = true,
     this.isEnabled = true,
-    this.statusEffects = const [],
+    List<String>? statusEffects,
     this.lives = 1,
     this.idCheckedByBouncer = false,
     this.medicChoice,
@@ -77,7 +88,9 @@ class Player {
     this.roofiAbilityRevoked = false,
     this.bouncerAbilityRevoked = false,
     this.bouncerHasRoofiAbility = false,
+    this.deathReason,
   }) : tabooNames = tabooNames ?? [],
+       statusEffects = statusEffects ?? [],
        alliance = role.alliance;
 
   bool get isActive => isAlive && isEnabled && !joinsNextNight;
@@ -100,8 +113,9 @@ class Player {
     }
   }
 
-  void die([int? currentDay]) {
+  void die([int? currentDay, String? reason]) {
     isAlive = false;
+    deathReason = reason;
     if (currentDay != null) {
       deathDay = currentDay;
     }
@@ -135,6 +149,8 @@ class Player {
       'alliance': alliance,
       'idCheckedByBouncer': idCheckedByBouncer,
       'medicChoice': medicChoice,
+      'hasReviveToken': hasReviveToken,
+      'creepTargetId': creepTargetId,
       'hasRumour': hasRumour,
       'messyBitchKillUsed': messyBitchKillUsed,
       'clingerPartnerId': clingerPartnerId,
@@ -157,11 +173,12 @@ class Player {
       'predatorTargetId': predatorTargetId,
       'dramaQueenTargetAId': dramaQueenTargetAId,
       'dramaQueenTargetBId': dramaQueenTargetBId,
+      'deathReason': deathReason,
     };
   }
 
   factory Player.fromJson(Map<String, dynamic> json, Role role) {
-    return Player(
+    var player = Player(
       id: json['id'],
       name: json['name'],
       role: role,
@@ -191,6 +208,9 @@ class Player {
       blockedKillNight: json['blockedKillNight'],
       roofiAbilityRevoked: json['roofiAbilityRevoked'] ?? false,
       bouncerAbilityRevoked: json['bouncerAbilityRevoked'] ?? false,
-    )..alliance = json['alliance'] ?? role.alliance; // Restore alliance
+    );
+    player.alliance = json['alliance'] ?? role.alliance;
+    player.deathReason = json['deathReason'];
+    return player;
   }
 }

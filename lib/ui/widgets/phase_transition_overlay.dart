@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../services/sound_service.dart';
 import '../styles.dart';
+import '../animations.dart';
 
 class PhaseTransitionOverlay extends StatefulWidget {
   final String phaseName;
@@ -31,37 +32,40 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
   @override
   void initState() {
     super.initState();
-    
+
     // Play dramatic phase transition sound
     SoundService().playPhaseTransition();
-    
+
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1600),
+      duration: ClubMotion.overlay,
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.2).animate(
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.05).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
+        curve: const Interval(0.0, 0.6, curve: ClubMotion.easeOutBack),
       ),
     );
 
     _fadeAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 30),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 40),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 25),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 25),
     ]).animate(_controller);
 
-    _glowAnimation = Tween<double>(begin: 0.0, end: 50.0).animate(
+    _glowAnimation = Tween<double>(begin: 0.0, end: 36.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.5, curve: ClubMotion.easeOut),
       ),
     );
 
-    _controller.forward().then((_) {
-      Future.delayed(const Duration(milliseconds: 300), widget.onComplete);
+    _controller.forward();
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        widget.onComplete();
+      }
     });
   }
 
@@ -98,25 +102,36 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
                 child: Transform.scale(
                   scale: _scaleAnimation.value,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 48,
+                      vertical: 32,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(32),
                       border: Border.all(
-                        color: widget.phaseColor.withOpacity(_fadeAnimation.value),
+                        color: widget.phaseColor.withOpacity(
+                          _fadeAnimation.value,
+                        ),
                         width: 3,
                       ),
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          widget.phaseColor.withOpacity(0.3 * _fadeAnimation.value),
+                          widget.phaseColor.withOpacity(
+                            0.3 * _fadeAnimation.value,
+                          ),
                           Colors.black.withOpacity(0.9 * _fadeAnimation.value),
-                          widget.phaseColor.withOpacity(0.3 * _fadeAnimation.value),
+                          widget.phaseColor.withOpacity(
+                            0.3 * _fadeAnimation.value,
+                          ),
                         ],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: widget.phaseColor.withOpacity(0.6 * _fadeAnimation.value),
+                          color: widget.phaseColor.withOpacity(
+                            0.6 * _fadeAnimation.value,
+                          ),
                           blurRadius: _glowAnimation.value,
                           spreadRadius: _glowAnimation.value * 0.3,
                         ),
@@ -154,7 +169,10 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
                             fontFamily: 'Hyperwave',
                             color: widget.phaseColor,
                             letterSpacing: 4,
-                            shadows: ClubBlackoutTheme.textGlow(widget.phaseColor, intensity: 2.0),
+                            shadows: ClubBlackoutTheme.textGlow(
+                              widget.phaseColor,
+                              intensity: 2.0,
+                            ),
                           ),
                         ),
                       ],
@@ -168,16 +186,19 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
                 final random = (index * 47) % 100 / 100;
                 final xPos = random;
                 final delay = random * 0.5;
-                final particleAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-                  CurvedAnimation(
-                    parent: _controller,
-                    curve: Interval(delay, 1.0, curve: Curves.easeOut),
-                  ),
-                );
-                
+                final particleAnim = Tween<double>(begin: 0.0, end: 1.0)
+                    .animate(
+                      CurvedAnimation(
+                        parent: _controller,
+                        curve: Interval(delay, 1.0, curve: Curves.easeOut),
+                      ),
+                    );
+
                 return Positioned(
                   left: MediaQuery.of(context).size.width * xPos,
-                  top: -50 + (MediaQuery.of(context).size.height * particleAnim.value),
+                  top:
+                      -50 +
+                      (MediaQuery.of(context).size.height * particleAnim.value),
                   child: Opacity(
                     opacity: (1 - particleAnim.value) * _fadeAnimation.value,
                     child: Container(
@@ -226,7 +247,7 @@ void showPhaseTransition(
   );
 
   Overlay.of(context).insert(overlay);
-  
+
   Future.delayed(const Duration(milliseconds: 1800), () {
     overlay.remove();
   });

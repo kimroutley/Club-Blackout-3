@@ -29,51 +29,51 @@ class GuidesScreen extends StatelessWidget {
           SafeArea(
             child: Column(
               children: [
-              // TabBar at the top of the content area
-              Container(
-                margin: const EdgeInsets.only(
-                  top: 100,
-                ), // Spacing for MainScreen AppBar
-                color: Colors.black.withOpacity(0.5),
-                child: TabBar(
-                  indicatorColor: ClubBlackoutTheme.neonOrange,
-                  labelColor: ClubBlackoutTheme.neonOrange,
-                  unselectedLabelColor: Colors.white54,
-                  indicatorWeight: 3,
-                  labelStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                // TabBar at the top of the content area
+                Container(
+                  margin: const EdgeInsets.only(
+                    top: 100,
+                  ), // Spacing for MainScreen AppBar
+                  color: Colors.black.withOpacity(0.5),
+                  child: TabBar(
+                    indicatorColor: ClubBlackoutTheme.neonOrange,
+                    labelColor: ClubBlackoutTheme.neonOrange,
+                    unselectedLabelColor: Colors.white54,
+                    indicatorWeight: 3,
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    tabs: const [
+                      Tab(icon: Icon(Icons.mic, size: 20), text: "HOST"),
+                      Tab(icon: Icon(Icons.person, size: 20), text: "PLAYER"),
+                      Tab(icon: Icon(Icons.style, size: 20), text: "CARDS"),
+                      Tab(icon: Icon(Icons.gavel, size: 20), text: "RULES"),
+                    ],
                   ),
-                  tabs: const [
-                    Tab(icon: Icon(Icons.mic, size: 20), text: "HOST"),
-                    Tab(icon: Icon(Icons.person, size: 20), text: "PLAYER"),
-                    Tab(icon: Icon(Icons.style, size: 20), text: "CARDS"),
-                    Tab(icon: Icon(Icons.gavel, size: 20), text: "RULES"),
-                  ],
                 ),
-              ),
 
-              // Tab content
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _buildHostGuide(context),
-                    ClubBlackoutTheme.centeredConstrained(
-                      maxWidth: 760,
-                      child: PlayerGuideBody(),
-                    ),
-                    ClubBlackoutTheme.centeredConstrained(
-                      maxWidth: 920,
-                      child: CharacterCardsScreen(
-                        roles: gameEngine?.roleRepository.roles ?? [],
+                // Tab content
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _buildHostGuide(context),
+                      ClubBlackoutTheme.centeredConstrained(
+                        maxWidth: 760,
+                        child: PlayerGuideBody(),
                       ),
-                    ),
-                    _buildRulesGuide(context),
-                  ],
+                      ClubBlackoutTheme.centeredConstrained(
+                        maxWidth: 920,
+                        child: CharacterCardsScreen(
+                          roles: gameEngine?.roleRepository.roles ?? [],
+                        ),
+                      ),
+                      _buildRulesGuide(context),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           ),
         ],
       ),

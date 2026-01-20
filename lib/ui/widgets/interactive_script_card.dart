@@ -1,9 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/script_step.dart';
 import '../../models/role.dart';
+import '../../models/player.dart';
+import '../../logic/game_engine.dart';
 import '../../services/sound_service.dart';
 import '../styles.dart';
+import '../animations.dart';
+import 'host_player_status_card.dart';
 
 class InteractiveScriptCard extends StatefulWidget {
   final ScriptStep step;
@@ -11,6 +16,8 @@ class InteractiveScriptCard extends StatefulWidget {
   final Color stepColor;
   final Role? role;
   final String? playerName;
+  final Player? player; // Optional player object for rich display
+  final GameEngine? gameEngine; // Required if player is provided
   final VoidCallback? onTap;
 
   const InteractiveScriptCard({
@@ -20,6 +27,8 @@ class InteractiveScriptCard extends StatefulWidget {
     required this.stepColor,
     this.role,
     this.playerName,
+    this.player,
+    this.gameEngine,
     this.onTap,
   });
 
@@ -30,7 +39,6 @@ class InteractiveScriptCard extends StatefulWidget {
 class _InteractiveScriptCardState extends State<InteractiveScriptCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
   bool _isExpanded = false;
   bool _hasBeenRead = false;
 
@@ -40,9 +48,6 @@ class _InteractiveScriptCardState extends State<InteractiveScriptCard>
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
-    );
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
     if (widget.isActive) {
@@ -71,7 +76,9 @@ class _InteractiveScriptCardState extends State<InteractiveScriptCard>
   String _normalizeMultiline(String text) {
     if (text.isEmpty) return text;
 
-    final newlineNormalized = text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+    final newlineNormalized = text
+        .replaceAll('\r\n', '\n')
+        .replaceAll('\r', '\n');
     final decodedNewlines = newlineNormalized.replaceAll('\\n', '\n');
     final collapsed = decodedNewlines.replaceAll(RegExp(r'\n{3,}'), '\n\n');
 
@@ -79,6 +86,7 @@ class _InteractiveScriptCardState extends State<InteractiveScriptCard>
   }
 
   void _toggleExpand() {
+    HapticFeedback.selectionClick();
     setState(() {
       _isExpanded = !_isExpanded;
       if (_isExpanded) {
@@ -121,52 +129,57 @@ class _InteractiveScriptCardState extends State<InteractiveScriptCard>
                   ),
                 ]
               : _hasBeenRead
-                  ? [
-                      BoxShadow(
-                        color: ClubBlackoutTheme.neonGreen.withOpacity(0.2),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : null,
+              ? [
+                  BoxShadow(
+                    color: ClubBlackoutTheme.neonGreen.withOpacity(0.2),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : null,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(18),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    bgColor.withOpacity(0.9),
-                    bgColor.withOpacity(0.8),
-                    widget.stepColor.withOpacity(0.1),
+            child: AnimatedSize(
+              duration: ClubMotion.quick,
+              curve: ClubMotion.easeOut,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      bgColor.withOpacity(0.9),
+                      bgColor.withOpacity(0.8),
+                      widget.stepColor.withOpacity(0.1),
+                    ],
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header
+                    _buildHeader(),
+
+                    // Expandable Content
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox.shrink(),
+                      secondChild: _buildExpandedContent(),
+                      crossFadeState: _isExpanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: ClubMotion.medium,
+                      sizeCurve: ClubMotion.easeInOut,
+                    ),
+
+                    // Action Indicator
+                    if (widget.isActive &&
+                        widget.step.actionType != ScriptActionType.none)
+                      _buildActionIndicator(),
                   ],
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header
-                  _buildHeader(),
-
-                  // Expandable Content
-                  AnimatedCrossFade(
-                    firstChild: const SizedBox.shrink(),
-                    secondChild: _buildExpandedContent(),
-                    crossFadeState: _isExpanded
-                        ? CrossFadeState.showSecond
-                        : CrossFadeState.showFirst,
-                    duration: const Duration(milliseconds: 300),
-                    sizeCurve: Curves.easeInOut,
-                  ),
-
-                  // Action Indicator
-                  if (widget.isActive && widget.step.actionType != ScriptActionType.none)
-                    _buildActionIndicator(),
-                ],
               ),
             ),
           ),
@@ -180,10 +193,7 @@ class _InteractiveScriptCardState extends State<InteractiveScriptCard>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            widget.stepColor.withOpacity(0.2),
-            Colors.transparent,
-          ],
+          colors: [widget.stepColor.withOpacity(0.2), Colors.transparent],
         ),
         border: Border(
           bottom: BorderSide(
@@ -200,16 +210,9 @@ class _InteractiveScriptCardState extends State<InteractiveScriptCard>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: widget.stepColor.withOpacity(0.2),
-              border: Border.all(
-                color: widget.stepColor,
-                width: 2,
-              ),
+              border: Border.all(color: widget.stepColor, width: 2),
             ),
-            child: Icon(
-              _getStepIcon(),
-              color: widget.stepColor,
-              size: 20,
-            ),
+            child: Icon(_getStepIcon(), color: widget.stepColor, size: 20),
           ),
           const SizedBox(width: 12),
 
@@ -281,6 +284,16 @@ class _InteractiveScriptCardState extends State<InteractiveScriptCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Rich Player Card (if available)
+          if (widget.player != null && widget.gameEngine != null) ...[
+            HostPlayerStatusCard(
+              player: widget.player!,
+              gameEngine: widget.gameEngine!,
+              showControls: false, // Read-only view in script
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // Read Aloud Section
           if (readText.isNotEmpty) ...[
             Row(
@@ -315,19 +328,19 @@ class _InteractiveScriptCardState extends State<InteractiveScriptCard>
               ),
               child: SelectableText(
                 readText,
-                style: widget.step.id.startsWith('morning_report') 
-                ? const TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                  height: 1.2,
-                  fontFamily: 'monospace',
-                  fontWeight: FontWeight.w600,
-                )
-                : const TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                  height: 1.5,
-                ),
+                style: widget.step.id.startsWith('morning_report')
+                    ? const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                        height: 1.2,
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w600,
+                      )
+                    : const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                        height: 1.5,
+                      ),
               ),
             ),
             const SizedBox(height: 16),
@@ -387,23 +400,23 @@ class _InteractiveScriptCardState extends State<InteractiveScriptCard>
 
     switch (widget.step.actionType) {
       case ScriptActionType.selectPlayer:
-        actionText = 'SELECT A PLAYER';
+        actionText = 'SELECT PLAYER'; // Shortened
         actionIcon = Icons.person_pin;
         break;
       case ScriptActionType.selectTwoPlayers:
-        actionText = 'SELECT TWO PLAYERS';
+        actionText = 'SELECT TWO'; // Shortened
         actionIcon = Icons.people;
         break;
       case ScriptActionType.showDayScene:
-        actionText = 'VIEW DAY SCENE';
+        actionText = 'DAY SCENE'; // Shortened
         actionIcon = Icons.wb_sunny;
         break;
       case ScriptActionType.showInfo:
-        actionText = 'VIEW INFORMATION';
+        actionText = 'VIEW INFO'; // Shortened
         actionIcon = Icons.visibility;
         break;
       case ScriptActionType.showTimer:
-        actionText = 'TIMER ACTIVE';
+        actionText = 'TIMER'; // Shortened
         actionIcon = Icons.timer;
         break;
       default:
@@ -411,33 +424,34 @@ class _InteractiveScriptCardState extends State<InteractiveScriptCard>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.symmetric(
+        vertical: 10,
+        horizontal: 12,
+      ), // Reduced padding
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            actionColor.withOpacity(0.3),
-            actionColor.withOpacity(0.1),
-          ],
+          colors: [actionColor.withOpacity(0.3), actionColor.withOpacity(0.1)],
         ),
         border: Border(
-          top: BorderSide(
-            color: actionColor.withOpacity(0.5),
-            width: 2,
-          ),
+          top: BorderSide(color: actionColor.withOpacity(0.5), width: 2),
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(actionIcon, color: actionColor, size: 20),
+          Icon(actionIcon, color: actionColor, size: 18), // Smaller icon
           const SizedBox(width: 8),
-          Text(
-            actionText,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: actionColor,
-              letterSpacing: 1.5,
+          Flexible(
+            // Allow text to shrink if needed
+            child: Text(
+              actionText,
+              style: TextStyle(
+                fontSize: 13, // Smaller font
+                fontWeight: FontWeight.bold,
+                color: actionColor,
+                letterSpacing: 1.2,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

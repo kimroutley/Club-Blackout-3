@@ -31,13 +31,15 @@ class Role {
     required this.colorHex,
   });
 
+  // Helper to convert hex string to Color
   Color get color {
-    final hexCode = colorHex.replaceAll('#', '');
-    try {
-      return Color(int.parse('FF$hexCode', radix: 16));
-    } catch (e) {
-      return const Color(0xFFFFFFFF);
+    if (colorHex.startsWith('#')) {
+      final buffer = StringBuffer();
+      if (colorHex.length == 7) buffer.write('ff');
+      buffer.write(colorHex.replaceFirst('#', ''));
+      return Color(int.parse(buffer.toString(), radix: 16));
     }
+    return const Color(0xFFFFFFFF); // Default white
   }
 
   String get emoji => '';
