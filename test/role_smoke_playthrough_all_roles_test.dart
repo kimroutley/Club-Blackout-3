@@ -34,9 +34,8 @@ void main() {
 
   Role _requireRole(String id) {
     final role = roleRepository.getRoleById(id);
-    if (role == null) {
+    if (role == null)
       throw StateError('Missing required roleId=$id in roles.json');
-    }
     return role;
   }
 
