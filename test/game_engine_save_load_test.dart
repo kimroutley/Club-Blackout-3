@@ -121,7 +121,8 @@ void main() {
     expect(loaded2, isTrue);
     expect(engine3.hasPendingTeaSpillerReveal, isTrue);
     expect(engine3.pendingTeaSpillerId, tinaId);
-    expect(engine3.pendingTeaSpillerEligibleVoterIds, containsAll([aliceId, bobId]));
+    expect(engine3.pendingTeaSpillerEligibleVoterIds,
+        containsAll([aliceId, bobId]));
 
     expect(engine2.dramaQueenSwapPending, isTrue);
     expect(engine2.dramaQueenMarkedAId, aliceId);

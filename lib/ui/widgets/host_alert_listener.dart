@@ -66,12 +66,14 @@ class _HostAlertListenerState extends State<HostAlertListener> {
       if (!mounted) return;
 
       final cs = Theme.of(context).colorScheme;
-      
+
       // Try to find a role matching the title
       final matchingRole = widget.engine.roleRepository.roles.firstWhereOrNull(
-        (r) => title.toLowerCase().contains(r.name.toLowerCase()) || 
-               title.toLowerCase().contains(r.id.toLowerCase().replaceAll('_', ' '))
-      );
+          (r) =>
+              title.toLowerCase().contains(r.name.toLowerCase()) ||
+              title
+                  .toLowerCase()
+                  .contains(r.id.toLowerCase().replaceAll('_', ' ')));
 
       final accent = matchingRole?.color ?? ClubBlackoutTheme.neonOrange;
 
@@ -97,8 +99,7 @@ class _HostAlertListenerState extends State<HostAlertListener> {
                 Expanded(
                   child: Text(
                     title,
-                    style: (textTheme.titleLarge ?? const TextStyle())
-                        .copyWith(
+                    style: (textTheme.titleLarge ?? const TextStyle()).copyWith(
                       color: cs.onSurface,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.2,
