@@ -91,18 +91,6 @@ class ReactionSystem {
     }
   }
 
-  ReactionSystem copy() {
-    final copy = ReactionSystem();
-    copy._eventHistory.addAll(_eventHistory);
-    // _pendingReactions is unused/ephemeral, so ignoring it matches persistence behavior.
-    return copy;
-  }
-
-  void copyFrom(ReactionSystem other) {
-    _eventHistory.clear();
-    _eventHistory.addAll(other._eventHistory);
-  }
-
   /// Register a reaction to be processed
   void registerReaction(PendingReaction reaction) {
     _pendingReactions.add(reaction);
@@ -232,16 +220,6 @@ class PendingReaction {
     this.targetPlayerIds = const [],
     this.isResolved = false,
   });
-
-  PendingReaction copy() {
-    return PendingReaction(
-      ability: ability,
-      sourcePlayer: sourcePlayer,
-      triggeringEvent: triggeringEvent,
-      targetPlayerIds: List<String>.from(targetPlayerIds),
-      isResolved: isResolved,
-    );
-  }
 }
 
 /// Manages complex ability interactions and chains
@@ -334,21 +312,6 @@ class StatusEffectManager {
     });
   }
 
-  StatusEffectManager copy() {
-    final copy = StatusEffectManager();
-    _playerEffects.forEach((playerId, effects) {
-      copy._playerEffects[playerId] = effects.map((e) => e.copy()).toList();
-    });
-    return copy;
-  }
-
-  void copyFrom(StatusEffectManager other) {
-    _playerEffects.clear();
-    other._playerEffects.forEach((playerId, effects) {
-      _playerEffects[playerId] = effects.map((e) => e.copy()).toList();
-    });
-  }
-
   /// Apply a status effect to a player
   void applyEffect(String playerId, StatusEffect effect) {
     _playerEffects.putIfAbsent(playerId, () => []).add(effect);
@@ -418,17 +381,6 @@ class StatusEffect {
         'isPermanent': isPermanent,
         'data': data,
       };
-
-  StatusEffect copy() {
-    return StatusEffect(
-      id: id,
-      name: name,
-      description: description,
-      duration: duration,
-      isPermanent: isPermanent,
-      data: Map<String, dynamic>.from(data),
-    );
-  }
 
   factory StatusEffect.fromJson(Map<String, dynamic> json) => StatusEffect(
         id: json['id'] as String,

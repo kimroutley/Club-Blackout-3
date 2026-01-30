@@ -60,10 +60,6 @@ class GameEndResult {
 class GameEngine extends ChangeNotifier {
   final RoleRepository roleRepository;
 
-  /// If true, logging to the game log and external services is disabled.
-  /// This is critical for performance during Monte Carlo simulations.
-  final bool silent;
-
   static const String hostRoleId = 'host';
   static const String hostPlayerId = 'host';
 
@@ -304,11 +300,7 @@ class GameEngine extends ChangeNotifier {
   String? get winner => _winner;
   String? get winMessage => _winMessage;
 
-  GameEngine({
-    required this.roleRepository,
-    bool loadNameHistory = true,
-    this.silent = false,
-  }) {
+  GameEngine({required this.roleRepository, bool loadNameHistory = true}) {
     if (loadNameHistory) {
       _loadNameHistory();
     }
@@ -440,10 +432,6 @@ class GameEngine extends ChangeNotifier {
   /// ineligible voters (e.g., Sober-sent-home), but this protects against any
   /// direct map mutations or stale saved state.
   Map<String, List<String>> get eligibleDayVotesByTarget {
-    // Optimization: Create a map for O(1) player lookup instead of O(N) search per target.
-    // This reduces complexity from O(T*N) to O(N + T).
-    final playerMap = {for (var p in players) p.id: p};
-
     final eligibleVoterIds = players
         .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
         .where((p) => !p.soberSentHome)
@@ -454,7 +442,7 @@ class GameEngine extends ChangeNotifier {
     final filtered = <String, List<String>>{};
     for (final entry in currentDayVotesByTarget.entries) {
       final targetId = entry.key;
-      final target = playerMap[targetId];
+      final target = players.where((p) => p.id == targetId).firstOrNull;
       if (target != null && target.alibiDay == dayCount) {
         // Silver Fox alibi: targets with vote immunity cannot accrue votes today.
         continue;
@@ -666,52 +654,17 @@ class GameEngine extends ChangeNotifier {
   ///
   /// Returns a simple winner token when the game is over, otherwise null.
   GameEndResult? checkGameEnd() {
-    final alive = <Player>[];
-    int dealerCount = 0;
-    int partyCount = 0;
-    bool clubManagerAlive = false;
-
-    Player? messyBitch;
-    bool allTargetsHaveRumour = true;
-
-    for (final p in players) {
-      if (!p.isEnabled) continue;
-
-      if (p.role.id == 'messy_bitch') {
-        messyBitch = p;
-      }
-
-      if (p.role.id == 'host') continue;
-
-      if (p.isAlive) {
-        alive.add(p);
-
-        final allianceLower = p.alliance.toLowerCase();
-        if (p.role.id == 'dealer' || allianceLower.contains('dealer')) {
-          dealerCount++;
-        }
-        if (allianceLower.contains('party')) {
-          partyCount++;
-        }
-        if (p.role.id == 'club_manager') {
-          clubManagerAlive = true;
-        }
-
-        if (p.role.id != 'messy_bitch') {
-          if (!p.hasRumour) {
-            allTargetsHaveRumour = false;
-          }
-        }
-      }
-    }
-
     // Messy Bitch immediate win: rumours have reached every enabled guest.
-    if (messyBitch != null && messyBitch.isAlive && allTargetsHaveRumour) {
+    if (_isMessyBitchWinConditionMet()) {
       return const GameEndResult(
         winner: 'MESSY_BITCH',
         message: 'Messy Bitch spread a rumour to every player.',
       );
     }
+
+    final alive = players
+        .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
+        .toList();
 
     if (alive.isEmpty) {
       return const GameEndResult(
@@ -719,6 +672,14 @@ class GameEngine extends ChangeNotifier {
         message: 'No one wins. Everyone is dead.',
       );
     }
+
+    final dealerCount = alive
+        .where((p) =>
+            p.role.id == 'dealer' ||
+            p.alliance.toLowerCase().contains('dealer'))
+        .length;
+    final partyCount =
+        alive.where((p) => p.alliance.toLowerCase().contains('party')).length;
 
     // Party Animals win when all Dealers are dead (and at least one Party Animal remains).
     if (dealerCount == 0 && partyCount > 0) {
@@ -730,6 +691,7 @@ class GameEngine extends ChangeNotifier {
 
     // Special case: Club Manager vs Dealers.
     // Dealers do NOT win at parity if a Club Manager is still alive to maintain order.
+    final clubManagerAlive = alive.any((p) => p.role.id == 'club_manager');
 
     // Dealer win condition:
     // 1. Dealers outnumber or equal Party Animals (control the vote).
@@ -2359,8 +2321,6 @@ class GameEngine extends ChangeNotifier {
 
   void logAction(String title, String description,
       {GameLogType type = GameLogType.action, bool toast = false}) {
-    if (silent) return;
-
     final entry = GameLogEntry(
       turn: dayCount,
       phase: _currentPhase.name.toUpperCase(),
