@@ -82,9 +82,7 @@ class _DramaQueenSwapDialogState extends State<DramaQueenSwapDialog> {
                     ? (isNight
                         ? cs.secondaryContainer
                         : ClubBlackoutTheme.neonPurple.withValues(alpha: 0.25))
-                    : (isNight
-                        ? cs.surfaceContainerHighest
-                        : Colors.white10),
+                    : (isNight ? cs.surfaceContainerHighest : Colors.white10),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: selected
@@ -203,4 +201,3 @@ class _DramaQueenSwapDialogState extends State<DramaQueenSwapDialog> {
     );
   }
 }
-

@@ -127,7 +127,9 @@ class _GameToastListenerState extends State<GameToastListener>
           : engine.roleRepository.roles.firstWhereOrNull(
               (r) =>
                   title.toLowerCase().contains(r.name.toLowerCase()) ||
-                  title.toLowerCase().contains(r.id.toLowerCase().replaceAll('_', ' ')),
+                  title
+                      .toLowerCase()
+                      .contains(r.id.toLowerCase().replaceAll('_', ' ')),
             );
 
       final phaseAccent = engine.currentPhase == GamePhase.night

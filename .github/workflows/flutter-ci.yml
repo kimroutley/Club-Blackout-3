@@ -61,7 +61,7 @@ jobs:
         run: flutter pub get
 
       - name: Check formatting
-        run: flutter format --set-exit-if-changed .
+        run: dart format --set-exit-if-changed .
 
   test:
     runs-on: ubuntu-latest

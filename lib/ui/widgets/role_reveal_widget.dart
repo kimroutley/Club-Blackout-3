@@ -36,7 +36,8 @@ Future<void> showRoleReveal(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                RoleCardWidget(role: role, compact: false, factsContext: factsContext),
+                RoleCardWidget(
+                    role: role, compact: false, factsContext: factsContext),
                 if (subtitle != null || body != null) ...[
                   const SizedBox(height: 16),
                   Card(
@@ -50,7 +51,8 @@ Future<void> showRoleReveal(
                             Text(
                               subtitle,
                               textAlign: TextAlign.center,
-                              style: (tt.bodyLarge ?? const TextStyle()).copyWith(
+                              style:
+                                  (tt.bodyLarge ?? const TextStyle()).copyWith(
                                 color: cs.onSurface,
                                 fontWeight: FontWeight.w600,
                               ),

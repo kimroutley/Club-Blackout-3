@@ -83,7 +83,8 @@ class _GameFabMenuState extends State<GameFabMenu> {
           icon: Icon(icon ?? Icons.circle, size: 18),
           label: Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.6),
+            style: const TextStyle(
+                fontWeight: FontWeight.w900, letterSpacing: 0.6),
           ),
         ),
       ),
@@ -211,7 +212,8 @@ class _TabooListDialogState extends State<_TabooListDialog> {
     return ClubAlertDialog(
       title: Row(
         children: [
-          const Icon(Icons.warning_rounded, color: ClubBlackoutTheme.neonOrange),
+          const Icon(Icons.warning_rounded,
+              color: ClubBlackoutTheme.neonOrange),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -254,7 +256,9 @@ class _TabooListDialogState extends State<_TabooListDialog> {
                         elevation: 0,
                         color: cs.surfaceContainer,
                         child: ListTile(
-                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                          title: Text(name,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w700)),
                           subtitle: const Text('Tap to mark violation'),
                           trailing: const Icon(Icons.chevron_right_rounded),
                           onTap: () {
@@ -326,10 +330,12 @@ class _ClingerOpsDialog extends StatelessWidget {
                     elevation: 0,
                     color: cs.surfaceContainer,
                     child: ListTile(
-                      title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                      title: Text(c.name,
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
                       subtitle: Text(
                         'Freed: ${c.clingerFreedAsAttackDog} • Used: ${c.clingerAttackDogUsed}',
-                        style: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.9)),
+                        style: TextStyle(
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.9)),
                       ),
                     ),
                   );
