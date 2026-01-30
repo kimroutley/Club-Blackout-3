@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../logic/game_engine.dart';
 import '../styles.dart';
-import '../widgets/glow_button.dart';
 
 class HomeScreen extends StatelessWidget {
   final GameEngine gameEngine;
@@ -19,35 +18,29 @@ class HomeScreen extends StatelessWidget {
   void _showStartOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (ctx) {
-        return Container(
-          decoration: ClubBlackoutTheme.neonBottomSheetDecoration(
-            ctx,
-            accent: ClubBlackoutTheme.neonBlue,
-          ),
-          padding: ClubBlackoutTheme.sheetPadding,
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              GlowButton(
+              FilledButton(
                 onPressed: () {
                   Navigator.pop(ctx);
                   onNavigateToLobby();
                 },
-                glowColor: ClubBlackoutTheme.neonPurple,
                 child: const Text('Start a games night'),
               ),
               ClubBlackoutTheme.gap12,
-              GlowButton(
+              FilledButton.tonal(
                 onPressed: () {
                   Navigator.pop(ctx);
                   onNavigateToLobby();
                 },
-                glowColor: ClubBlackoutTheme.neonPink,
                 child: const Text('Normal game'),
               ),
               ClubBlackoutTheme.gap12,
@@ -62,7 +55,6 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Phase-aware styling
     final isNight = gameEngine.currentPhase == GamePhase.night;
-    // For 'Day/Lobby', we keep it bright/colorful (Neon theme), but using M3 structures.
     
     // Background
     Widget background;
@@ -76,22 +68,6 @@ class HomeScreen extends StatelessWidget {
         height: double.infinity,
       );
     }
-
-    // Buttons
-    // In Night mode, use standard scheme. In Day mode, use specific Neon accents.
-    final btnStylePrimary = isNight 
-        ? null // Default M3
-        : FilledButton.styleFrom(
-            backgroundColor: ClubBlackoutTheme.neonBlue, 
-            foregroundColor: Colors.white,
-          );
-    
-    final btnStyleSecondary = isNight
-        ? null // Default M3 tonal
-        : FilledButton.styleFrom(
-            backgroundColor: ClubBlackoutTheme.neonOrange,
-            foregroundColor: Colors.white,
-          );
 
     return Stack(
       children: [
@@ -122,14 +98,12 @@ class HomeScreen extends StatelessWidget {
                       onPressed: () => _showStartOptions(context),
                       icon: const Icon(Icons.play_arrow),
                       label: const Text("Let's get started"),
-                      style: btnStylePrimary,
                     ),
                     ClubBlackoutTheme.gap24,
-                    FilledButton.icon(
+                    FilledButton.tonalIcon(
                       onPressed: onNavigateToGuides,
                       icon: const Icon(Icons.menu_book),
                       label: const Text('Guides'),
-                      style: btnStyleSecondary,
                     ),
                   ],
                 ),

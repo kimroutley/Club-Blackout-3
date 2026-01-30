@@ -27,17 +27,8 @@ class GameDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    final useM3 = gameEngine?.currentPhase == GamePhase.night;
-
-    final accent = useM3
-        ? cs.primary
-        : switch (selectedIndex) {
-            0 => ClubBlackoutTheme.neonBlue,
-            1 => ClubBlackoutTheme.neonPink,
-            2 => ClubBlackoutTheme.neonOrange,
-            3 => ClubBlackoutTheme.neonGold,
-            _ => ClubBlackoutTheme.neonPurple,
-          };
+    // Default accent to primary for M3 consistency
+    final accent = cs.primary;
 
     final labelStyle = Theme.of(context)
         .textTheme
@@ -51,26 +42,20 @@ class GameDrawer extends StatelessWidget {
 
     return NavigationDrawerTheme(
       data: NavigationDrawerThemeData(
-        backgroundColor:
-            useM3 ? cs.surfaceContainerLow : ClubBlackoutTheme.pureBlack,
-        surfaceTintColor: useM3 ? cs.surfaceTint : Colors.transparent,
-        indicatorColor: useM3
-            ? cs.secondaryContainer.withValues(alpha: 0.75)
-            : accent.withValues(alpha: 0.15),
+        backgroundColor: cs.surfaceContainerLow,
+        surfaceTintColor: cs.surfaceTint,
+        indicatorColor: cs.secondaryContainer.withValues(alpha: 0.75),
         indicatorShape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
         ),
-        elevation: useM3 ? 1 : 0,
+        elevation: 1,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) {
             final selected = states.contains(WidgetState.selected);
             return labelStyle?.copyWith(
               color: selected
-                  ? (useM3 ? cs.onSecondaryContainer : accent)
+                  ? cs.onSecondaryContainer
                   : cs.onSurface.withValues(alpha: 0.70),
-              shadows: (!useM3 && selected)
-                  ? ClubBlackoutTheme.textGlow(accent, intensity: 0.8)
-                  : null,
             );
           },
         ),
@@ -79,12 +64,9 @@ class GameDrawer extends StatelessWidget {
             final selected = states.contains(WidgetState.selected);
             return IconThemeData(
               color: selected
-                  ? (useM3 ? cs.onSecondaryContainer : accent)
+                  ? cs.onSecondaryContainer
                   : cs.onSurface.withValues(alpha: 0.45),
               size: 22,
-              shadows: (!useM3 && selected)
-                  ? ClubBlackoutTheme.iconGlow(accent, intensity: 0.6)
-                  : null,
             );
           },
         ),
@@ -97,7 +79,7 @@ class GameDrawer extends StatelessWidget {
           onNavigate?.call(index);
         },
         children: [
-          _buildHeader(context, accent, useM3: useM3),
+          _buildHeader(context, accent),
 
           ClubBlackoutTheme.gap16,
 
@@ -149,8 +131,7 @@ class GameDrawer extends StatelessWidget {
                 child: _DrawerTile(
                   label: 'Continue Game',
                   icon: Icons.play_arrow_rounded,
-                  accent: useM3 ? cs.primary : ClubBlackoutTheme.neonGreen,
-                  useM3: useM3,
+                  accent: cs.primary,
                   onTap: () {
                     Navigator.pop(context);
                     onContinueGameTap?.call();
@@ -164,8 +145,7 @@ class GameDrawer extends StatelessWidget {
                 child: _DrawerTile(
                   label: 'Host Dashboard',
                   icon: Icons.dashboard_customize_outlined,
-                  accent: useM3 ? cs.primary : ClubBlackoutTheme.neonBlue,
-                  useM3: useM3,
+                  accent: cs.primary,
                   onTap: () {
                     Navigator.pop(context);
                     onHostDashboardTap?.call();
@@ -177,15 +157,12 @@ class GameDrawer extends StatelessWidget {
               child: _DrawerTile(
                 label: 'Save / Load',
                 icon: Icons.save_outlined,
-                accent: useM3 ? cs.tertiary : ClubBlackoutTheme.neonGreen,
-                useM3: useM3,
+                accent: cs.tertiary,
                 onTap: () async {
                   Navigator.pop(context);
                   await showDialog<bool>(
                     context: context,
-                    builder: (ctx) => useM3
-                        ? SaveLoadDialogM3(engine: gameEngine!)
-                        : SaveLoadDialog(engine: gameEngine!),
+                    builder: (ctx) => SaveLoadDialog(engine: gameEngine!),
                   );
                 },
               ),
@@ -195,8 +172,7 @@ class GameDrawer extends StatelessWidget {
               child: _DrawerTile(
                 label: 'Game Log',
                 icon: Icons.receipt_long_outlined,
-                accent: useM3 ? cs.primary : ClubBlackoutTheme.neonBlue,
-                useM3: useM3,
+                accent: cs.primary,
                 onTap: () {
                   Navigator.pop(context);
                   onGameLogTap?.call();
@@ -215,8 +191,7 @@ class GameDrawer extends StatelessWidget {
               child: _DrawerTile(
                 label: 'Restart Lobby',
                 icon: Icons.restart_alt_rounded,
-                accent: useM3 ? cs.secondary : ClubBlackoutTheme.neonPurple,
-                useM3: useM3,
+                accent: cs.secondary,
                 onTap: () async {
                   Navigator.pop(context);
                   final confirm = await showDialog<bool>(
@@ -268,8 +243,7 @@ class GameDrawer extends StatelessWidget {
               child: _DrawerTile(
                 label: 'Full Reset',
                 icon: Icons.delete_forever_outlined,
-                accent: useM3 ? cs.error : ClubBlackoutTheme.neonRed,
-                useM3: useM3,
+                accent: cs.error,
                 onTap: () async {
                   Navigator.pop(context);
                   final confirm = await showDialog<bool>(
@@ -325,7 +299,7 @@ class GameDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, Color accent, {required bool useM3}) {
+  Widget _buildHeader(BuildContext context, Color accent) {
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return Container(
@@ -337,27 +311,13 @@ class GameDrawer extends StatelessWidget {
         right: 24,
       ),
       decoration: BoxDecoration(
-        color: useM3
-            ? scheme.surfaceContainerLow
-            : accent.withValues(alpha: 0.02),
+        color: scheme.surfaceContainerLow,
         border: Border(
           bottom: BorderSide(
-            color: useM3
-                ? scheme.outlineVariant.withValues(alpha: 0.3)
-                : accent.withValues(alpha: 0.15),
+            color: scheme.outlineVariant.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
-        gradient: useM3
-            ? null
-            : LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  accent.withValues(alpha: 0.05),
-                  Colors.transparent,
-                ],
-              ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,9 +330,6 @@ class GameDrawer extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: accent,
                   borderRadius: BorderRadius.circular(2),
-                  boxShadow: useM3
-                      ? null
-                      : ClubBlackoutTheme.boxGlow(accent, intensity: 0.8),
                 ),
               ),
               const SizedBox(width: 16),
@@ -381,27 +338,18 @@ class GameDrawer extends StatelessWidget {
                 children: [
                   Text(
                     'CLUB BLACKOUT',
-                    style: useM3
-                        ? (tt.headlineSmall ?? const TextStyle()).copyWith(
+                    style: (tt.headlineSmall ?? const TextStyle()).copyWith(
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.5,
                             color: scheme.onSurface,
                             fontSize: 22,
-                          )
-                        : ClubBlackoutTheme.neonGlowTextStyle(
-                            color: accent,
-                            fontSize: 24,
-                            letterSpacing: 3.5,
-                            glowIntensity: 1.2,
                           ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'HOST DASHBOARD V1.0',
                     style: TextStyle(
-                      color: useM3
-                          ? scheme.onSurfaceVariant.withValues(alpha: 0.7)
-                          : accent.withValues(alpha: 0.5),
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 2.5,
@@ -416,14 +364,10 @@ class GameDrawer extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: useM3
-                    ? scheme.surfaceContainerHigh
-                    : scheme.onSurface.withValues(alpha: 0.05),
+                color: scheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: useM3
-                      ? scheme.outlineVariant.withValues(alpha: 0.3)
-                      : scheme.onSurface.withValues(alpha: 0.08),
+                  color: scheme.outlineVariant.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -473,14 +417,12 @@ class _DrawerTile extends StatelessWidget {
   final IconData icon;
   final Color accent;
   final VoidCallback onTap;
-  final bool useM3;
 
   const _DrawerTile({
     required this.label,
     required this.icon,
     required this.accent,
     required this.onTap,
-    this.useM3 = false,
   });
 
   @override
@@ -488,61 +430,32 @@ class _DrawerTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: useM3
-          ? Card(
-              elevation: 0,
-              color: scheme.surfaceContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(
-                  color: scheme.outlineVariant.withValues(alpha: 0.55),
-                ),
-              ),
-              child: ListTile(
-                onTap: onTap,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                leading: Icon(icon, color: accent.withValues(alpha: 0.9)),
-                title: Text(
-                  label,
-                  style: TextStyle(
-                    color: scheme.onSurface.withValues(alpha: 0.92),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ),
-            )
-          : Container(
-              decoration: ClubBlackoutTheme.neonFrame(
-                color: accent,
-                opacity: 0.06,
-                borderRadius: ClubBlackoutTheme.radiusSm,
-                borderWidth: 1.0,
-              ),
-              child: ListTile(
-                onTap: onTap,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ClubBlackoutTheme.radiusSm),
-                ),
-                leading: Icon(
-                  icon,
-                  color: accent.withValues(alpha: 0.90),
-                  shadows: ClubBlackoutTheme.iconGlow(accent, intensity: 0.35),
-                ),
-                title: Text(
-                  label,
-                  style: TextStyle(
-                    color: scheme.onSurface.withValues(alpha: 0.80),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    letterSpacing: 1.3,
-                  ),
-                ),
-              ),
+      child: Card(
+        elevation: 0,
+        color: scheme.surfaceContainer,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.55),
+          ),
+        ),
+        child: ListTile(
+          onTap: onTap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          leading: Icon(icon, color: accent.withValues(alpha: 0.9)),
+          title: Text(
+            label,
+            style: TextStyle(
+              color: scheme.onSurface.withValues(alpha: 0.92),
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              letterSpacing: 0.4,
             ),
+          ),
+        ),
+      ),
     );
   }
 }
