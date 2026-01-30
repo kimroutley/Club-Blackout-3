@@ -55,7 +55,6 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Phase-aware styling
     final isNight = gameEngine.currentPhase == GamePhase.night;
-    // For 'Day/Lobby', we keep it bright/colorful (Neon theme), but using M3 structures.
 
     // Background
     Widget background;

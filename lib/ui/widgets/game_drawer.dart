@@ -78,7 +78,7 @@ class GameDrawer extends StatelessWidget {
           onNavigate?.call(index);
         },
         children: [
-          _buildHeader(context, accent, useM3: useM3),
+          _buildHeader(context, accent),
           ClubBlackoutTheme.gap16,
           const NavigationDrawerDestination(
             label: Text('HOME'),
@@ -336,11 +336,11 @@ class GameDrawer extends StatelessWidget {
                   Text(
                     'CLUB BLACKOUT',
                     style: (tt.headlineSmall ?? const TextStyle()).copyWith(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                            color: scheme.onSurface,
-                            fontSize: 22,
-                          ),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                      color: scheme.onSurface,
+                      fontSize: 22,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(

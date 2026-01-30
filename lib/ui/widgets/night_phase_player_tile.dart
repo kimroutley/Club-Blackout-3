@@ -100,7 +100,8 @@ class NightPhasePlayerTile extends StatelessWidget {
                           onPressed: onConfirm,
                           style: FilledButton.styleFrom(
                             backgroundColor: accent,
-                            foregroundColor: ClubBlackoutTheme.contrastOn(accent),
+                            foregroundColor:
+                                ClubBlackoutTheme.contrastOn(accent),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
