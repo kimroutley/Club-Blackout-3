@@ -178,7 +178,8 @@ class PlayerStatusResolver {
           PlayerStatusDisplay(
             label: 'IMMUNE',
             color: ClubBlackoutTheme.neonMint,
-            description: 'Immune to Dealer kills until ID checked by the Bouncer.',
+            description:
+                'Immune to Dealer kills until ID checked by the Bouncer.',
             icon: Icons.shield_outlined,
           ),
         );

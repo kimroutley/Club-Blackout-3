@@ -50,27 +50,35 @@ class ShenanigansTracker {
       changeCounts[change.voterId] = (changeCounts[change.voterId] ?? 0) + 1;
     }
     if (changeCounts.isNotEmpty) {
-      final top = changeCounts.entries.reduce((a, b) => a.value > b.value ? a : b);
-      if (top.value > 1) { 
-         final p = playersById[top.key];
-         if (p != null) {
-           awards.add(ShenaniganAward(
-             title: 'The Flip-Flopper',
-             description: 'Changed their vote the most times.',
-             playerId: p.id,
-             playerName: p.name,
-             value: '${top.value} times',
-             icon: Icons.swap_horiz_rounded,
-             color: Colors.orange,
-           ));
-         }
+      final top =
+          changeCounts.entries.reduce((a, b) => a.value > b.value ? a : b);
+      if (top.value > 1) {
+        final p = playersById[top.key];
+        if (p != null) {
+          awards.add(ShenaniganAward(
+            title: 'The Flip-Flopper',
+            description: 'Changed their vote the most times.',
+            playerId: p.id,
+            playerName: p.name,
+            value: '${top.value} times',
+            icon: Icons.swap_horiz_rounded,
+            color: Colors.orange,
+          ));
+        }
       }
     }
 
     // --- 2. "Public Enemy #1" (Most Targeted by Night Actions) ---
     final nightTargetCounts = <String, int>{};
     for (final night in engine.nightHistory) {
-      const keys = ['kill', 'check_id', 'silence', 'sober_sent_home', 'protect', 'role_block'];
+      const keys = [
+        'kill',
+        'check_id',
+        'silence',
+        'sober_sent_home',
+        'protect',
+        'role_block'
+      ];
       for (final key in keys) {
         final targetId = night[key];
         if (targetId is String) {
@@ -79,7 +87,8 @@ class ShenanigansTracker {
       }
     }
     if (nightTargetCounts.isNotEmpty) {
-      final top = nightTargetCounts.entries.reduce((a, b) => a.value > b.value ? a : b);
+      final top =
+          nightTargetCounts.entries.reduce((a, b) => a.value > b.value ? a : b);
       final p = playersById[top.key];
       if (p != null) {
         awards.add(ShenaniganAward(
@@ -97,19 +106,20 @@ class ShenanigansTracker {
     // --- 3. "Nemesis Pair" ---
     final voteAdj = <String, Map<String, int>>{};
     for (final vote in engine.voteHistory) {
-       if (vote.targetId == null) continue;
-       voteAdj.putIfAbsent(vote.voterId, () => {});
-       voteAdj[vote.voterId]![vote.targetId!] = (voteAdj[vote.voterId]![vote.targetId!] ?? 0) + 1;
+      if (vote.targetId == null) continue;
+      voteAdj.putIfAbsent(vote.voterId, () => {});
+      voteAdj[vote.voterId]![vote.targetId!] =
+          (voteAdj[vote.voterId]![vote.targetId!] ?? 0) + 1;
     }
-    
+
     String? p1, p2;
     int maxConflict = 0;
-    
+
     for (final v1 in voteAdj.keys) {
       for (final t1 in voteAdj[v1]!.keys) {
         final int v1ot1 = voteAdj[v1]![t1]!;
         final int t1ov1 = voteAdj[t1]?[v1] ?? 0;
-        final int conflict = v1ot1 + t1ov1; 
+        final int conflict = v1ot1 + t1ov1;
         if (conflict > maxConflict && v1.compareTo(t1) < 0) {
           maxConflict = conflict;
           p1 = v1;
@@ -117,19 +127,19 @@ class ShenanigansTracker {
         }
       }
     }
-    
+
     if (p1 != null && p2 != null && maxConflict >= 3) {
-       final name1 = playersById[p1]?.name ?? 'Unknown';
-       final name2 = playersById[p2]?.name ?? 'Unknown';
-       awards.add(ShenaniganAward(
-         title: 'Nemesis Pair',
-         description: 'These two couldn\'t leave each other alone.',
-         playerId: '$p1-$p2',
-         playerName: '$name1 & $name2',
-         value: '$maxConflict clashes',
-         icon: Icons.compare_arrows_rounded,
-         color: Colors.purple,
-       ));
+      final name1 = playersById[p1]?.name ?? 'Unknown';
+      final name2 = playersById[p2]?.name ?? 'Unknown';
+      awards.add(ShenaniganAward(
+        title: 'Nemesis Pair',
+        description: 'These two couldn\'t leave each other alone.',
+        playerId: '$p1-$p2',
+        playerName: '$name1 & $name2',
+        value: '$maxConflict clashes',
+        icon: Icons.compare_arrows_rounded,
+        color: Colors.purple,
+      ));
     }
 
     // --- 4. "The Lone Wolf" (Voted alone often) ---
@@ -147,10 +157,11 @@ class ShenanigansTracker {
         }
       }
     }
-    
+
     if (loneWolfCounts.isNotEmpty) {
-      final top = loneWolfCounts.entries.reduce((a, b) => a.value > b.value ? a : b);
-      if (top.value >= 2) { 
+      final top =
+          loneWolfCounts.entries.reduce((a, b) => a.value > b.value ? a : b);
+      if (top.value >= 2) {
         final p = playersById[top.key];
         if (p != null) {
           awards.add(ShenaniganAward(
@@ -174,20 +185,21 @@ class ShenanigansTracker {
         uniqueTargets[entry.key]!.add(entry.value);
       }
     }
-    
+
     if (uniqueTargets.isNotEmpty) {
-      final top = uniqueTargets.entries.reduce((a, b) => a.value.length > b.value.length ? a : b);
+      final top = uniqueTargets.entries
+          .reduce((a, b) => a.value.length > b.value.length ? a : b);
       if (top.value.length >= 3) {
         final p = playersById[top.key];
         if (p != null) {
           awards.add(ShenaniganAward(
-             title: 'The Scatterbrain',
-             description: 'Suspected the widest variety of people.',
-             playerId: p.id,
-             playerName: p.name,
-             value: '${top.value.length} suspects',
-             icon: Icons.call_split_rounded,
-             color: Colors.teal,
+            title: 'The Scatterbrain',
+            description: 'Suspected the widest variety of people.',
+            playerId: p.id,
+            playerName: p.name,
+            value: '${top.value.length} suspects',
+            icon: Icons.call_split_rounded,
+            color: Colors.teal,
           ));
         }
       }
@@ -200,8 +212,9 @@ class ShenanigansTracker {
         final voter = playersById[entry.key];
         final target = playersById[entry.value];
         // Note: Using current alliance.
-        if (voter != null && target != null && 
-            voter.alliance.toLowerCase().contains('party') && 
+        if (voter != null &&
+            target != null &&
+            voter.alliance.toLowerCase().contains('party') &&
             target.alliance.toLowerCase().contains('dealer')) {
           detectiveScores[entry.key] = (detectiveScores[entry.key] ?? 0) + 1;
         }
@@ -209,7 +222,8 @@ class ShenanigansTracker {
     }
 
     if (detectiveScores.isNotEmpty) {
-      final top = detectiveScores.entries.reduce((a, b) => a.value > b.value ? a : b);
+      final top =
+          detectiveScores.entries.reduce((a, b) => a.value > b.value ? a : b);
       if (top.value >= 2) {
         final p = playersById[top.key];
         if (p != null) {
@@ -232,16 +246,16 @@ class ShenanigansTracker {
       for (final p in engine.guests) {
         votesReceived[p.id] = 0;
       }
-      
+
       for (final dayVotes in votesByDay.values) {
         for (final targetId in dayVotes.values) {
           votesReceived[targetId] = (votesReceived[targetId] ?? 0) + 1;
         }
       }
-      
+
       String? bestShadow;
       int minVotes = 999;
-      
+
       for (final entry in votesReceived.entries) {
         final p = playersById[entry.key];
         if (p != null && p.alliance.toLowerCase().contains('dealer')) {
@@ -251,8 +265,8 @@ class ShenanigansTracker {
           }
         }
       }
-      
-      if (bestShadow != null && minVotes <= 2) { 
+
+      if (bestShadow != null && minVotes <= 2) {
         final p = playersById[bestShadow];
         if (p != null) {
           awards.add(ShenaniganAward(
@@ -274,7 +288,9 @@ class ShenanigansTracker {
     for (final night in engine.nightHistory) {
       final killTarget = night['kill'];
       final protectTarget = night['protect'];
-      if (killTarget != null && protectTarget != null && killTarget == protectTarget) {
+      if (killTarget != null &&
+          protectTarget != null &&
+          killTarget == protectTarget) {
         successfulSaves++;
       }
     }
@@ -282,10 +298,10 @@ class ShenanigansTracker {
     if (successfulSaves > 0) {
       // Find the Medic (assuming single medic for simplicity)
       final medic = playersById.values.cast<Player?>().firstWhere(
-        (p) => p?.role.id == 'medic',
-        orElse: () => null,
-      );
-      
+            (p) => p?.role.id == 'medic',
+            orElse: () => null,
+          );
+
       if (medic != null) {
         awards.add(ShenaniganAward(
           title: 'The Guardian Angel',
@@ -308,13 +324,14 @@ class ShenanigansTracker {
     for (final entry in votesByDay.entries) {
       final day = entry.key;
       final dayVotes = entry.value; // voterId -> targetId
-      
+
       final counts = <String, int>{};
       for (final t in dayVotes.values) {
         counts[t] = (counts[t] ?? 0) + 1;
       }
-      
-      final sorted = counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+      final sorted = counts.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
       if (sorted.isEmpty) continue;
       final eliminatedId = sorted.first.key;
       // Ensure it wasn't a tie (skip ties for stats simplicity)
@@ -332,8 +349,8 @@ class ShenanigansTracker {
       // Instigator
       VoteCast? firstVote;
       for (final v in engine.voteHistory) {
-        if (v.day == day && 
-            v.targetId == eliminatedId && 
+        if (v.day == day &&
+            v.targetId == eliminatedId &&
             votersForEliminated.contains(v.voterId)) {
           if (firstVote == null || v.sequence < firstVote.sequence) {
             firstVote = v;
@@ -341,12 +358,14 @@ class ShenanigansTracker {
         }
       }
       if (firstVote != null) {
-        instigatorCounts[firstVote.voterId] = (instigatorCounts[firstVote.voterId] ?? 0) + 1;
+        instigatorCounts[firstVote.voterId] =
+            (instigatorCounts[firstVote.voterId] ?? 0) + 1;
       }
     }
 
     if (executionerCounts.isNotEmpty) {
-      final top = executionerCounts.entries.reduce((a, b) => a.value > b.value ? a : b);
+      final top =
+          executionerCounts.entries.reduce((a, b) => a.value > b.value ? a : b);
       if (top.value >= 2) {
         final p = playersById[top.key];
         if (p != null) {
@@ -364,8 +383,10 @@ class ShenanigansTracker {
     }
 
     if (instigatorCounts.isNotEmpty) {
-      final top = instigatorCounts.entries.reduce((a, b) => a.value > b.value ? a : b);
-      if (top.value >= 1) { // Even once is notable if they led the charge
+      final top =
+          instigatorCounts.entries.reduce((a, b) => a.value > b.value ? a : b);
+      if (top.value >= 1) {
+        // Even once is notable if they led the charge
         final p = playersById[top.key];
         if (p != null) {
           awards.add(ShenaniganAward(
@@ -387,7 +408,8 @@ class ShenanigansTracker {
       for (final entry in dayVotes.entries) {
         final voter = playersById[entry.key];
         final target = playersById[entry.value];
-        if (voter != null && target != null &&
+        if (voter != null &&
+            target != null &&
             voter.alliance.toLowerCase().contains('party') &&
             target.alliance.toLowerCase().contains('party')) {
           ffCounts[entry.key] = (ffCounts[entry.key] ?? 0) + 1;
@@ -417,7 +439,8 @@ class ShenanigansTracker {
   }
 
   /// Generates awards based on a list of game snapshots (Multi-Game Session).
-  static List<ShenaniganAward> generateSessionAwards(List<GameStorySnapshot> games) {
+  static List<ShenaniganAward> generateSessionAwards(
+      List<GameStorySnapshot> games) {
     if (games.isEmpty) return [];
 
     // Aggregators (Key = Player Name)
@@ -446,7 +469,14 @@ class ShenanigansTracker {
 
       // 2. Public Enemy
       for (final night in game.nightHistory) {
-        const keys = ['kill', 'check_id', 'silence', 'sober_sent_home', 'protect', 'role_block'];
+        const keys = [
+          'kill',
+          'check_id',
+          'silence',
+          'sober_sent_home',
+          'protect',
+          'role_block'
+        ];
         for (final key in keys) {
           final targetId = night[key];
           if (targetId is String) {
@@ -476,15 +506,16 @@ class ShenanigansTracker {
         for (final t in dayVotes.values) {
           counts[t] = (counts[t] ?? 0) + 1;
         }
-        
+
         // Find eliminated (max votes)
-        final sorted = counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+        final sorted = counts.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
         String? eliminatedId;
         if (sorted.isNotEmpty) {
-           // Simple max heuristic
-           if (sorted.length == 1 || sorted[0].value > sorted[1].value) {
-             eliminatedId = sorted[0].key;
-           }
+          // Simple max heuristic
+          if (sorted.length == 1 || sorted[0].value > sorted[1].value) {
+            eliminatedId = sorted[0].key;
+          }
         }
 
         final votersForEliminated = <String>[];
@@ -498,40 +529,45 @@ class ShenanigansTracker {
           if (voter == null || target == null) continue;
 
           // Detective (Party -> Dealer)
-          if (voter.alliance.toLowerCase().contains('party') && 
+          if (voter.alliance.toLowerCase().contains('party') &&
               target.alliance.toLowerCase().contains('dealer')) {
-            detectiveCounts[voter.name] = (detectiveCounts[voter.name] ?? 0) + 1;
+            detectiveCounts[voter.name] =
+                (detectiveCounts[voter.name] ?? 0) + 1;
           }
 
           // Friendly Fire (Party -> Party)
-          if (voter.alliance.toLowerCase().contains('party') && 
+          if (voter.alliance.toLowerCase().contains('party') &&
               target.alliance.toLowerCase().contains('party')) {
-            friendlyFireCounts[voter.name] = (friendlyFireCounts[voter.name] ?? 0) + 1;
+            friendlyFireCounts[voter.name] =
+                (friendlyFireCounts[voter.name] ?? 0) + 1;
           }
 
           // Executioner
           if (eliminatedId != null && targetId == eliminatedId) {
-            executionerCounts[voter.name] = (executionerCounts[voter.name] ?? 0) + 1;
+            executionerCounts[voter.name] =
+                (executionerCounts[voter.name] ?? 0) + 1;
             votersForEliminated.add(voterId);
           }
         }
 
         // Instigator
         if (eliminatedId != null) {
-           VoteCast? firstVote;
-           for (final v in game.voteHistory) {
-             if (v.day == day && v.targetId == eliminatedId && votersForEliminated.contains(v.voterId)) {
-               if (firstVote == null || v.sequence < firstVote.sequence) {
-                 firstVote = v;
-               }
-             }
-           }
-           if (firstVote != null) {
-             final p = playersById[firstVote.voterId];
-             if (p != null) {
-               instigatorCounts[p.name] = (instigatorCounts[p.name] ?? 0) + 1;
-             }
-           }
+          VoteCast? firstVote;
+          for (final v in game.voteHistory) {
+            if (v.day == day &&
+                v.targetId == eliminatedId &&
+                votersForEliminated.contains(v.voterId)) {
+              if (firstVote == null || v.sequence < firstVote.sequence) {
+                firstVote = v;
+              }
+            }
+          }
+          if (firstVote != null) {
+            final p = playersById[firstVote.voterId];
+            if (p != null) {
+              instigatorCounts[p.name] = (instigatorCounts[p.name] ?? 0) + 1;
+            }
+          }
         }
       }
     }
@@ -539,7 +575,9 @@ class ShenanigansTracker {
     // Convert Aggregates to Awards
     final awards = <ShenaniganAward>[];
 
-    void addAward(Map<String, int> counts, String title, String desc, IconData icon, Color color, String suffix, {int min = 1}) {
+    void addAward(Map<String, int> counts, String title, String desc,
+        IconData icon, Color color, String suffix,
+        {int min = 1}) {
       if (counts.isEmpty) return;
       final top = counts.entries.reduce((a, b) => a.value > b.value ? a : b);
       if (top.value >= min) {
@@ -555,14 +593,50 @@ class ShenanigansTracker {
       }
     }
 
-    addAward(flipFlopCounts, 'Legacy of Indecision', 'Changed their vote the most across all games.', Icons.swap_horiz_rounded, Colors.orange, 'flips', min: 3);
-    addAward(nightTargetCounts, 'Target Practice', 'Most targeted player of the night.', Icons.search_rounded, Colors.redAccent, 'visits', min: 3);
-    addAward(executionerCounts, 'The Grim Reaper', 'Voted for eliminated players most often.', Icons.gavel_rounded, Colors.brown, 'executions', min: 3);
-    addAward(instigatorCounts, 'Mob Boss', 'Started the most elimination mobs.', Icons.campaign_rounded, Colors.deepOrange, 'mobs', min: 2);
-    addAward(detectiveCounts, 'Sherlock Holmes', 'Most correct votes against Dealers.', Icons.policy_rounded, Colors.blue, 'caught', min: 3);
-    addAward(friendlyFireCounts, 'The Saboteur', 'Voted for teammates most often.', Icons.error_outline_rounded, Colors.red.shade900, 'betrayals', min: 3);
+    addAward(
+        flipFlopCounts,
+        'Legacy of Indecision',
+        'Changed their vote the most across all games.',
+        Icons.swap_horiz_rounded,
+        Colors.orange,
+        'flips',
+        min: 3);
+    addAward(
+        nightTargetCounts,
+        'Target Practice',
+        'Most targeted player of the night.',
+        Icons.search_rounded,
+        Colors.redAccent,
+        'visits',
+        min: 3);
+    addAward(
+        executionerCounts,
+        'The Grim Reaper',
+        'Voted for eliminated players most often.',
+        Icons.gavel_rounded,
+        Colors.brown,
+        'executions',
+        min: 3);
+    addAward(instigatorCounts, 'Mob Boss', 'Started the most elimination mobs.',
+        Icons.campaign_rounded, Colors.deepOrange, 'mobs',
+        min: 2);
+    addAward(
+        detectiveCounts,
+        'Sherlock Holmes',
+        'Most correct votes against Dealers.',
+        Icons.policy_rounded,
+        Colors.blue,
+        'caught',
+        min: 3);
+    addAward(
+        friendlyFireCounts,
+        'The Saboteur',
+        'Voted for teammates most often.',
+        Icons.error_outline_rounded,
+        Colors.red.shade900,
+        'betrayals',
+        min: 3);
 
     return awards;
   }
 }
-

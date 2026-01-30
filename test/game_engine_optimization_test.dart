@@ -9,9 +9,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // Mock SharedPreferences
-  const sharedPrefsChannel = MethodChannel('plugins.flutter.io/shared_preferences');
+  const sharedPrefsChannel =
+      MethodChannel('plugins.flutter.io/shared_preferences');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(sharedPrefsChannel, (MethodCall methodCall) async {
+      .setMockMethodCallHandler(sharedPrefsChannel,
+          (MethodCall methodCall) async {
     if (methodCall.method == 'getAll') {
       return <String, dynamic>{};
     }
@@ -39,12 +41,16 @@ void main() {
     });
 
     test('correctly filters votes', () {
-      final p1 = Player(id: 'p1', name: 'Player 1', role: partyRole)..initialize();
-      final p2 = Player(id: 'p2', name: 'Player 2', role: partyRole)..initialize();
-      final p3 = Player(id: 'p3', name: 'Player 3', role: partyRole)..initialize();
+      final p1 = Player(id: 'p1', name: 'Player 1', role: partyRole)
+        ..initialize();
+      final p2 = Player(id: 'p2', name: 'Player 2', role: partyRole)
+        ..initialize();
+      final p3 = Player(id: 'p3', name: 'Player 3', role: partyRole)
+        ..initialize();
 
       // p4 is sent home (ineligible voter)
-      final p4 = Player(id: 'p4', name: 'Player 4', role: partyRole)..initialize();
+      final p4 = Player(id: 'p4', name: 'Player 4', role: partyRole)
+        ..initialize();
       p4.soberSentHome = true;
 
       engine.players.addAll([p1, p2, p3, p4]);
@@ -74,8 +80,10 @@ void main() {
     });
 
     test('ignores targets with alibi', () {
-      final p1 = Player(id: 'p1', name: 'Player 1', role: partyRole)..initialize();
-      final p2 = Player(id: 'p2', name: 'Player 2', role: partyRole)..initialize();
+      final p1 = Player(id: 'p1', name: 'Player 1', role: partyRole)
+        ..initialize();
+      final p2 = Player(id: 'p2', name: 'Player 2', role: partyRole)
+        ..initialize();
 
       // p2 has alibi
       p2.alibiDay = engine.dayCount;

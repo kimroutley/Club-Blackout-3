@@ -213,7 +213,8 @@ Map<String, dynamic> buildAiStoryExport(
       'dayCount': engine.dayCount,
       'currentIndex': engine.currentScriptIndex,
       'totalSteps': engine.scriptQueue.length,
-      'steps': engine.scriptQueue.map((s) => s.toJson()).toList(growable: false),
+      'steps':
+          engine.scriptQueue.map((s) => s.toJson()).toList(growable: false),
     },
   };
 }

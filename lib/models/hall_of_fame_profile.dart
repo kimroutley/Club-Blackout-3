@@ -1,4 +1,3 @@
-
 class HallOfFameProfile {
   final String id;
   final String name;
@@ -32,7 +31,8 @@ class HallOfFameProfile {
       totalWins: (json['totalWins'] as num?)?.toInt() ?? 0,
       roleStats: (json['roleStats'] as Map?)?.cast<String, int>() ?? {},
       awardStats: (json['awardStats'] as Map?)?.cast<String, int>() ?? {},
-      lastPlayed: DateTime.tryParse(json['lastPlayed'] as String? ?? '') ?? DateTime.now(),
+      lastPlayed: DateTime.tryParse(json['lastPlayed'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 
@@ -45,7 +45,7 @@ class HallOfFameProfile {
         'awardStats': awardStats,
         'lastPlayed': lastPlayed.toIso8601String(),
       };
-      
+
   HallOfFameProfile copyWith({
     String? name,
     int? totalGames,

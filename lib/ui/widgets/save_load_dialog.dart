@@ -377,17 +377,20 @@ class _SaveLoadDialogM3State extends State<SaveLoadDialogM3> {
                         child: ListView.separated(
                           shrinkWrap: true,
                           itemCount: _saves.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final s = _saves[index];
                             final isSelected = s.id == _selectedSaveId;
                             return Card(
                               elevation: 0,
                               color: isSelected
-                                  ? cs.secondaryContainer.withValues(alpha: 0.55)
+                                  ? cs.secondaryContainer
+                                      .withValues(alpha: 0.55)
                                   : cs.surfaceContainer,
                               child: ListTile(
-                                onTap: () => setState(() => _selectedSaveId = s.id),
+                                onTap: () =>
+                                    setState(() => _selectedSaveId = s.id),
                                 leading: Icon(
                                   isSelected
                                       ? Icons.radio_button_checked_rounded
@@ -440,12 +443,14 @@ class _SaveLoadDialogM3State extends State<SaveLoadDialogM3> {
           child: const Text('Close'),
         ),
         TextButton(
-          onPressed: (_loading || _selectedSaveId == null) ? null : _deleteSelected,
+          onPressed:
+              (_loading || _selectedSaveId == null) ? null : _deleteSelected,
           style: TextButton.styleFrom(foregroundColor: cs.error),
           child: const Text('Delete'),
         ),
         FilledButton(
-          onPressed: (_loading || _selectedSaveId == null) ? null : _loadSelected,
+          onPressed:
+              (_loading || _selectedSaveId == null) ? null : _loadSelected,
           child: const Text('Load'),
         ),
       ],
@@ -594,7 +599,8 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
         ),
         const SizedBox(width: 8),
         TextButton(
-          onPressed: (_loading || _selectedSaveId == null) ? null : _deleteSelected,
+          onPressed:
+              (_loading || _selectedSaveId == null) ? null : _deleteSelected,
           style: TextButton.styleFrom(
             foregroundColor: ClubBlackoutTheme.neonRed,
           ),
@@ -602,7 +608,8 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
         ),
         const SizedBox(width: 8),
         FilledButton(
-          onPressed: (_loading || _selectedSaveId == null) ? null : _loadSelected,
+          onPressed:
+              (_loading || _selectedSaveId == null) ? null : _loadSelected,
           style: ClubBlackoutTheme.neonButtonStyle(
             ClubBlackoutTheme.neonGreen,
             isPrimary: true,
@@ -650,22 +657,22 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                                   ),
                                   content: Text(
                                     'Creates (or overwrites) a test save with one of each role, then loads it.',
-                                    style: ClubBlackoutTheme.bulletinBodyStyle(cs.onSurface),
+                                    style: ClubBlackoutTheme.bulletinBodyStyle(
+                                        cs.onSurface),
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.pop(ctx, false),
                                       style: TextButton.styleFrom(
-                                        foregroundColor: cs.onSurface
-                                            .withValues(alpha: 0.7),
+                                        foregroundColor:
+                                            cs.onSurface.withValues(alpha: 0.7),
                                       ),
                                       child: const Text('CANCEL'),
                                     ),
                                     const SizedBox(width: 8),
                                     FilledButton(
-                                      onPressed: () =>
-                                          Navigator.pop(ctx, true),
+                                      onPressed: () => Navigator.pop(ctx, true),
                                       style: ClubBlackoutTheme.neonButtonStyle(
                                           accent,
                                           isPrimary: true),
@@ -688,16 +695,20 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                                 title: SizedBox.shrink(),
                                 content: SizedBox(
                                   height: 72,
-                                  child: Center(child: CircularProgressIndicator()),
+                                  child: Center(
+                                      child: CircularProgressIndicator()),
                                 ),
                               ),
                             );
 
                             try {
                               final saves = await widget.engine.getSavedGames();
-                              final existing = saves.where((s) => s.name == _testSaveName).firstOrNull;
+                              final existing = saves
+                                  .where((s) => s.name == _testSaveName)
+                                  .firstOrNull;
 
-                              await widget.engine.createTestGame(fullRoster: true);
+                              await widget.engine
+                                  .createTestGame(fullRoster: true);
                               await widget.engine.startGame();
                               await widget.engine.saveGame(
                                 _testSaveName,
@@ -707,11 +718,13 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                               // Prefer the known id (if overwriting), else re-query.
                               String? saveId = existing?.id;
                               if (saveId == null) {
-                                final saves2 = await widget.engine.getSavedGames();
+                                final saves2 =
+                                    await widget.engine.getSavedGames();
                                 final created = saves2
                                     .where((s) => s.name == _testSaveName)
                                     .toList()
-                                  ..sort((a, b) => b.savedAt.compareTo(a.savedAt));
+                                  ..sort(
+                                      (a, b) => b.savedAt.compareTo(a.savedAt));
                                 saveId = created.firstOrNull?.id;
                               }
 
@@ -729,7 +742,8 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                             } catch (_) {
                               if (!context.mounted) return;
                               navigator.pop(); // progress dialog
-                              widget.engine.showToast('Failed to load test game.');
+                              widget.engine
+                                  .showToast('Failed to load test game.');
                               await _refresh();
                             }
                           },
@@ -751,7 +765,8 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                               child: Text(
                                 'Load Test Game (one of each role)',
                                 style: ClubBlackoutTheme.glowTextStyle(
-                                  base: ClubBlackoutTheme.bulletinBodyStyle(cs.onSurface),
+                                  base: ClubBlackoutTheme.bulletinBodyStyle(
+                                      cs.onSurface),
                                   color: ClubBlackoutTheme.neonGreen,
                                   fontWeight: FontWeight.w900,
                                   glowIntensity: 0.8,
@@ -791,7 +806,8 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                     runSpacing: 8,
                     children: [
                       FilledButton.icon(
-                        style: ClubBlackoutTheme.neonButtonStyle(accent, isPrimary: true),
+                        style: ClubBlackoutTheme.neonButtonStyle(accent,
+                            isPrimary: true),
                         onPressed: () => _save(),
                         icon: const Icon(Icons.save_rounded),
                         label: const Text('Save New'),
@@ -818,7 +834,8 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                   const SizedBox(height: 8),
                   Text(
                     'Saved games',
-                    style: ClubBlackoutTheme.bulletinBodyStyle(cs.onSurface).copyWith(
+                    style: ClubBlackoutTheme.bulletinBodyStyle(cs.onSurface)
+                        .copyWith(
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.0,
                     ),
@@ -827,7 +844,9 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                   if (_saves.isEmpty)
                     Text(
                       'No saves yet.',
-                      style: ClubBlackoutTheme.bulletinBodyStyle(cs.onSurfaceVariant).copyWith(
+                      style: ClubBlackoutTheme.bulletinBodyStyle(
+                              cs.onSurfaceVariant)
+                          .copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     )
@@ -846,7 +865,8 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                           return InkWell(
                             onTap: () => setState(() => _selectedSaveId = s.id),
                             child: DecoratedBox(
-                              decoration: ClubBlackoutTheme.bulletinItemDecoration(
+                              decoration:
+                                  ClubBlackoutTheme.bulletinItemDecoration(
                                 color: accent,
                                 opacity: selected ? 0.16 : 0.10,
                               ),
@@ -855,24 +875,35 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                                 child: Row(
                                   children: [
                                     Icon(
-                                      selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
-                                      color: selected ? accent : cs.onSurfaceVariant,
+                                      selected
+                                          ? Icons.radio_button_checked_rounded
+                                          : Icons.radio_button_off_rounded,
+                                      color: selected
+                                          ? accent
+                                          : cs.onSurfaceVariant,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             s.name,
-                                            style: ClubBlackoutTheme.bulletinBodyStyle(cs.onSurface).copyWith(
+                                            style: ClubBlackoutTheme
+                                                    .bulletinBodyStyle(
+                                                        cs.onSurface)
+                                                .copyWith(
                                               fontWeight: FontWeight.w900,
                                             ),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             'Day ${s.dayCount} • ${s.alivePlayers}/${s.totalPlayers} alive • ${s.currentPhase}',
-                                            style: ClubBlackoutTheme.bulletinBodyStyle(cs.onSurfaceVariant).copyWith(
+                                            style: ClubBlackoutTheme
+                                                    .bulletinBodyStyle(
+                                                        cs.onSurfaceVariant)
+                                                .copyWith(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
                                               height: 1.25,
@@ -881,8 +912,10 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                                           const SizedBox(height: 2),
                                           Text(
                                             s.savedAt.toLocal().toString(),
-                                            style: ClubBlackoutTheme.bulletinBodyStyle(
-                                              cs.onSurfaceVariant.withValues(alpha: 0.9),
+                                            style: ClubBlackoutTheme
+                                                .bulletinBodyStyle(
+                                              cs.onSurfaceVariant
+                                                  .withValues(alpha: 0.9),
                                             ).copyWith(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
