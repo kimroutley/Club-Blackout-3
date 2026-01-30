@@ -378,8 +378,82 @@ class GameEngine extends ChangeNotifier {
 
   /// Creates a deep-ish clone suitable for Monte Carlo simulations.
   Future<GameEngine> cloneForSimulation({bool includeLog = false}) async {
+    return copy(includeLog: includeLog);
+  }
+
+  /// Optimized manual deep copy of the engine state.
+  GameEngine copy({bool includeLog = false}) {
     final clone = GameEngine(roleRepository: roleRepository, loadNameHistory: false);
-    await clone.importSaveBlobMap(exportSaveBlobMap(includeLog: includeLog), notify: false);
+
+    // Primitives & Simple State
+    clone._currentPhase = _currentPhase;
+    clone.dayCount = dayCount;
+    clone._scriptIndex = _scriptIndex;
+    clone.hostAlertVersion = hostAlertVersion;
+    clone.hostAlertTitle = hostAlertTitle;
+    clone.hostAlertMessage = hostAlertMessage;
+    clone.toastVersion = toastVersion;
+    clone.toastTitle = toastTitle;
+    clone.toastMessage = toastMessage;
+    clone.messyBitchVictoryPending = messyBitchVictoryPending;
+    clone.toastActionLabel = toastActionLabel;
+    clone.toastAction = toastAction;
+    clone.lastNightSummary = lastNightSummary;
+    clone.lastNightHostRecap = lastNightHostRecap;
+    clone._voteSequence = _voteSequence;
+    clone._winner = _winner;
+    clone._winMessage = _winMessage;
+    clone.dramaQueenSwapPending = dramaQueenSwapPending;
+    clone.dramaQueenMarkedAId = dramaQueenMarkedAId;
+    clone.dramaQueenMarkedBId = dramaQueenMarkedBId;
+    clone.lastDramaQueenSwap = lastDramaQueenSwap;
+    clone._dayphaseVotesMade = _dayphaseVotesMade;
+    clone.pendingPredatorId = pendingPredatorId;
+    clone.pendingPredatorPreferredTargetId = pendingPredatorPreferredTargetId;
+    clone.pendingTeaSpillerId = pendingTeaSpillerId;
+
+    // Collections (Deep Copy where needed)
+    clone.players = players.map((p) => p.copy()).toList();
+
+    if (includeLog) {
+      clone._gameLog = List.from(_gameLog);
+      clone.voteHistory.addAll(voteHistory);
+    } else {
+      clone._gameLog = [];
+      // voteHistory remains empty
+    }
+
+    clone._scriptQueue = List.from(_scriptQueue);
+    clone.nightActions = Map.from(nightActions);
+    clone.deadPlayerIds = List.from(deadPlayerIds);
+    clone.nameHistory = List.from(nameHistory);
+    clone.lastNightStats.addAll(lastNightStats);
+
+    clone._clingerDoubleDeaths.addAll(
+      _clingerDoubleDeaths.map((m) => Map<String, String>.from(m)),
+    );
+    clone.pendingPredatorEligibleVoterIds = List.from(
+      pendingPredatorEligibleVoterIds,
+    );
+    clone.pendingTeaSpillerEligibleVoterIds = List.from(
+      pendingTeaSpillerEligibleVoterIds,
+    );
+
+    clone.nightHistory.addAll(
+      nightHistory.map((m) => Map<String, dynamic>.from(m)),
+    );
+    clone.voteChanges.addAll(voteChanges);
+
+    clone.currentDayVotesByVoter.addAll(currentDayVotesByVoter);
+    clone.currentDayVotesByTarget.addAll(
+      currentDayVotesByTarget.map((k, v) => MapEntry(k, List.from(v))),
+    );
+
+    // Sub-systems
+    clone.reactionSystem.copyFrom(reactionSystem);
+    clone.statusEffectManager.copyFrom(statusEffectManager);
+    clone.abilityResolver.copyFrom(abilityResolver);
+
     return clone;
   }
 
