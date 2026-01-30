@@ -60,6 +60,10 @@ class GameEndResult {
 class GameEngine extends ChangeNotifier {
   final RoleRepository roleRepository;
 
+  /// If true, logging to the game log and external services is disabled.
+  /// This is critical for performance during Monte Carlo simulations.
+  final bool silent;
+
   static const String hostRoleId = 'host';
   static const String hostPlayerId = 'host';
 
@@ -300,7 +304,11 @@ class GameEngine extends ChangeNotifier {
   String? get winner => _winner;
   String? get winMessage => _winMessage;
 
-  GameEngine({required this.roleRepository, bool loadNameHistory = true}) {
+  GameEngine({
+    required this.roleRepository,
+    bool loadNameHistory = true,
+    this.silent = false,
+  }) {
     if (loadNameHistory) {
       _loadNameHistory();
     }
@@ -432,6 +440,10 @@ class GameEngine extends ChangeNotifier {
   /// ineligible voters (e.g., Sober-sent-home), but this protects against any
   /// direct map mutations or stale saved state.
   Map<String, List<String>> get eligibleDayVotesByTarget {
+    // Optimization: Create a map for O(1) player lookup instead of O(N) search per target.
+    // This reduces complexity from O(T*N) to O(N + T).
+    final playerMap = {for (var p in players) p.id: p};
+
     final eligibleVoterIds = players
         .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
         .where((p) => !p.soberSentHome)
@@ -442,7 +454,7 @@ class GameEngine extends ChangeNotifier {
     final filtered = <String, List<String>>{};
     for (final entry in currentDayVotesByTarget.entries) {
       final targetId = entry.key;
-      final target = players.where((p) => p.id == targetId).firstOrNull;
+      final target = playerMap[targetId];
       if (target != null && target.alibiDay == dayCount) {
         // Silver Fox alibi: targets with vote immunity cannot accrue votes today.
         continue;
@@ -2321,6 +2333,8 @@ class GameEngine extends ChangeNotifier {
 
   void logAction(String title, String description,
       {GameLogType type = GameLogType.action, bool toast = false}) {
+    if (silent) return;
+
     final entry = GameLogEntry(
       turn: dayCount,
       phase: _currentPhase.name.toUpperCase(),

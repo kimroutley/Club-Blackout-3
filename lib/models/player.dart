@@ -264,4 +264,58 @@ class Player {
 
     return player;
   }
+
+  /// Creates a deep copy of this Player instance.
+  ///
+  /// This is significantly faster than JSON serialization for simulations.
+  Player copy() {
+    final player = Player(
+      id: id,
+      name: name,
+      role: role, // Role is immutable
+      isAlive: isAlive,
+      isEnabled: isEnabled,
+      statusEffects: List<String>.from(statusEffects),
+      lives: lives,
+      idCheckedByBouncer: idCheckedByBouncer,
+      medicChoice: medicChoice,
+      hasReviveToken: hasReviveToken,
+      creepTargetId: creepTargetId,
+      hasRumour: hasRumour,
+      messyBitchKillUsed: messyBitchKillUsed,
+      clingerPartnerId: clingerPartnerId,
+      clingerFreedAsAttackDog: clingerFreedAsAttackDog,
+      clingerAttackDogUsed: clingerAttackDogUsed,
+      tabooNames: List<String>.from(tabooNames),
+      minorHasBeenIDd: minorHasBeenIDd,
+      soberAbilityUsed: soberAbilityUsed,
+      soberSentHome: soberSentHome,
+      silverFoxAbilityUsed: silverFoxAbilityUsed,
+      secondWindConverted: secondWindConverted,
+      secondWindPendingConversion: secondWindPendingConversion,
+      secondWindRefusedConversion: secondWindRefusedConversion,
+      secondWindConversionNight: secondWindConversionNight,
+      joinsNextNight: joinsNextNight,
+      deathDay: deathDay,
+      silencedDay: silencedDay,
+      blockedKillNight: blockedKillNight,
+      roofiAbilityRevoked: roofiAbilityRevoked,
+      bouncerAbilityRevoked: bouncerAbilityRevoked,
+      bouncerHasRoofiAbility: bouncerHasRoofiAbility,
+      deathReason: deathReason,
+      whoreDeflectionTargetId: whoreDeflectionTargetId,
+      whoreDeflectionUsed: whoreDeflectionUsed,
+      needsSetup: needsSetup,
+      alibiDay: alibiDay,
+    );
+
+    // Fields not in constructor
+    player.alliance = alliance;
+    player.teaSpillerTargetId = teaSpillerTargetId;
+    player.predatorTargetId = predatorTargetId;
+    player.dramaQueenTargetAId = dramaQueenTargetAId;
+    player.dramaQueenTargetBId = dramaQueenTargetBId;
+
+    return player;
+  }
 }
