@@ -645,17 +645,52 @@ class GameEngine extends ChangeNotifier {
   ///
   /// Returns a simple winner token when the game is over, otherwise null.
   GameEndResult? checkGameEnd() {
+    final alive = <Player>[];
+    int dealerCount = 0;
+    int partyCount = 0;
+    bool clubManagerAlive = false;
+
+    Player? messyBitch;
+    bool allTargetsHaveRumour = true;
+
+    for (final p in players) {
+      if (!p.isEnabled) continue;
+
+      if (p.role.id == 'messy_bitch') {
+        messyBitch = p;
+      }
+
+      if (p.role.id == 'host') continue;
+
+      if (p.isAlive) {
+        alive.add(p);
+
+        final allianceLower = p.alliance.toLowerCase();
+        if (p.role.id == 'dealer' || allianceLower.contains('dealer')) {
+          dealerCount++;
+        }
+        if (allianceLower.contains('party')) {
+          partyCount++;
+        }
+        if (p.role.id == 'club_manager') {
+          clubManagerAlive = true;
+        }
+
+        if (p.role.id != 'messy_bitch') {
+          if (!p.hasRumour) {
+            allTargetsHaveRumour = false;
+          }
+        }
+      }
+    }
+
     // Messy Bitch immediate win: rumours have reached every enabled guest.
-    if (_isMessyBitchWinConditionMet()) {
+    if (messyBitch != null && messyBitch.isAlive && allTargetsHaveRumour) {
       return const GameEndResult(
         winner: 'MESSY_BITCH',
         message: 'Messy Bitch spread a rumour to every player.',
       );
     }
-
-    final alive = players
-        .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
-        .toList();
 
     if (alive.isEmpty) {
       return const GameEndResult(
@@ -663,14 +698,6 @@ class GameEngine extends ChangeNotifier {
         message: 'No one wins. Everyone is dead.',
       );
     }
-
-    final dealerCount = alive
-        .where((p) =>
-            p.role.id == 'dealer' ||
-            p.alliance.toLowerCase().contains('dealer'))
-        .length;
-    final partyCount =
-        alive.where((p) => p.alliance.toLowerCase().contains('party')).length;
 
     // Party Animals win when all Dealers are dead (and at least one Party Animal remains).
     if (dealerCount == 0 && partyCount > 0) {
@@ -682,7 +709,6 @@ class GameEngine extends ChangeNotifier {
 
     // Special case: Club Manager vs Dealers.
     // Dealers do NOT win at parity if a Club Manager is still alive to maintain order.
-    final clubManagerAlive = alive.any((p) => p.role.id == 'club_manager');
 
     // Dealer win condition:
     // 1. Dealers outnumber or equal Party Animals (control the vote).
