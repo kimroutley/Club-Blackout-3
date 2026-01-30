@@ -35,10 +35,9 @@ class GameDrawer extends StatelessWidget {
         .labelLarge
         ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5);
 
-    final canContinueGame =
-      onContinueGameTap != null &&
-      gameEngine != null &&
-      gameEngine!.currentPhase != GamePhase.lobby;
+    final canContinueGame = onContinueGameTap != null &&
+        gameEngine != null &&
+        gameEngine!.currentPhase != GamePhase.lobby;
 
     return NavigationDrawerTheme(
       data: NavigationDrawerThemeData(
@@ -46,7 +45,7 @@ class GameDrawer extends StatelessWidget {
         surfaceTintColor: cs.surfaceTint,
         indicatorColor: cs.secondaryContainer.withValues(alpha: 0.75),
         indicatorShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12),
         ),
         elevation: 1,
         labelTextStyle: WidgetStateProperty.resolveWith(
@@ -80,9 +79,7 @@ class GameDrawer extends StatelessWidget {
         },
         children: [
           _buildHeader(context, accent),
-
           ClubBlackoutTheme.gap16,
-
           const NavigationDrawerDestination(
             label: Text('HOME'),
             icon: Icon(Icons.home_outlined),
@@ -103,7 +100,6 @@ class GameDrawer extends StatelessWidget {
             icon: Icon(Icons.nights_stay_outlined),
             selectedIcon: Icon(Icons.nights_stay_rounded),
           ),
-          
           if (gameEngine != null) ...[
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -113,18 +109,17 @@ class GameDrawer extends StatelessWidget {
               ),
             ),
             Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'GAME CONTROLS',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.5),
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                  ),
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'GAME CONTROLS',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
+              ),
             ),
             const SizedBox(height: 8),
-
             if (canContinueGame)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -138,7 +133,6 @@ class GameDrawer extends StatelessWidget {
                   },
                 ),
               ),
-
             if (onHostDashboardTap != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -233,7 +227,8 @@ class GameDrawer extends StatelessWidget {
                     },
                   );
                   if (confirm != true) return;
-                  gameEngine!.resetToLobby(keepGuests: true, keepAssignedRoles: false);
+                  gameEngine!
+                      .resetToLobby(keepGuests: true, keepAssignedRoles: false);
                   onNavigate?.call(1);
                 },
               ),
@@ -285,13 +280,13 @@ class GameDrawer extends StatelessWidget {
                     },
                   );
                   if (confirm != true) return;
-                  gameEngine!.resetToLobby(keepGuests: false, keepAssignedRoles: false);
+                  gameEngine!.resetToLobby(
+                      keepGuests: false, keepAssignedRoles: false);
                   onNavigate?.call(1);
                 },
               ),
             ),
           ],
-          
           ClubBlackoutTheme.gap8,
           _buildFooter(context),
         ],
@@ -339,11 +334,11 @@ class GameDrawer extends StatelessWidget {
                   Text(
                     'CLUB BLACKOUT',
                     style: (tt.headlineSmall ?? const TextStyle()).copyWith(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                            color: scheme.onSurface,
-                            fontSize: 22,
-                          ),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                      color: scheme.onSurface,
+                      fontSize: 22,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -373,7 +368,8 @@ class GameDrawer extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.perm_identity, size: 16, color: accent.withValues(alpha: 0.8)),
+                  Icon(Icons.perm_identity,
+                      size: 16, color: accent.withValues(alpha: 0.8)),
                   ClubBlackoutTheme.hGap12,
                   Text(
                     'Guests Registered: ${gameEngine!.guests.length}',

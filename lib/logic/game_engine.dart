@@ -72,7 +72,8 @@ class GameEngine extends ChangeNotifier {
   static const String _savePrefix = 'gameState_';
   static const String _saveBlobSuffix = '_blob';
 
-  String _saveKey(String saveId, String field) => '$_savePrefix${saveId}_$field';
+  String _saveKey(String saveId, String field) =>
+      '$_savePrefix${saveId}_$field';
   String _saveBlobKey(String saveId) => '$_savePrefix$saveId$_saveBlobSuffix';
 
   void refreshUi() {
@@ -108,6 +109,7 @@ class GameEngine extends ChangeNotifier {
     messyBitchVictoryPending = false;
     notifyListeners();
   }
+
   String? toastActionLabel;
   VoidCallback? toastAction;
 
@@ -186,8 +188,10 @@ class GameEngine extends ChangeNotifier {
 
   // Voting telemetry (used by HostInsights/VotingInsights/StoryExporter)
   final List<VoteCast> voteHistory = [];
-  final List<Map<String, dynamic>> nightHistory = []; // Archives nightActions per night
-  final List<VoteCast> voteChanges = []; // Tracks real-time vote switching within a day
+  final List<Map<String, dynamic>> nightHistory =
+      []; // Archives nightActions per night
+  final List<VoteCast> voteChanges =
+      []; // Tracks real-time vote switching within a day
   final Map<String, String?> currentDayVotesByVoter = {};
   final Map<String, List<String>> currentDayVotesByTarget = {};
   int _voteSequence = 0;
@@ -319,7 +323,9 @@ class GameEngine extends ChangeNotifier {
       'schemaVersion': _saveSchemaVersion,
       'savedAt': DateTime.now().toIso8601String(),
       'players': players.map((p) => p.toJson()).toList(growable: false),
-      'log': includeLog ? _gameLog.map((l) => l.toJson()).toList(growable: false) : const <dynamic>[],
+      'log': includeLog
+          ? _gameLog.map((l) => l.toJson()).toList(growable: false)
+          : const <dynamic>[],
       'phaseIndex': _currentPhase.index,
       'dayCount': dayCount,
       'scriptIndex': _scriptIndex,
@@ -327,7 +333,9 @@ class GameEngine extends ChangeNotifier {
       'deadPlayerIds': deadPlayerIds,
       'votesByVoter': currentDayVotesByVoter,
       'votesByTarget': currentDayVotesByTarget,
-      'voteHistory': includeLog ? voteHistory.map((v) => v.toJson()).toList(growable: false) : const <dynamic>[],
+      'voteHistory': includeLog
+          ? voteHistory.map((v) => v.toJson()).toList(growable: false)
+          : const <dynamic>[],
       'voteSequence': _voteSequence,
       'predatorPending': {
         'pendingPredatorId': pendingPredatorId,
@@ -485,7 +493,8 @@ class GameEngine extends ChangeNotifier {
 
     var effectiveTargetId = targetId;
     if (effectiveTargetId != null && _isVoteImmuneTarget(effectiveTargetId)) {
-      final target = players.where((p) => p.id == effectiveTargetId).firstOrNull;
+      final target =
+          players.where((p) => p.id == effectiveTargetId).firstOrNull;
       if (target != null) {
         logAction('Silver Fox',
             '${target.name} has an ALIBI today and cannot receive votes.');
@@ -497,16 +506,14 @@ class GameEngine extends ChangeNotifier {
     final prev = currentDayVotesByVoter[voterId];
     if (prev != null) {
       if (prev != effectiveTargetId) {
-         // Changed vote
-         voteChanges.add(
-           VoteCast(
-             day: dayCount,
-             voterId: voterId,
-             targetId: effectiveTargetId,
-             timestamp: DateTime.now(),
-             sequence: _voteSequence++,
-           )
-         );
+        // Changed vote
+        voteChanges.add(VoteCast(
+          day: dayCount,
+          voterId: voterId,
+          targetId: effectiveTargetId,
+          timestamp: DateTime.now(),
+          sequence: _voteSequence++,
+        ));
       }
       currentDayVotesByTarget[prev]?.remove(voterId);
       if (currentDayVotesByTarget[prev]?.isEmpty ?? false) {
@@ -544,7 +551,7 @@ class GameEngine extends ChangeNotifier {
         .where((p) =>
             p.role.id == 'clinger' &&
             p.isActive &&
-        !p.soberSentHome &&
+            !p.soberSentHome &&
             !p.clingerFreedAsAttackDog &&
             p.clingerPartnerId != null)
         .toList();
@@ -574,8 +581,8 @@ class GameEngine extends ChangeNotifier {
 
     final partnerId = clinger.clingerPartnerId;
     final partnerName = partnerId != null
-      ? players.where((p) => p.id == partnerId).firstOrNull?.name
-      : null;
+        ? players.where((p) => p.id == partnerId).firstOrNull?.name
+        : null;
 
     clinger.clingerFreedAsAttackDog = true;
     clinger.clingerPartnerId = null;
@@ -744,9 +751,9 @@ class GameEngine extends ChangeNotifier {
     // Rules: wins immediately if every currently living player (besides herself)
     // has heard a rumour.
     final targets = players
-      .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
-      .where((p) => p.id != messyBitch.id)
-      .toList();
+        .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
+        .where((p) => p.id != messyBitch.id)
+        .toList();
 
     // Vacuously true if Messy Bitch is the last living player.
     return targets.every((p) => p.hasRumour);
@@ -977,7 +984,8 @@ class GameEngine extends ChangeNotifier {
     if (restoredName.isEmpty) return false;
 
     final lower = restoredName.toLowerCase();
-    final nameCollision = players.any((p) => p.name.trim().toLowerCase() == lower);
+    final nameCollision =
+        players.any((p) => p.name.trim().toLowerCase() == lower);
     if (nameCollision) return false;
 
     final idCollision = players.any((p) => p.id == player.id);
@@ -1028,7 +1036,8 @@ class GameEngine extends ChangeNotifier {
       return;
     }
 
-    if (players.any((p) => p.name.toLowerCase() == sanitizedName.toLowerCase())) {
+    if (players
+        .any((p) => p.name.toLowerCase() == sanitizedName.toLowerCase())) {
       throw ArgumentError('A player with this name already exists');
     }
 
@@ -1147,9 +1156,7 @@ class GameEngine extends ChangeNotifier {
 
     logAction(
       step.title,
-      step.readAloudText.isNotEmpty
-          ? step.readAloudText
-          : step.instructionText,
+      step.readAloudText.isNotEmpty ? step.readAloudText : step.instructionText,
       type: GameLogType.script,
     );
   }
@@ -1203,7 +1210,8 @@ class GameEngine extends ChangeNotifier {
       _dayphaseVotesMade = false;
       clearDayVotes();
 
-      final dayQueue = ScriptBuilder.buildDayScript(dayCount, announcement, players);
+      final dayQueue =
+          ScriptBuilder.buildDayScript(dayCount, announcement, players);
 
       // Second Wind conversion choice is a NEXT-NIGHT decision (after the day + vote).
       // Do not inject anything into the Day script.
@@ -1293,10 +1301,9 @@ class GameEngine extends ChangeNotifier {
     // Sober: sent-home players cannot be killed by night murders.
     // Also, when a Dealer is sent home, guest murders are cancelled.
     final noDealersActiveTonight = nightActions['no_murders_tonight'] == true;
-    final isDealerKillAttempt =
-        causeLower == 'night_kill' ||
-            causeLower == 'dealer_kill' ||
-            causeLower == 'night_kill_special';
+    final isDealerKillAttempt = causeLower == 'night_kill' ||
+        causeLower == 'dealer_kill' ||
+        causeLower == 'night_kill_special';
     final isClingerKill = causeLower == 'clinger_attack_dog';
 
     // Rule: Sent-home players are safe from ALL night murders.
@@ -1320,7 +1327,9 @@ class GameEngine extends ChangeNotifier {
     // Second Wind should only intercept Dealer-kill attempts (per rules).
 
     // Minor: cannot die to Dealer kill attempts until ID'd by the Bouncer.
-    if (victim.role.id == 'minor' && isDealerKillAttempt && !victim.minorHasBeenIDd) {
+    if (victim.role.id == 'minor' &&
+        isDealerKillAttempt &&
+        !victim.minorHasBeenIDd) {
       logAction('Minor',
           '${victim.name} is The Minor and cannot be killed by the Dealers until ID’d by the Bouncer.');
       notifyListeners();
@@ -1380,7 +1389,8 @@ class GameEngine extends ChangeNotifier {
   /// Lightweight: if they speak a taboo name, they die immediately.
   ///
   /// This is a real-world speech rule, so the host triggers it explicitly.
-  void markLightweightTabooViolation({String? tabooName, String? lightweightId}) {
+  void markLightweightTabooViolation(
+      {String? tabooName, String? lightweightId}) {
     Player? lightweight;
 
     if (lightweightId != null) {
@@ -1390,8 +1400,9 @@ class GameEngine extends ChangeNotifier {
         return;
       }
     } else {
-      final livingLightweights =
-          players.where((p) => p.isAlive && p.role.id == 'lightweight').toList();
+      final livingLightweights = players
+          .where((p) => p.isAlive && p.role.id == 'lightweight')
+          .toList();
 
       if (livingLightweights.isEmpty) {
         logAction('Taboo Violation', 'No alive Lightweight in game.');
@@ -1411,7 +1422,8 @@ class GameEngine extends ChangeNotifier {
     }
 
     final cleaned = tabooName?.trim();
-    final detail = (cleaned != null && cleaned.isNotEmpty) ? ' ("$cleaned")' : '';
+    final detail =
+        (cleaned != null && cleaned.isNotEmpty) ? ' ("$cleaned")' : '';
     logAction('Taboo Violation',
         '${lightweight.name} spoke a taboo name$detail and dies immediately.');
     processDeath(lightweight, cause: DeathCause.spokeTabooName);
@@ -1507,11 +1519,13 @@ class GameEngine extends ChangeNotifier {
     }
 
     final killTargetId = nightActions['kill'] as String?;
-    
+
     // Dealer Block Logic (Roofi): If the solo dealer is blocked, the kill attempt proceeds in narrative but fails in mechanics.
-    final aliveDealers = players.where((p) => p.isActive && p.role.id == 'dealer').toList();
+    final aliveDealers =
+        players.where((p) => p.isActive && p.role.id == 'dealer').toList();
     bool killBlockedByRoofi = false;
-    if (aliveDealers.length == 1 && aliveDealers.first.blockedKillNight == dayCount) {
+    if (aliveDealers.length == 1 &&
+        aliveDealers.first.blockedKillNight == dayCount) {
       killBlockedByRoofi = true;
     }
 
@@ -1580,7 +1594,8 @@ class GameEngine extends ChangeNotifier {
         quietNight = false;
         if (target.role.id == 'dealer') {
           addLine(
-            cleanLine: '• With someone important sent home, there were no murders tonight.',
+            cleanLine:
+                '• With someone important sent home, there were no murders tonight.',
             spicyLine:
                 '• With a Dealer sent home, there were no Dealer murders tonight.',
           );
@@ -1612,7 +1627,8 @@ class GameEngine extends ChangeNotifier {
         final gossip = kGossips[Random().nextInt(kGossips.length)];
         addLine(
           cleanLine: '• RUMOUR: ${target.name} $gossip',
-          spicyLine: '• Messy Bitch spread a rumour that ${target.name} $gossip',
+          spicyLine:
+              '• Messy Bitch spread a rumour that ${target.name} $gossip',
         );
         quietNight = false;
       }
@@ -1660,7 +1676,8 @@ class GameEngine extends ChangeNotifier {
       final target = players.where((p) => p.id == targetId).firstOrNull;
       if (target == null) {
         addLine(
-          cleanLine: '• There was a murder attempt, but the target was invalid.',
+          cleanLine:
+              '• There was a murder attempt, but the target was invalid.',
           spicyLine:
               '• The Dealers tried to kill someone... but the target was invalid.',
         );
@@ -1685,7 +1702,8 @@ class GameEngine extends ChangeNotifier {
         } else if (killedIds.contains(targetId)) {
           processDeath(target, cause: 'night_kill');
 
-          if (target.role.id == 'second_wind' && target.secondWindPendingConversion) {
+          if (target.role.id == 'second_wind' &&
+              target.secondWindPendingConversion) {
             addLine(
               cleanLine: '• ${target.name} was attacked. Sadly, they died.',
               spicyLine:
@@ -1722,7 +1740,8 @@ class GameEngine extends ChangeNotifier {
           lastNightStats['saved'] = (lastNightStats['saved'] ?? 0) + 1;
         } else if (livesLostIds.contains(targetId)) {
           addLine(
-            cleanLine: '• ${target.name} was attacked, but survived (lost a life).',
+            cleanLine:
+                '• ${target.name} was attacked, but survived (lost a life).',
             spicyLine:
                 '• The Dealers attacked ${target.name}, but they survived (Lost a Life).',
           );
@@ -1747,7 +1766,8 @@ class GameEngine extends ChangeNotifier {
       }
       processDeath(victim, cause: 'night_kill_special');
 
-      if (victim.role.id == 'second_wind' && victim.secondWindPendingConversion) {
+      if (victim.role.id == 'second_wind' &&
+          victim.secondWindPendingConversion) {
         addLine(
           cleanLine: '• ${victim.name} was found dead.',
           spicyLine:
@@ -1834,12 +1854,14 @@ class GameEngine extends ChangeNotifier {
           final targetIsPartyAnimal =
               targetPlayer.alliance.toLowerCase().contains('party');
 
-          final canRevive =
-              medicChoseRevive && !alreadyUsedRevive && allowedWhileDead && targetIsPartyAnimal;
+          final canRevive = medicChoseRevive &&
+              !alreadyUsedRevive &&
+              allowedWhileDead &&
+              targetIsPartyAnimal;
 
           // SPECIAL RULE: Medic can only revive someone who died THIS specific night.
           final diedThisNight = targetPlayer.deathDay == dayCount;
-          
+
           if (canRevive && !targetPlayer.isAlive && diedThisNight) {
             targetPlayer.isAlive = true;
             targetPlayer.deathDay = null;
@@ -1849,7 +1871,8 @@ class GameEngine extends ChangeNotifier {
 
             medicPlayer.reviveUsed = true;
             addLine(
-              cleanLine: '• MIRACLE! ${targetPlayer.name} returned from the dead!',
+              cleanLine:
+                  '• MIRACLE! ${targetPlayer.name} returned from the dead!',
               spicyLine:
                   '• MIRACLE! The Medic revived ${targetPlayer.name} from the dead!',
             );
@@ -1947,7 +1970,9 @@ class GameEngine extends ChangeNotifier {
       final marked = nightActions['predator_mark'];
       if (marked is String) {
         final markedPlayer = players.where((p) => p.id == marked).firstOrNull;
-        if (markedPlayer != null && markedPlayer.isAlive && markedPlayer.id != votedOutPlayer.id) {
+        if (markedPlayer != null &&
+            markedPlayer.isAlive &&
+            markedPlayer.id != votedOutPlayer.id) {
           pendingPredatorPreferredTargetId = markedPlayer.id;
         } else {
           pendingPredatorPreferredTargetId = null;
@@ -2408,7 +2433,8 @@ class GameEngine extends ChangeNotifier {
     // of this night script.
     if (sourcePlayer != null && sourcePlayer.silencedDay != null) {
       final silenced = sourcePlayer.silencedDay;
-      final isSilencedToday = _currentPhase == GamePhase.day && silenced == dayCount;
+      final isSilencedToday =
+          _currentPhase == GamePhase.day && silenced == dayCount;
       final isSilencedThisNight =
           _currentPhase == GamePhase.night && silenced == (dayCount + 1);
       if (isSilencedToday || isSilencedThisNight) {
@@ -2426,7 +2452,7 @@ class GameEngine extends ChangeNotifier {
     }
 
     void applySecondWindDecision(
-      {required bool convert, required String sourceTitle}) {
+        {required bool convert, required String sourceTitle}) {
       final secondWind = players
           .where((p) =>
               p.role.id == 'second_wind' && p.secondWindPendingConversion)
@@ -2449,8 +2475,8 @@ class GameEngine extends ChangeNotifier {
         }
 
         logAction(
-          sourceTitle, '${secondWind.name} was converted into a Dealer.',
-          toast: _currentPhase == GamePhase.night);
+            sourceTitle, '${secondWind.name} was converted into a Dealer.',
+            toast: _currentPhase == GamePhase.night);
 
         // CRITICAL: Since they converted, skip the next "Dealer Kill" step.
         // We find the next step. If it is 'dealer_act', we consume it.
@@ -2459,7 +2485,8 @@ class GameEngine extends ChangeNotifier {
           final nextStep = _scriptQueue[nextIndex];
           if (nextStep.id == 'dealer_act') {
             _scriptIndex++; // Advance index to "skip" it effectively
-            logAction('System', 'Skipping Dealer Kill phase due to Conversion.');
+            logAction(
+                'System', 'Skipping Dealer Kill phase due to Conversion.');
             // Note: GameScreen might need a refresh to pick up the skip
             // but usually next button press advances anyway.
             // Actually, we are IN the current step processing.
@@ -2472,7 +2499,6 @@ class GameEngine extends ChangeNotifier {
         secondWind.isAlive = true;
         deadPlayerIds.remove(secondWind.id);
         secondWind.deathReason = null;
-        
       } else {
         // They refused conversion.
         secondWind.secondWindRefusedConversion = true;
@@ -2480,11 +2506,11 @@ class GameEngine extends ChangeNotifier {
 
         // They remain dead. Clear the eligibility so we don't prompt again.
         secondWind.secondWindConversionNight = null;
-        
+
         logAction(sourceTitle,
-          'Dealers refused conversion. ${secondWind.name} remains dead.',
-          toast: _currentPhase == GamePhase.night);
-        
+            'Dealers refused conversion. ${secondWind.name} remains dead.',
+            toast: _currentPhase == GamePhase.night);
+
         // We do NOT skip the next step. They will proceed to 'dealer_act' to pick a new victim.
       }
     }
@@ -2501,7 +2527,8 @@ class GameEngine extends ChangeNotifier {
               ? true
               : (raw == 'kill' ? false : parseBinaryChoice(selections.first));
           if (decision == null) {
-            logAction(step.title, 'Invalid choice. Expected CONVERT/KILL (or yes/no legacy).');
+            logAction(step.title,
+                'Invalid choice. Expected CONVERT/KILL (or yes/no legacy).');
             break;
           }
           applySecondWindDecision(convert: decision, sourceTitle: step.title);
@@ -2511,7 +2538,7 @@ class GameEngine extends ChangeNotifier {
         final target = resolvePlayer(selections.first);
         nightActions['kill'] = target.id;
         logAction(step.title, 'Dealers selected ${target.name} to eliminate.',
-          toast: _currentPhase == GamePhase.night);
+            toast: _currentPhase == GamePhase.night);
         break;
 
       case 'second_wind':
@@ -2555,7 +2582,7 @@ class GameEngine extends ChangeNotifier {
           nightActions['no_murders_tonight'] = true;
         }
         logAction(step.title, 'Sober sent ${target.name} home for the night.',
-          toast: _currentPhase == GamePhase.night);
+            toast: _currentPhase == GamePhase.night);
 
         // This affects who wakes up, so rebuild the remaining night script.
         rebuildNightScript();
@@ -2581,17 +2608,20 @@ class GameEngine extends ChangeNotifier {
         silverTarget.alibiDay = dayCount + 1;
         nightActions['silver_fox_alibi'] = silverTarget.id;
         logAction(step.title,
-          'Silver Fox gave ${silverTarget.name} an alibi (cannot be voted out tomorrow).',
-          toast: _currentPhase == GamePhase.night);
+            'Silver Fox gave ${silverTarget.name} an alibi (cannot be voted out tomorrow).',
+            toast: _currentPhase == GamePhase.night);
         break;
 
       case 'medic':
         if (step.id == 'medic_setup_choice') {
           final decision = selections.first;
           final medic = players
-              .where((p) => p.role.id == 'medic' && p.isActive && p.needsSetup)
-              .firstOrNull ??
-              players.where((p) => p.role.id == 'medic' && p.isActive).firstOrNull;
+                  .where(
+                      (p) => p.role.id == 'medic' && p.isActive && p.needsSetup)
+                  .firstOrNull ??
+              players
+                  .where((p) => p.role.id == 'medic' && p.isActive)
+                  .firstOrNull;
           if (medic != null) {
             medic.medicChoice = decision;
             medic.needsSetup = false;
@@ -2620,11 +2650,11 @@ class GameEngine extends ChangeNotifier {
 
       case 'bouncer':
         final bouncer = players
-          .where((p) => p.isActive && p.role.id == 'bouncer')
-          .firstOrNull;
+            .where((p) => p.isActive && p.role.id == 'bouncer')
+            .firstOrNull;
         if (bouncer != null && bouncer.bouncerAbilityRevoked) {
           logAction(step.title,
-            'Bouncer ID-check ability has been revoked; action ignored.');
+              'Bouncer ID-check ability has been revoked; action ignored.');
           break;
         }
 
@@ -2645,11 +2675,11 @@ class GameEngine extends ChangeNotifier {
             queuedSpecialAlert = true;
           }
         }
-        
+
         // Host Feedback for ID Check (avoid overwriting a special alert, e.g. Minor vulnerability)
         if (!queuedSpecialAlert) {
-          final isDealerSide =
-              target.alliance == 'The Dealers' || target.role.alliance == 'The Dealers';
+          final isDealerSide = target.alliance == 'The Dealers' ||
+              target.role.alliance == 'The Dealers';
           if (isDealerSide) {
             queueHostAlert(
               title: 'Gotcha!',
@@ -2663,25 +2693,25 @@ class GameEngine extends ChangeNotifier {
           }
         }
 
-        logAction(step.title,
-          "Bouncer I.D.'d ${target.name} → ${target.alliance}.",
-          toast: _currentPhase == GamePhase.night);
+        logAction(
+            step.title, "Bouncer I.D.'d ${target.name} → ${target.alliance}.",
+            toast: _currentPhase == GamePhase.night);
         break;
 
       case 'roofi':
         final activeRoofi = players
-          .where((p) =>
-            p.isActive && p.role.id == 'roofi' && !p.roofiAbilityRevoked)
-          .firstOrNull;
+            .where((p) =>
+                p.isActive && p.role.id == 'roofi' && !p.roofiAbilityRevoked)
+            .firstOrNull;
         final stolenByBouncer = players
-          .where((p) =>
-            p.isActive &&
-            p.role.id == 'bouncer' &&
-            p.bouncerHasRoofiAbility)
-          .firstOrNull;
+            .where((p) =>
+                p.isActive &&
+                p.role.id == 'bouncer' &&
+                p.bouncerHasRoofiAbility)
+            .firstOrNull;
         if (activeRoofi == null && stolenByBouncer == null) {
           logAction(step.title,
-            'No active Roofi power available (revoked or missing).');
+              'No active Roofi power available (revoked or missing).');
           break;
         }
 
@@ -2691,18 +2721,22 @@ class GameEngine extends ChangeNotifier {
         if (target.role.id == 'dealer') target.blockedKillNight = dayCount + 1;
 
         final actorLabel =
-          stolenByBouncer != null ? 'Bouncer (stolen Roofi powers)' : 'Roofi';
+            stolenByBouncer != null ? 'Bouncer (stolen Roofi powers)' : 'Roofi';
         logAction(step.title,
-          '$actorLabel silenced ${target.name} for Day ${dayCount + 1}.',
-          toast: _currentPhase == GamePhase.night);
+            '$actorLabel silenced ${target.name} for Day ${dayCount + 1}.',
+            toast: _currentPhase == GamePhase.night);
         break;
 
       case 'creep':
         final target = resolvePlayer(selections.first);
         nightActions['creep_target'] = target.id;
         final creep = players
-            .where((p) => p.role.id == 'creep' && p.isActive && p.needsSetup)
-            .firstOrNull ?? players.where((p) => p.role.id == 'creep' && p.isActive).firstOrNull;
+                .where(
+                    (p) => p.role.id == 'creep' && p.isActive && p.needsSetup)
+                .firstOrNull ??
+            players
+                .where((p) => p.role.id == 'creep' && p.isActive)
+                .firstOrNull;
         if (creep != null) {
           creep.creepTargetId = target.id;
           creep.needsSetup = false;
@@ -2747,8 +2781,12 @@ class GameEngine extends ChangeNotifier {
               toast: _currentPhase == GamePhase.night);
         } else {
           final clinger = players
-              .where((p) => p.role.id == 'clinger' && p.isAlive && p.needsSetup)
-              .firstOrNull ?? players.where((p) => p.role.id == 'clinger' && p.isAlive).firstOrNull;
+                  .where((p) =>
+                      p.role.id == 'clinger' && p.isAlive && p.needsSetup)
+                  .firstOrNull ??
+              players
+                  .where((p) => p.role.id == 'clinger' && p.isAlive)
+                  .firstOrNull;
           if (clinger != null) {
             clinger.clingerPartnerId = target.id;
             clinger.needsSetup = false;
@@ -2789,12 +2827,13 @@ class GameEngine extends ChangeNotifier {
           break;
         }
         if (!messyBitch.isAlive) {
-          logAction(step.title, 'Messy Bitch is dead and cannot spread rumours.');
+          logAction(
+              step.title, 'Messy Bitch is dead and cannot spread rumours.');
           break;
         }
         if (messyBitch.soberSentHome) {
-          logAction(step.title,
-              'Messy Bitch was sent home and cannot act tonight.');
+          logAction(
+              step.title, 'Messy Bitch was sent home and cannot act tonight.');
           break;
         }
 
@@ -2812,16 +2851,16 @@ class GameEngine extends ChangeNotifier {
           break;
         }
         if (rumourTarget.id == messyBitch.id) {
-          logAction(step.title,
-              'Messy Bitch must choose another living player.');
+          logAction(
+              step.title, 'Messy Bitch must choose another living player.');
           break;
         }
 
         rumourTarget.hasRumour = true;
         nightActions['messy_bitch_rumour'] = rumourTarget.id;
         logAction(
-          step.title, 'Messy Bitch spread a rumour to ${rumourTarget.name}.',
-          toast: _currentPhase == GamePhase.night);
+            step.title, 'Messy Bitch spread a rumour to ${rumourTarget.name}.',
+            toast: _currentPhase == GamePhase.night);
         break;
 
       case 'drama_queen':
@@ -2886,8 +2925,9 @@ class GameEngine extends ChangeNotifier {
             break;
           }
           if (whore.whoreDeflectionTargetId != null) {
-            final lockedTarget =
-                players.where((p) => p.id == whore.whoreDeflectionTargetId).firstOrNull;
+            final lockedTarget = players
+                .where((p) => p.id == whore.whoreDeflectionTargetId)
+                .firstOrNull;
             logAction(
               step.title,
               'Whore scapegoat already locked${lockedTarget != null ? ': ${lockedTarget.name}' : ''} (ignored: ${target.name}).',
@@ -2955,8 +2995,8 @@ class GameEngine extends ChangeNotifier {
         }
 
         logAction(step.title,
-          "Club Manager viewed ${target.name}'s role: ${target.role.name}",
-          toast: _currentPhase == GamePhase.night);
+            "Club Manager viewed ${target.name}'s role: ${target.role.name}",
+            toast: _currentPhase == GamePhase.night);
         onClubManagerReveal?.call(target);
         break;
 
@@ -2984,27 +3024,27 @@ class GameEngine extends ChangeNotifier {
     }
 
     final alive = players
-      .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
-      .toList();
+        .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
+        .toList();
 
     final baseEligible = alive.where((p) => p.id != predatorId).toList();
 
     // If we have captured voter telemetry, restrict to those voters...
     final restricted = pendingPredatorEligibleVoterIds.isNotEmpty
-      ? baseEligible
-        .where((p) => pendingPredatorEligibleVoterIds.contains(p.id))
-        .toList()
-      : baseEligible;
+        ? baseEligible
+            .where((p) => pendingPredatorEligibleVoterIds.contains(p.id))
+            .toList()
+        : baseEligible;
 
     // ...but always allow the preferred marked target (if alive), even if they
     // were sent home / silenced and didn't vote.
     final preferredId = pendingPredatorPreferredTargetId;
     final preferred = preferredId == null
-      ? null
-      : baseEligible.where((p) => p.id == preferredId).firstOrNull;
+        ? null
+        : baseEligible.where((p) => p.id == preferredId).firstOrNull;
 
-    final eligible = <Player>{...restricted, if (preferred != null) preferred}
-      .toList();
+    final eligible =
+        <Player>{...restricted, if (preferred != null) preferred}.toList();
 
     final target = eligible.where((p) => p.id == targetId).firstOrNull;
     if (target == null) {
@@ -3032,9 +3072,8 @@ class GameEngine extends ChangeNotifier {
   /// Defensive behavior: this is a one-time resolution per game because either
   /// success or failure sets a terminal flag.
   bool resolveBouncerRoofiChallenge(String suspectedPlayerId) {
-    final bouncer = players
-        .where((p) => p.isActive && p.role.id == 'bouncer')
-        .firstOrNull;
+    final bouncer =
+        players.where((p) => p.isActive && p.role.id == 'bouncer').firstOrNull;
     if (bouncer == null) {
       logAction('Bouncer Challenge', 'No active Bouncer in game.');
       return false;
@@ -3109,7 +3148,8 @@ class GameEngine extends ChangeNotifier {
           break;
         }
         if (wallflower.soberSentHome) {
-          logAction(step.title, 'Wallflower was sent home; witness choice ignored.');
+          logAction(
+              step.title, 'Wallflower was sent home; witness choice ignored.');
           break;
         }
 
@@ -3125,7 +3165,7 @@ class GameEngine extends ChangeNotifier {
               priority: 60,
             ),
           );
-            logAction(step.title, 'Wallflower declined to witness.',
+          logAction(step.title, 'Wallflower declined to witness.',
               toast: _currentPhase == GamePhase.night);
         } else {
           abilityResolver.queueAbility(
@@ -3236,7 +3276,8 @@ class GameEngine extends ChangeNotifier {
   Future<void> saveGame(String saveName, {String? overwriteId}) async {
     final prefs = await SharedPreferences.getInstance();
 
-    final saveId = overwriteId ?? DateTime.now().millisecondsSinceEpoch.toString();
+    final saveId =
+        overwriteId ?? DateTime.now().millisecondsSinceEpoch.toString();
 
     // If overwriting, clear out old keys we know about to avoid stale state.
     if (overwriteId != null) {
@@ -3302,15 +3343,22 @@ class GameEngine extends ChangeNotifier {
     await prefs.setInt(_saveKey(saveId, 'scriptIndex'), _scriptIndex);
 
     // Host-facing recap (keeps Day bulletin consistent after load).
-    await prefs.setString(_saveKey(saveId, 'lastNightSummary'), lastNightSummary);
-    await prefs.setString(_saveKey(saveId, 'lastNightHostRecap'), lastNightHostRecap);
+    await prefs.setString(
+        _saveKey(saveId, 'lastNightSummary'), lastNightSummary);
+    await prefs.setString(
+        _saveKey(saveId, 'lastNightHostRecap'), lastNightHostRecap);
 
     // In-flight engine state used by tests / mid-game resumes
-    await prefs.setString(_saveKey(saveId, 'nightActions'), jsonEncode(nightActions));
-    await prefs.setString(_saveKey(saveId, 'deadPlayerIds'), jsonEncode(deadPlayerIds));
-    await prefs.setString(_saveKey(saveId, 'votesByVoter'), jsonEncode(currentDayVotesByVoter));
-    await prefs.setString(_saveKey(saveId, 'votesByTarget'), jsonEncode(currentDayVotesByTarget));
-    await prefs.setString(_saveKey(saveId, 'voteHistory'), jsonEncode(voteHistory.map((v) => v.toJson()).toList()));
+    await prefs.setString(
+        _saveKey(saveId, 'nightActions'), jsonEncode(nightActions));
+    await prefs.setString(
+        _saveKey(saveId, 'deadPlayerIds'), jsonEncode(deadPlayerIds));
+    await prefs.setString(
+        _saveKey(saveId, 'votesByVoter'), jsonEncode(currentDayVotesByVoter));
+    await prefs.setString(
+        _saveKey(saveId, 'votesByTarget'), jsonEncode(currentDayVotesByTarget));
+    await prefs.setString(_saveKey(saveId, 'voteHistory'),
+        jsonEncode(voteHistory.map((v) => v.toJson()).toList()));
     await prefs.setInt(_saveKey(saveId, 'voteSequence'), _voteSequence);
     await prefs.setString(
       _saveKey(saveId, 'predatorPending'),
@@ -3335,8 +3383,10 @@ class GameEngine extends ChangeNotifier {
         'markedBId': dramaQueenMarkedBId,
       }),
     );
-    await prefs.setString(_saveKey(saveId, 'statusEffects'), jsonEncode(statusEffectManager.toJson()));
-    await prefs.setString(_saveKey(saveId, 'abilityQueue'), jsonEncode(abilityResolver.toJson()));
+    await prefs.setString(_saveKey(saveId, 'statusEffects'),
+        jsonEncode(statusEffectManager.toJson()));
+    await prefs.setString(
+        _saveKey(saveId, 'abilityQueue'), jsonEncode(abilityResolver.toJson()));
 
     final saveMetadata = SavedGame(
       id: saveId,
@@ -3352,7 +3402,8 @@ class GameEngine extends ChangeNotifier {
     // Remove any existing entry for this id (overwrite / duplicate repair).
     saves.removeWhere((s) => s.id == saveId);
     saves.add(saveMetadata);
-    await prefs.setString(_savedGamesIndexKey, jsonEncode(saves.map((s) => s.toJson()).toList()));
+    await prefs.setString(
+        _savedGamesIndexKey, jsonEncode(saves.map((s) => s.toJson()).toList()));
 
     if (lastDramaQueenSwap != null) {
       prefs.setString(
@@ -3369,7 +3420,8 @@ class GameEngine extends ChangeNotifier {
       );
     }
 
-    prefs.setString(_saveKey(saveId, 'reactionHistory'), jsonEncode(reactionSystem.getHistoryJson()));
+    prefs.setString(_saveKey(saveId, 'reactionHistory'),
+        jsonEncode(reactionSystem.getHistoryJson()));
   }
 
   Future<List<SavedGame>> getSavedGames() async {
@@ -3437,7 +3489,8 @@ class GameEngine extends ChangeNotifier {
 
   Future<bool> loadGame(String saveId) async {
     final prefs = await SharedPreferences.getInstance();
-    if (!prefs.containsKey(_saveBlobKey(saveId)) && !prefs.containsKey(_saveKey(saveId, 'players'))) {
+    if (!prefs.containsKey(_saveBlobKey(saveId)) &&
+        !prefs.containsKey(_saveKey(saveId, 'players'))) {
       return false;
     }
 
@@ -3460,7 +3513,8 @@ class GameEngine extends ChangeNotifier {
         final bulletin = lastNightSummary.trim().isNotEmpty
             ? lastNightSummary
             : 'Game Loaded.';
-        _scriptQueue = ScriptBuilder.buildDayScript(dayCount, bulletin, players);
+        _scriptQueue =
+            ScriptBuilder.buildDayScript(dayCount, bulletin, players);
       } else {
         _scriptQueue = [];
       }
@@ -3479,7 +3533,8 @@ class GameEngine extends ChangeNotifier {
         );
       }
 
-      final reactionHistoryStr = prefs.getString(_saveKey(saveId, 'reactionHistory'));
+      final reactionHistoryStr =
+          prefs.getString(_saveKey(saveId, 'reactionHistory'));
       if (reactionHistoryStr != null) {
         final decoded = jsonDecode(reactionHistoryStr) as List<dynamic>;
         reactionSystem.loadHistoryFromJson(decoded);
@@ -3514,7 +3569,8 @@ class GameEngine extends ChangeNotifier {
     }
 
     List<dynamic> asList(dynamic v) => v is List ? v : const [];
-    Map<String, dynamic> asMap(dynamic v) => v is Map ? v.cast<String, dynamic>() : <String, dynamic>{};
+    Map<String, dynamic> asMap(dynamic v) =>
+        v is Map ? v.cast<String, dynamic>() : <String, dynamic>{};
 
     final playersList = asList(map['players']);
     players = playersList.map((json) {
@@ -3549,11 +3605,13 @@ class GameEngine extends ChangeNotifier {
 
     lastNightSummary = (map['lastNightSummary'] as String?) ?? lastNightSummary;
     lastNightHostRecap =
-      (map['lastNightHostRecap'] as String?) ?? lastNightHostRecap;
+        (map['lastNightHostRecap'] as String?) ?? lastNightHostRecap;
 
     // In-flight state
     nightActions = asMap(map['nightActions']);
-    deadPlayerIds = asList(map['deadPlayerIds']).map((e) => e.toString()).toList(growable: true);
+    deadPlayerIds = asList(map['deadPlayerIds'])
+        .map((e) => e.toString())
+        .toList(growable: true);
 
     final votesByVoter = asMap(map['votesByVoter']);
     currentDayVotesByVoter
@@ -3565,29 +3623,34 @@ class GameEngine extends ChangeNotifier {
     for (final entry in votesByTarget.entries) {
       final list = entry.value;
       if (list is List) {
-        currentDayVotesByTarget[entry.key] = list.map((e) => e.toString()).toList();
+        currentDayVotesByTarget[entry.key] =
+            list.map((e) => e.toString()).toList();
       }
     }
 
     final historyList = asList(map['voteHistory']);
     voteHistory
       ..clear()
-      ..addAll(historyList.map((e) => VoteCast.fromJson((e as Map).cast<String, dynamic>())));
+      ..addAll(historyList
+          .map((e) => VoteCast.fromJson((e as Map).cast<String, dynamic>())));
 
     _voteSequence = asInt(map['voteSequence'], fallback: _voteSequence);
 
     final predatorPending = asMap(map['predatorPending']);
     pendingPredatorId = predatorPending['pendingPredatorId'] as String?;
-    pendingPredatorPreferredTargetId = predatorPending['preferredTargetId'] as String?;
+    pendingPredatorPreferredTargetId =
+        predatorPending['preferredTargetId'] as String?;
     final eligible = predatorPending['eligibleVoterIds'];
     if (eligible is List) {
-      pendingPredatorEligibleVoterIds = eligible.map((e) => e.toString()).toList(growable: true);
+      pendingPredatorEligibleVoterIds =
+          eligible.map((e) => e.toString()).toList(growable: true);
     } else {
       pendingPredatorEligibleVoterIds = <String>[];
     }
 
     final dqPending = asMap(map['dramaQueenPending']);
-    dramaQueenSwapPending = dqPending['swapPending'] as bool? ?? dramaQueenSwapPending;
+    dramaQueenSwapPending =
+        dqPending['swapPending'] as bool? ?? dramaQueenSwapPending;
     dramaQueenMarkedAId = dqPending['markedAId'] as String?;
     dramaQueenMarkedBId = dqPending['markedBId'] as String?;
 
@@ -3633,13 +3696,15 @@ class GameEngine extends ChangeNotifier {
     if (_currentPhase == GamePhase.night) {
       _scriptQueue = ScriptBuilder.buildNightScript(players, dayCount);
     } else if (_currentPhase == GamePhase.day) {
-      _scriptQueue = ScriptBuilder.buildDayScript(dayCount, 'Game Loaded.', players);
+      _scriptQueue =
+          ScriptBuilder.buildDayScript(dayCount, 'Game Loaded.', players);
     } else {
       _scriptQueue = [];
     }
   }
 
-  Future<void> _loadFromLegacyKeys(SharedPreferences prefs, String saveId) async {
+  Future<void> _loadFromLegacyKeys(
+      SharedPreferences prefs, String saveId) async {
     final playersStr = prefs.getString(_saveKey(saveId, 'players'));
     if (playersStr != null) {
       final decoded = jsonDecode(playersStr) as List<dynamic>;
@@ -3677,22 +3742,25 @@ class GameEngine extends ChangeNotifier {
     dayCount = prefs.getInt(_saveKey(saveId, 'dayCount')) ?? 0;
     _scriptIndex = prefs.getInt(_saveKey(saveId, 'scriptIndex')) ?? 0;
 
-    lastNightSummary =
-      prefs.getString(_saveKey(saveId, 'lastNightSummary')) ?? lastNightSummary;
-    lastNightHostRecap = prefs.getString(_saveKey(saveId, 'lastNightHostRecap')) ??
-      lastNightHostRecap;
+    lastNightSummary = prefs.getString(_saveKey(saveId, 'lastNightSummary')) ??
+        lastNightSummary;
+    lastNightHostRecap =
+        prefs.getString(_saveKey(saveId, 'lastNightHostRecap')) ??
+            lastNightHostRecap;
 
     if (_currentPhase == GamePhase.night) {
       _scriptQueue = ScriptBuilder.buildNightScript(players, dayCount);
     } else if (_currentPhase == GamePhase.day) {
-      _scriptQueue = ScriptBuilder.buildDayScript(dayCount, 'Game Loaded.', players);
+      _scriptQueue =
+          ScriptBuilder.buildDayScript(dayCount, 'Game Loaded.', players);
     } else {
       _scriptQueue = [];
     }
 
     final nightActionsStr = prefs.getString(_saveKey(saveId, 'nightActions'));
     if (nightActionsStr != null) {
-      nightActions = (jsonDecode(nightActionsStr) as Map).cast<String, dynamic>();
+      nightActions =
+          (jsonDecode(nightActionsStr) as Map).cast<String, dynamic>();
     }
 
     final deadIdsStr = prefs.getString(_saveKey(saveId, 'deadPlayerIds'));
@@ -3704,7 +3772,8 @@ class GameEngine extends ChangeNotifier {
 
     final votesByVoterStr = prefs.getString(_saveKey(saveId, 'votesByVoter'));
     if (votesByVoterStr != null) {
-      final decoded = (jsonDecode(votesByVoterStr) as Map).cast<String, dynamic>();
+      final decoded =
+          (jsonDecode(votesByVoterStr) as Map).cast<String, dynamic>();
       currentDayVotesByVoter
         ..clear()
         ..addAll(decoded.map((k, v) => MapEntry(k, v as String?)));
@@ -3712,12 +3781,14 @@ class GameEngine extends ChangeNotifier {
 
     final votesByTargetStr = prefs.getString(_saveKey(saveId, 'votesByTarget'));
     if (votesByTargetStr != null) {
-      final decoded = (jsonDecode(votesByTargetStr) as Map).cast<String, dynamic>();
+      final decoded =
+          (jsonDecode(votesByTargetStr) as Map).cast<String, dynamic>();
       currentDayVotesByTarget.clear();
       for (final entry in decoded.entries) {
         final list = entry.value;
         if (list is List) {
-          currentDayVotesByTarget[entry.key] = list.map((e) => e as String).toList();
+          currentDayVotesByTarget[entry.key] =
+              list.map((e) => e as String).toList();
         }
       }
     }
@@ -3727,25 +3798,33 @@ class GameEngine extends ChangeNotifier {
       final decoded = jsonDecode(voteHistoryStr) as List<dynamic>;
       voteHistory
         ..clear()
-        ..addAll(decoded.map((e) => VoteCast.fromJson((e as Map).cast<String, dynamic>())));
+        ..addAll(decoded
+            .map((e) => VoteCast.fromJson((e as Map).cast<String, dynamic>())));
     }
 
-    _voteSequence = prefs.getInt(_saveKey(saveId, 'voteSequence')) ?? _voteSequence;
+    _voteSequence =
+        prefs.getInt(_saveKey(saveId, 'voteSequence')) ?? _voteSequence;
 
-    final predatorPendingStr = prefs.getString(_saveKey(saveId, 'predatorPending'));
+    final predatorPendingStr =
+        prefs.getString(_saveKey(saveId, 'predatorPending'));
     if (predatorPendingStr != null) {
-      final decoded = (jsonDecode(predatorPendingStr) as Map).cast<String, dynamic>();
+      final decoded =
+          (jsonDecode(predatorPendingStr) as Map).cast<String, dynamic>();
       pendingPredatorId = decoded['pendingPredatorId'] as String?;
-      pendingPredatorPreferredTargetId = decoded['preferredTargetId'] as String?;
+      pendingPredatorPreferredTargetId =
+          decoded['preferredTargetId'] as String?;
       final voters = decoded['eligibleVoterIds'];
       if (voters is List) {
-        pendingPredatorEligibleVoterIds = voters.map((e) => e as String).toList(growable: true);
+        pendingPredatorEligibleVoterIds =
+            voters.map((e) => e as String).toList(growable: true);
       }
     }
 
-    final teaPendingStr = prefs.getString(_saveKey(saveId, 'teaSpillerPending'));
+    final teaPendingStr =
+        prefs.getString(_saveKey(saveId, 'teaSpillerPending'));
     if (teaPendingStr != null) {
-      final decoded = (jsonDecode(teaPendingStr) as Map).cast<String, dynamic>();
+      final decoded =
+          (jsonDecode(teaPendingStr) as Map).cast<String, dynamic>();
       pendingTeaSpillerId = decoded['pendingTeaSpillerId'] as String?;
       final voters = decoded['eligibleVoterIds'];
       if (voters is List) {
@@ -3759,19 +3838,22 @@ class GameEngine extends ChangeNotifier {
     final dqPendingStr = prefs.getString(_saveKey(saveId, 'dramaQueenPending'));
     if (dqPendingStr != null) {
       final decoded = (jsonDecode(dqPendingStr) as Map).cast<String, dynamic>();
-      dramaQueenSwapPending = decoded['swapPending'] as bool? ?? dramaQueenSwapPending;
+      dramaQueenSwapPending =
+          decoded['swapPending'] as bool? ?? dramaQueenSwapPending;
       dramaQueenMarkedAId = decoded['markedAId'] as String?;
       dramaQueenMarkedBId = decoded['markedBId'] as String?;
     }
 
     final statusEffectsStr = prefs.getString(_saveKey(saveId, 'statusEffects'));
     if (statusEffectsStr != null) {
-      statusEffectManager.loadFromJson((jsonDecode(statusEffectsStr) as Map).cast<String, dynamic>());
+      statusEffectManager.loadFromJson(
+          (jsonDecode(statusEffectsStr) as Map).cast<String, dynamic>());
     }
 
     final abilityQueueStr = prefs.getString(_saveKey(saveId, 'abilityQueue'));
     if (abilityQueueStr != null) {
-      abilityResolver.loadFromJson((jsonDecode(abilityQueueStr) as Map).cast<String, dynamic>());
+      abilityResolver.loadFromJson(
+          (jsonDecode(abilityQueueStr) as Map).cast<String, dynamic>());
     }
   }
 
@@ -3795,22 +3877,20 @@ class GameEngine extends ChangeNotifier {
           colorHex: '#FFFFFF',
         );
 
-    players = kept
-        .map(
-          (p) {
-            final role = keepAssignedRoles ? p.role : tempRole;
-            final rebuilt = Player(
-              id: p.id,
-              name: p.name,
-              role: role,
-              isAlive: true,
-              isEnabled: p.isEnabled,
-            );
-            rebuilt.initialize();
-            return rebuilt;
-          },
-        )
-        .toList(growable: true);
+    players = kept.map(
+      (p) {
+        final role = keepAssignedRoles ? p.role : tempRole;
+        final rebuilt = Player(
+          id: p.id,
+          name: p.name,
+          role: role,
+          isAlive: true,
+          isEnabled: p.isEnabled,
+        );
+        rebuilt.initialize();
+        return rebuilt;
+      },
+    ).toList(growable: true);
 
     _currentPhase = GamePhase.lobby;
     dayCount = 0;

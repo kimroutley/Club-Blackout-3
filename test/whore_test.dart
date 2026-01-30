@@ -27,7 +27,8 @@ void main() {
       gameEngine.addPlayer('Whore1', role: roleRepository.getRoleById('whore'));
       gameEngine.addPlayer('PA1',
           role: roleRepository.getRoleById('party_animal'));
-      gameEngine.addPlayer('WF1', role: roleRepository.getRoleById('wallflower'));
+      gameEngine.addPlayer('WF1',
+          role: roleRepository.getRoleById('wallflower'));
       await gameEngine.startGame();
 
       final dealer = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
@@ -58,7 +59,8 @@ void main() {
       gameEngine.addPlayer('Whore1', role: roleRepository.getRoleById('whore'));
       gameEngine.addPlayer('PA1',
           role: roleRepository.getRoleById('party_animal'));
-      gameEngine.addPlayer('WF1', role: roleRepository.getRoleById('wallflower'));
+      gameEngine.addPlayer('WF1',
+          role: roleRepository.getRoleById('wallflower'));
       await gameEngine.startGame();
 
       final whore = gameEngine.players.firstWhere((p) => p.name == 'Whore1');

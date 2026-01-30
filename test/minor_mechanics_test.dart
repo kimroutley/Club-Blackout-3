@@ -8,11 +8,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  
+
   // Mock SharedPreferences channel
-  const sharedPrefsChannel = MethodChannel('plugins.flutter.io/shared_preferences');
+  const sharedPrefsChannel =
+      MethodChannel('plugins.flutter.io/shared_preferences');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(sharedPrefsChannel, (MethodCall methodCall) async {
+      .setMockMethodCallHandler(sharedPrefsChannel,
+          (MethodCall methodCall) async {
     if (methodCall.method == 'getAll') {
       return <String, dynamic>{};
     }
@@ -29,9 +31,9 @@ void main() {
       // Mock or use real repository
       // Since it's a unit test, we can use a basic one or the real one if accessible
       // Assuming RoleRepository is available in logic/role_repository.dart
-      final repo = RoleRepository(); 
+      final repo = RoleRepository();
       engine = GameEngine(roleRepository: repo);
-      
+
       minorRole = Role(
         id: 'minor',
         name: 'The Minor',
@@ -72,42 +74,50 @@ void main() {
       // Clear auto-created players
       engine.players.clear();
 
-      final minor = Player(id: 'm1', name: 'Minor', role: minorRole)..initialize();
-      final dealer = Player(id: 'd1', name: 'Dealer', role: dealerRole)..initialize();
-      
+      final minor = Player(id: 'm1', name: 'Minor', role: minorRole)
+        ..initialize();
+      final dealer = Player(id: 'd1', name: 'Dealer', role: dealerRole)
+        ..initialize();
+
       engine.players.addAll([minor, dealer]);
 
       // Attempt to kill Minor
       engine.processDeath(minor, cause: 'dealer_kill');
 
-      expect(minor.isAlive, isTrue, reason: 'Minor should survive dealer kill when not IDd');
-      expect(engine.gameLog.first.description, contains('cannot be killed by the Dealers'));
+      expect(minor.isAlive, isTrue,
+          reason: 'Minor should survive dealer kill when not IDd');
+      expect(engine.gameLog.first.description,
+          contains('cannot be killed by the Dealers'));
     });
 
     test('Minor dies if attacked after being IDd by Bouncer', () {
       engine.createTestGame();
       engine.players.clear();
 
-      final minor = Player(id: 'm1', name: 'Minor', role: minorRole)..initialize();
-      final bouncer = Player(id: 'b1', name: 'Bouncer', role: bouncerRole)..initialize();
-      final dealer = Player(id: 'd1', name: 'Dealer', role: dealerRole)..initialize();
-      
+      final minor = Player(id: 'm1', name: 'Minor', role: minorRole)
+        ..initialize();
+      final bouncer = Player(id: 'b1', name: 'Bouncer', role: bouncerRole)
+        ..initialize();
+      final dealer = Player(id: 'd1', name: 'Dealer', role: dealerRole)
+        ..initialize();
+
       engine.players.addAll([minor, bouncer, dealer]);
 
       final alertBefore = engine.hostAlertVersion;
 
       // Night 1: Bouncer checks ID
-        const bouncerStep = ScriptStep(
+      const bouncerStep = ScriptStep(
           id: 'bouncer_act',
           title: 'Bouncer',
           readAloudText: 'Text',
           instructionText: 'Text',
           actionType: ScriptActionType.selectPlayer,
           roleId: 'bouncer');
-      
+
       engine.handleScriptAction(bouncerStep, [minor.id]);
 
-      expect(minor.minorHasBeenIDd, isTrue, reason: 'Minor should be flagged as IDd');
+      expect(minor.minorHasBeenIDd, isTrue,
+          reason: 'Minor should be flagged as IDd');
 
       expect(engine.hostAlertVersion, alertBefore + 1);
       expect(engine.hostAlertTitle, isNotNull);
@@ -116,20 +126,23 @@ void main() {
       // Night 2 (or same night): Dealer attacks
       engine.processDeath(minor, cause: 'dealer_kill');
 
-      expect(minor.isAlive, isFalse, reason: 'Minor should die to dealer kill after being IDd');
+      expect(minor.isAlive, isFalse,
+          reason: 'Minor should die to dealer kill after being IDd');
     });
 
     test('Minor dies to other causes (e.g. Vote) even if not IDd', () {
       engine.createTestGame();
       engine.players.clear();
 
-      final minor = Player(id: 'm1', name: 'Minor', role: minorRole)..initialize();
+      final minor = Player(id: 'm1', name: 'Minor', role: minorRole)
+        ..initialize();
       engine.players.add(minor);
 
       // Attempt to vote out
       engine.processDeath(minor, cause: 'vote');
 
-      expect(minor.isAlive, isFalse, reason: 'Minor should die to voting even if not IDd');
+      expect(minor.isAlive, isFalse,
+          reason: 'Minor should die to voting even if not IDd');
     });
   });
 }

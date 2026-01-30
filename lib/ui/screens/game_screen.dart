@@ -155,7 +155,7 @@ class _GameScreenState extends State<GameScreen>
         final viewport = box != null ? RenderAbstractViewport.of(box) : null;
         if (box is RenderBox && viewport != null) {
           final offset = viewport.getOffsetToReveal(box, alignment).offset;
-          
+
           // Adjustment: Ensure the active card sits below the top AppBar.
           final targetOffset = offset - 110.0;
 
@@ -242,16 +242,14 @@ class _GameScreenState extends State<GameScreen>
           (step.actionType == ScriptActionType.selectPlayer ||
               step.actionType == ScriptActionType.selectTwoPlayers)) {
         if (step.id == 'day_vote' && _voteCounts.isNotEmpty) {
-          final votedPlayers = _voteCounts.entries
-              .where((e) => e.value >= 2)
-              .toList();
+          final votedPlayers =
+              _voteCounts.entries.where((e) => e.value >= 2).toList();
           if (votedPlayers.isNotEmpty) {
             votedPlayers.sort((a, b) => b.value.compareTo(a.value));
             final mostVoted = votedPlayers.first;
             final maxVotes = mostVoted.value;
-            final topVoters = votedPlayers
-                .where((e) => e.value == maxVotes)
-                .toList();
+            final topVoters =
+                votedPlayers.where((e) => e.value == maxVotes).toList();
 
             if (topVoters.length > 1) {
               // Tie handled silently (logged via engine if needed)
@@ -290,8 +288,8 @@ class _GameScreenState extends State<GameScreen>
                     color: survivedVote
                         ? Colors.amber
                         : (wasDealer
-                              ? ClubBlackoutTheme.neonGreen.withValues(alpha: 0.6)
-                              : ClubBlackoutTheme.neonRed.withValues(alpha: 0.6)),
+                            ? ClubBlackoutTheme.neonGreen.withValues(alpha: 0.6)
+                            : ClubBlackoutTheme.neonRed.withValues(alpha: 0.6)),
                     width: 2,
                   ),
                 ),
@@ -304,8 +302,8 @@ class _GameScreenState extends State<GameScreen>
                       color: survivedVote
                           ? Colors.amber
                           : (wasDealer
-                                ? ClubBlackoutTheme.neonGreen
-                                : ClubBlackoutTheme.neonRed),
+                              ? ClubBlackoutTheme.neonGreen
+                              : ClubBlackoutTheme.neonRed),
                       size: 28,
                     ),
                     const SizedBox(width: 12),
@@ -1268,7 +1266,8 @@ class _GameScreenState extends State<GameScreen>
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: 0.5)),
                   ),
                   child: const Text(
                     'ONE TIME USE ONLY',
@@ -2087,9 +2086,8 @@ class _GameScreenState extends State<GameScreen>
                             ScriptActionType.phaseTransition) {
                           return PhaseCard(
                             key: key,
-                            phaseName: step.isNight
-                                ? 'PARTY TIME!'
-                                : 'CLUB IS CLOSED',
+                            phaseName:
+                                step.isNight ? 'PARTY TIME!' : 'CLUB IS CLOSED',
                             subtitle: step.id == 'club_closed'
                                 ? step.readAloudText
                                 : null,
@@ -2165,14 +2163,12 @@ class _GameScreenState extends State<GameScreen>
                     style: TextStyle(fontSize: 32, color: Colors.white),
                   ),
                 ),
-
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
                 child: _buildPinnedTopBar(context),
               ),
-
               if (!isWaiting && currentStep != null)
                 Positioned(
                   bottom: 30,
@@ -2180,7 +2176,6 @@ class _GameScreenState extends State<GameScreen>
                   right: 20,
                   child: _buildFloatingActionBar(currentStep),
                 ),
-
               if (isWaiting)
                 Positioned(
                   bottom: 30,
@@ -2193,7 +2188,6 @@ class _GameScreenState extends State<GameScreen>
                     ),
                   ),
                 ),
-
               if (_abilityFabExpanded) _buildAbilityFabMenu(),
               if (_rumourMillExpanded)
                 Positioned.fill(child: _buildRumourMillPanel()),
@@ -2265,8 +2259,7 @@ class _GameScreenState extends State<GameScreen>
 
   Widget _buildFloatingActionBar(ScriptStep step) {
     // Hide forward button during player selection steps
-    final isSelectionStep =
-        (step.actionType == ScriptActionType.selectPlayer ||
+    final isSelectionStep = (step.actionType == ScriptActionType.selectPlayer ||
             step.actionType == ScriptActionType.selectTwoPlayers) &&
         step.id != 'day_vote';
 
@@ -2311,8 +2304,7 @@ class _GameScreenState extends State<GameScreen>
       (p) => p.role.id == 'bouncer' && p.isActive && !p.bouncerAbilityRevoked,
     );
 
-    final hasAnyAbility =
-        hasMessyBitch ||
+    final hasAnyAbility = hasMessyBitch ||
         hasLightweight ||
         hasClingerToFree ||
         hasSecondWindConversion ||
@@ -3357,9 +3349,8 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _showDramaQueenSwapDialog() {
-    final alivePlayers = widget.gameEngine.players
-        .where((p) => p.isAlive)
-        .toList();
+    final alivePlayers =
+        widget.gameEngine.players.where((p) => p.isAlive).toList();
     final initialSelected = <String>{};
     if (widget.gameEngine.dramaQueenMarkedAId != null) {
       initialSelected.add(widget.gameEngine.dramaQueenMarkedAId!);
@@ -3379,7 +3370,8 @@ class _GameScreenState extends State<GameScreen>
               backgroundColor: Colors.black,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: const BorderSide(color: ClubBlackoutTheme.neonPurple, width: 2),
+                side: const BorderSide(
+                    color: ClubBlackoutTheme.neonPurple, width: 2),
               ),
               child: Container(
                 padding: const EdgeInsets.all(24),
@@ -3405,11 +3397,11 @@ class _GameScreenState extends State<GameScreen>
                         shrinkWrap: true,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              mainAxisSpacing: 8,
-                              crossAxisSpacing: 8,
-                              childAspectRatio: 0.85,
-                            ),
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 0.85,
+                        ),
                         itemCount: alivePlayers.length,
                         itemBuilder: (context, index) {
                           final player = alivePlayers[index];
@@ -3701,8 +3693,8 @@ class _GameLogDialog extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       itemCount: gameEngine.gameLog.reversed.length,
                       itemBuilder: (context, index) {
-                        final reversedList = gameEngine.gameLog.reversed
-                            .toList();
+                        final reversedList =
+                            gameEngine.gameLog.reversed.toList();
                         final entry = reversedList[index];
                         final ts = entry.timestamp.toLocal();
                         final hh = ts.hour.toString().padLeft(2, '0');
