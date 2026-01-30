@@ -21,6 +21,138 @@
 			"command": "& \"C:\\Users\\kimro\\Documents\\Codex\\Club Blackout Android Android\\android\\gradlew.bat\" assembleRelease --console=plain",
 			"isBackground": false,
 			"group": "build"
+		},
+		{
+			"label": "Flutter: Build APK (release)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"flutter build apk --release"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "kill-flutter-run",
+			"type": "shell",
+			"command": "Get-Process dart, flutter -ErrorAction SilentlyContinue | Stop-Process -Force",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "list-flutter-procs",
+			"type": "shell",
+			"command": "Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'dart|java|gradle|flutter|cmd' -and $_.CommandLine -match 'flutter run' } | Select-Object ProcessId,Name,CommandLine",
+			"isBackground": false
+		},
+		{
+			"label": "find-flutter-run-proc",
+			"type": "shell",
+			"command": "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*flutter run*' } | Select-Object ProcessId,Name,CommandLine | Format-List | Out-String -Width 4000",
+			"isBackground": false
+		},
+		{
+			"label": "find-real-flutter-run-proc",
+			"type": "shell",
+			"command": "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '\\bflutter(\\.bat)?\\b.*\\brun\\b' -and $_.CommandLine -notmatch 'Get-CimInstance' } | Select-Object ProcessId,Name,CommandLine | Format-List | Out-String -Width 4000",
+			"isBackground": false
+		},
+		{
+			"label": "find-flutter-tools-proc",
+			"type": "shell",
+			"command": "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'flutter_tools\\.dart' -and $_.CommandLine -notmatch 'Get-CimInstance' } | Select-Object ProcessId,Name,CommandLine | Format-List | Out-String -Width 4000",
+			"isBackground": false
+		},
+		{
+			"label": "flutter-pub-get",
+			"type": "shell",
+			"command": "flutter pub get",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "flutter-run-device-debug",
+			"type": "shell",
+			"command": "flutter run -d 58141FDCH003X2 --debug",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "flutter-run-device-debug-once",
+			"type": "shell",
+			"command": "flutter run -d 58141FDCH003X2 --debug --no-resident",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "adb-pidof-app",
+			"type": "shell",
+			"command": "adb shell pidof com.clubblackout.app",
+			"isBackground": false
+		},
+		{
+			"label": "adb-start-app",
+			"type": "shell",
+			"command": "adb shell am start -n com.clubblackout.app/com.clubblackout.app.MainActivity; adb shell pidof com.clubblackout.app",
+			"isBackground": false
+		},
+		{
+			"label": "flutter-test-all",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"test"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "flutter-test-saved-game-variations",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"flutter test --concurrency=1 -r expanded test/saved_game_simulation_variations_test.dart"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "flutter-test-full-expanded-to-file",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"flutter test --concurrency=1 -r expanded 2>&1 | Tee-Object -FilePath \"build\\full_test_expanded_latest.txt\""
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "flutter-test-full-compact-to-file",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"flutter test --concurrency=1 -r compact 2>&1 | Tee-Object -FilePath \"build\\full_test_compact_latest.txt\""
+			],
+			"isBackground": false,
+			"group": "test"
 		}
 	]
 }

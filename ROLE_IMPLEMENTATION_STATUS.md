@@ -1,5 +1,23 @@
 # Role Implementation Status
 
+Legend:
+- ✅ Engine + UI consistent
+- 🟡 Partially (UI-only or missing engine resolution)
+- ❌ Not implemented
+
+| Role | Status | Notes |
+|---|---:|---|
+| Dealer | ✅ | Canonical key `kill` bridged from `dealer_act` |
+| Medic | ✅ | Protect via engine; revive currently UI-driven |
+| Bouncer | ✅ | Sets flags; Minor interaction present |
+| Roofi | ✅ | Silence + dealer block flags |
+| Second Wind | ✅ | Now only triggers on Dealer kill |
+| Creep | ✅ | Inheritance via `processDeath` |
+| Clinger | ✅ | Heartbreak double-death |
+| Drama Queen | 🟡 | Swap resolution path depends on UI flow |
+| Tea Spiller | 🟡 | Reveal action is currently UI-driven after death |
+| Predator | 🟡 | Marking exists; retaliation not yet engine-enforced |
+
 ## ✅ Fully Implemented Roles
 
 ### The Dealer
@@ -186,3 +204,14 @@ bool secondWindConverted = false;
 - Clinger mechanics require careful UI/UX design to avoid revealing the role
 - Wallflower's "optional" observation is a player choice, not automated
 - Many day-phase abilities need voting system updates
+
+## Role Implementation Status (Current)
+
+| Area | Status | Notes |
+|---|---:|---|
+| Engine compile | ✅ | `game_engine.dart` present |
+| UI compile | 🟡 | Depends on assets/fonts present locally |
+| Script builder | ✅ | `script_builder.dart` exists |
+| Voting telemetry | ✅ | Engine has `recordVote()` + insights |
+| Reaction system | ✅ | `reaction_system.dart` present |
+| Night resolver | ✅ | `night_resolver.dart` compiles |

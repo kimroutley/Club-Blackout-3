@@ -501,3 +501,26 @@ A deep-dive analysis of role definitions vs. script implementation vs. game engi
 3. ⏳ **Integration Testing** - Verify fixes work with game flow
 4. ⏳ **Regression Testing** - Ensure 27 test suite still passes
 
+---
+
+## Role Implementation Audit (Current)
+
+### Properly wired through GameEngine
+- Dealer: selection canonicalized to `kill`
+- Medic: protect canonicalized to `protect`; revive handled via UI + dead list sync
+- Bouncer: canonicalized to `bouncer_check`; sets `idCheckedByBouncer` and Minor flag
+- Roofi: canonicalized to `roofi`; sets `silencedDay` (+ dealer block)
+- Creep: canonicalized to `creep_target`; inheritance on victim death
+- Clinger: obsession stored; heartbreak double-death on partner death
+- Drama Queen / Tea Spiller: death reactions dispatched via ReactionSystem
+
+### Known “UI-driven” (not fully engine-authored)
+- Voting telemetry (per-voter) is not captured by current vote UI (uses tap counters, no voter ids).
+
+## Role Implementation Audit
+
+Primary consistency checks:
+- `nightActions` step ids are canonicalized into engine keys in `_canonicalizeNightActions()`
+- `deadPlayerIds` matches `players.where(!isAlive)`
+- String enums: Medic choice is `PROTECT_DAILY` or `REVIVE` (engine + UI must match)
+

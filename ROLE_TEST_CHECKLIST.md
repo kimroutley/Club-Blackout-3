@@ -325,3 +325,41 @@ void main() {
 3. Verify existing implementations with medium priority tests
 4. Add comprehensive test suite for all fully implemented roles
 5. Run all tests in CI pipeline to catch regressions
+
+---
+
+## Role Test Checklist (Engine-Focused)
+
+### Night action plumbing (must be true for every role)
+- [ ] Selecting a target updates both `nightActions[step.id]` and engine canonical keys via `handleScriptAction()`.
+- [ ] Morning report reflects the resolved outcome (killed/saved/silenced).
+
+### Second Wind
+- [ ] If killed by Dealers: sets `secondWindPendingConversion=true` and does NOT die immediately.
+- [ ] If conversion accepted: becomes Dealer, alive, pending flag cleared.
+- [ ] If conversion refused: dies; pending cleared; refused flag set.
+
+### Medic
+- [ ] Setup choice persists (`PROTECT_DAILY` vs `REVIVE`).
+- [ ] Protect prevents Dealer kill.
+- [ ] Revive removes from `deadPlayerIds` and restores `isAlive=true`.
+
+### Bouncer / Minor
+- [ ] `bouncer_act` sets `idCheckedByBouncer=true`.
+- [ ] If target is Minor: `minorHasBeenIDd=true` (immunity toggled off).
+
+### Roofi
+- [ ] `roofi_act` sets `silencedDay = day+1`.
+- [ ] If target is Dealer: `blockedKillNight = day+1`.
+
+---
+
+## Role Test Checklist (Smoke)
+
+- [ ] `flutter analyze` passes
+- [ ] Start game from Lobby -> GameScreen shows script steps
+- [ ] Night: Dealer kill recorded to `nightActions['kill']`
+- [ ] Night: Medic protect recorded to `nightActions['protect']` when in PROTECT mode
+- [ ] Bouncer check updates `idCheckedByBouncer` and `minorHasBeenIDd` for Minor
+- [ ] Deaths update `deadPlayerIds` consistently
+- [ ] Save/Load restores players + log + phase

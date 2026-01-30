@@ -33,20 +33,40 @@ class GameEvent {
   }) : timestamp = timestamp ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-    'type': type.index,
-    'sourcePlayerId': sourcePlayerId,
-    'targetPlayerId': targetPlayerId,
-    'data': data,
-    'timestamp': timestamp.toIso8601String(),
-  };
+        'type': type.index,
+        'sourcePlayerId': sourcePlayerId,
+        'targetPlayerId': targetPlayerId,
+        'data': data,
+        'timestamp': timestamp.toIso8601String(),
+      };
 
-  factory GameEvent.fromJson(Map<String, dynamic> json) => GameEvent(
-    type: GameEventType.values[json['type'] as int],
-    sourcePlayerId: json['sourcePlayerId'] as String?,
-    targetPlayerId: json['targetPlayerId'] as String?,
-    data: json['data'] as Map<String, dynamic>? ?? {},
-    timestamp: DateTime.parse(json['timestamp'] as String),
-  );
+  factory GameEvent.fromJson(Map<String, dynamic> json) {
+    final rawType = json['type'];
+    final typeIdx =
+        rawType is int ? rawType : (rawType is num ? rawType.toInt() : 0);
+    final safeIdx = typeIdx.clamp(0, GameEventType.values.length - 1);
+
+    final rawData = json['data'];
+    final data = rawData is Map
+        ? rawData.cast<String, dynamic>()
+        : const <String, dynamic>{};
+
+    DateTime ts;
+    final rawTs = json['timestamp'];
+    try {
+      ts = rawTs is String ? DateTime.parse(rawTs) : DateTime.now();
+    } catch (_) {
+      ts = DateTime.now();
+    }
+
+    return GameEvent(
+      type: GameEventType.values[safeIdx],
+      sourcePlayerId: json['sourcePlayerId'] as String?,
+      targetPlayerId: json['targetPlayerId'] as String?,
+      data: data,
+      timestamp: ts,
+    );
+  }
 }
 
 /// Manages event-based reactions and ability triggers
@@ -61,8 +81,13 @@ class ReactionSystem {
 
   void loadHistoryFromJson(List<dynamic> jsonList) {
     _eventHistory.clear();
-    for (var json in jsonList) {
-      _eventHistory.add(GameEvent.fromJson(json));
+    for (final item in jsonList) {
+      if (item is! Map) continue;
+      try {
+        _eventHistory.add(GameEvent.fromJson(item.cast<String, dynamic>()));
+      } catch (_) {
+        // Skip invalid history entries to avoid breaking saved games.
+      }
     }
   }
 
@@ -75,7 +100,7 @@ class ReactionSystem {
   List<PendingReaction> triggerEvent(GameEvent event, List<Player> players) {
     _eventHistory.add(event);
 
-    List<PendingReaction> reactions = [];
+    final List<PendingReaction> reactions = [];
 
     // Check each alive player for reactions to this event
     for (var player in players.where((p) => p.isActive)) {
@@ -91,7 +116,7 @@ class ReactionSystem {
     GameEvent event,
     List<Player> players,
   ) {
-    List<PendingReaction> reactions = [];
+    final List<PendingReaction> reactions = [];
     final abilities = AbilityLibrary.getAbilitiesForRole(player.role.id);
 
     for (var ability in abilities) {
@@ -280,9 +305,8 @@ class StatusEffectManager {
     _playerEffects.clear();
     json.forEach((playerId, effectsJson) {
       if (effectsJson is List) {
-        final effects = effectsJson
-            .map((e) => StatusEffect.fromJson(e))
-            .toList();
+        final effects =
+            effectsJson.map((e) => StatusEffect.fromJson(e)).toList();
         _playerEffects[playerId] = effects;
       }
     });
@@ -350,22 +374,22 @@ class StatusEffect {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'description': description,
-    'duration': duration,
-    'isPermanent': isPermanent,
-    'data': data,
-  };
+        'id': id,
+        'name': name,
+        'description': description,
+        'duration': duration,
+        'isPermanent': isPermanent,
+        'data': data,
+      };
 
   factory StatusEffect.fromJson(Map<String, dynamic> json) => StatusEffect(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    description: json['description'] as String,
-    duration: json['duration'] as int,
-    isPermanent: json['isPermanent'] as bool,
-    data: json['data'] as Map<String, dynamic>? ?? {},
-  );
+        id: json['id'] as String,
+        name: json['name'] as String,
+        description: json['description'] as String,
+        duration: json['duration'] as int,
+        isPermanent: json['isPermanent'] as bool,
+        data: json['data'] as Map<String, dynamic>? ?? {},
+      );
 }
 
 /// Common status effects

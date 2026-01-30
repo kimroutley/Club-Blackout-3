@@ -1,4 +1,4 @@
-﻿import 'role.dart';
+import 'role.dart';
 
 class Player {
   final String id;
@@ -10,10 +10,14 @@ class Player {
   int lives;
   String alliance;
 
+  /// Some roles require a one-time setup action (e.g., after role swaps).
+  /// When true, the script will insert a setup step for that role.
+  bool needsSetup = false;
+
   // Specific role state
   bool idCheckedByBouncer = false;
   String?
-  medicChoice; // "PROTECT_DAILY" or "RESUSCITATE_ONCE" - permanent choice made at Night 0 setup
+      medicChoice; // "PROTECT_DAILY" or "REVIVE" - permanent choice made at Night 0 setup
   bool hasReviveToken =
       false; // True if medic has used their one-time revive ability
   String? creepTargetId; // For The Creep to store who they are mimicking
@@ -34,12 +38,13 @@ class Player {
   bool secondWindConverted = false; // Second Wind conversion status
   bool secondWindPendingConversion = false; // Waiting for Dealer decision
   bool secondWindRefusedConversion = false; // Dealers refused conversion
+  int? secondWindConversionNight; // Night number when conversion choice is available
   bool joinsNextNight = false; // Added mid-day; becomes active next night
   int? deathDay; // Day count when player died (for medic revive time limit)
   // Roofi/Bouncer mechanics
   int? silencedDay; // If set to D, player is silenced during Day D
   int?
-  blockedKillNight; // If set to N, this Dealer cannot kill on Night N (single-dealer case)
+      blockedKillNight; // If set to N, this Dealer cannot kill on Night N (single-dealer case)
   bool roofiAbilityRevoked =
       false; // Roofi lost ability due to Bouncer challenge
   bool bouncerAbilityRevoked =
@@ -55,6 +60,11 @@ class Player {
   String? predatorTargetId;
   String? dramaQueenTargetAId;
   String? dramaQueenTargetBId;
+  String? whoreDeflectionTargetId;
+  bool whoreDeflectionUsed = false;
+
+  /// Silver Fox: prevents vote-out on a specific day.
+  int? alibiDay;
 
   Player({
     required this.id,
@@ -81,6 +91,7 @@ class Player {
     this.secondWindConverted = false,
     this.secondWindPendingConversion = false,
     this.secondWindRefusedConversion = false,
+    this.secondWindConversionNight,
     this.joinsNextNight = false,
     this.deathDay,
     this.silencedDay,
@@ -89,11 +100,22 @@ class Player {
     this.bouncerAbilityRevoked = false,
     this.bouncerHasRoofiAbility = false,
     this.deathReason,
-  }) : tabooNames = tabooNames ?? [],
-       statusEffects = statusEffects ?? [],
-       alliance = role.alliance;
+    this.whoreDeflectionTargetId,
+    this.whoreDeflectionUsed = false,
+    this.needsSetup = false,
+    this.alibiDay,
+  })  : tabooNames = tabooNames ?? [],
+        statusEffects = statusEffects ?? [],
+        alliance = role.alliance;
 
   bool get isActive => isAlive && isEnabled && !joinsNextNight;
+
+  // Back-compat aliases used throughout the engine/tests.
+  bool get reviveUsed => hasReviveToken;
+  set reviveUsed(bool value) => hasReviveToken = value;
+
+  String? get teaSpillerMarkId => teaSpillerTargetId;
+  set teaSpillerMarkId(String? value) => teaSpillerTargetId = value;
 
   void initialize() {
     // Lives will be set by game engine for roles that need it
@@ -101,8 +123,15 @@ class Player {
       lives = 9;
     }
 
-    if (role.alliance == 'VARIABLE' && role.startAlliance != null) {
+    // Some roles start on a different alliance than their base descriptor.
+    // Note: roles.json uses "Variable" (not "VARIABLE"), so treat this as
+    // case-insensitive and primarily key off startAlliance.
+    if (role.startAlliance != null) {
       alliance = role.startAlliance!;
+    } else if (role.alliance.toLowerCase() == 'variable') {
+      // Default variable roles to Party Animal until their mechanic
+      // (e.g., Creep mimic / Second Wind conversion) changes it.
+      alliance = 'The Party Animals';
     }
   }
 
@@ -123,7 +152,8 @@ class Player {
 
   void setLivesBasedOnDealers(int dealerCount) {
     if (role.id == 'seasoned_drinker') {
-      lives = dealerCount; // One life per Dealer
+      // Baseline 1 life + one extra life per Dealer.
+      lives = 1 + dealerCount;
     }
   }
 
@@ -137,48 +167,53 @@ class Player {
     statusEffects = List.from(statusEffects)..remove(status);
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'roleId': role.id,
-      'isAlive': isAlive,
-      'isEnabled': isEnabled,
-      'statusEffects': statusEffects,
-      'lives': lives,
-      'alliance': alliance,
-      'idCheckedByBouncer': idCheckedByBouncer,
-      'medicChoice': medicChoice,
-      'hasReviveToken': hasReviveToken,
-      'creepTargetId': creepTargetId,
-      'hasRumour': hasRumour,
-      'messyBitchKillUsed': messyBitchKillUsed,
-      'clingerPartnerId': clingerPartnerId,
-      'clingerFreedAsAttackDog': clingerFreedAsAttackDog,
-      'clingerAttackDogUsed': clingerAttackDogUsed,
-      'tabooNames': tabooNames,
-      'minorHasBeenIDd': minorHasBeenIDd,
-      'soberAbilityUsed': soberAbilityUsed,
-      'soberSentHome': soberSentHome,
-      'silverFoxAbilityUsed': silverFoxAbilityUsed,
-      'secondWindConverted': secondWindConverted,
-      'secondWindPendingConversion': secondWindPendingConversion,
-      'joinsNextNight': joinsNextNight,
-      'deathDay': deathDay,
-      'silencedDay': silencedDay,
-      'blockedKillNight': blockedKillNight,
-      'roofiAbilityRevoked': roofiAbilityRevoked,
-      'bouncerAbilityRevoked': bouncerAbilityRevoked,
-      'teaSpillerTargetId': teaSpillerTargetId,
-      'predatorTargetId': predatorTargetId,
-      'dramaQueenTargetAId': dramaQueenTargetAId,
-      'dramaQueenTargetBId': dramaQueenTargetBId,
-      'deathReason': deathReason,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'roleId': role.id,
+        'isAlive': isAlive,
+        'isEnabled': isEnabled,
+        'statusEffects': statusEffects,
+        'lives': lives,
+        'alliance': alliance,
+        'needsSetup': needsSetup,
+        'idCheckedByBouncer': idCheckedByBouncer,
+        'medicChoice': medicChoice,
+        'hasReviveToken': hasReviveToken,
+        'creepTargetId': creepTargetId,
+        'hasRumour': hasRumour,
+        'messyBitchKillUsed': messyBitchKillUsed,
+        'clingerPartnerId': clingerPartnerId,
+        'clingerFreedAsAttackDog': clingerFreedAsAttackDog,
+        'clingerAttackDogUsed': clingerAttackDogUsed,
+        'tabooNames': tabooNames,
+        'minorHasBeenIDd': minorHasBeenIDd,
+        'soberAbilityUsed': soberAbilityUsed,
+        'soberSentHome': soberSentHome,
+        'silverFoxAbilityUsed': silverFoxAbilityUsed,
+        'secondWindConverted': secondWindConverted,
+        'secondWindPendingConversion': secondWindPendingConversion,
+        'secondWindRefusedConversion': secondWindRefusedConversion,
+        'secondWindConversionNight': secondWindConversionNight,
+        'joinsNextNight': joinsNextNight,
+        'deathDay': deathDay,
+        'silencedDay': silencedDay,
+        'blockedKillNight': blockedKillNight,
+        'roofiAbilityRevoked': roofiAbilityRevoked,
+        'bouncerAbilityRevoked': bouncerAbilityRevoked,
+        'bouncerHasRoofiAbility': bouncerHasRoofiAbility,
+        'deathReason': deathReason,
+        'alibiDay': alibiDay,
+        'teaSpillerTargetId': teaSpillerTargetId,
+        'predatorTargetId': predatorTargetId,
+        'dramaQueenTargetAId': dramaQueenTargetAId,
+        'dramaQueenTargetBId': dramaQueenTargetBId,
+        'whoreDeflectionTargetId': whoreDeflectionTargetId,
+        'whoreDeflectionUsed': whoreDeflectionUsed,
+      };
 
   factory Player.fromJson(Map<String, dynamic> json, Role role) {
-    var player = Player(
+    final player = Player(
       id: json['id'],
       name: json['name'],
       role: role,
@@ -202,15 +237,30 @@ class Player {
       silverFoxAbilityUsed: json['silverFoxAbilityUsed'] ?? false,
       secondWindConverted: json['secondWindConverted'] ?? false,
       secondWindPendingConversion: json['secondWindPendingConversion'] ?? false,
+      secondWindRefusedConversion: json['secondWindRefusedConversion'] ?? false,
+      secondWindConversionNight: json['secondWindConversionNight'] as int?,
       joinsNextNight: json['joinsNextNight'] ?? false,
       deathDay: json['deathDay'],
       silencedDay: json['silencedDay'],
       blockedKillNight: json['blockedKillNight'],
       roofiAbilityRevoked: json['roofiAbilityRevoked'] ?? false,
       bouncerAbilityRevoked: json['bouncerAbilityRevoked'] ?? false,
+      bouncerHasRoofiAbility: json['bouncerHasRoofiAbility'] as bool? ?? false,
+      deathReason: json['deathReason'] as String?,
+      whoreDeflectionTargetId: json['whoreDeflectionTargetId'] as String?,
+      whoreDeflectionUsed: json['whoreDeflectionUsed'] as bool? ?? false,
+      needsSetup: json['needsSetup'] as bool? ?? false,
+      alibiDay: json['alibiDay'] as int?,
     );
     player.alliance = json['alliance'] ?? role.alliance;
     player.deathReason = json['deathReason'];
+
+    // Persistent reactive targets
+    player.teaSpillerTargetId = json['teaSpillerTargetId'];
+    player.predatorTargetId = json['predatorTargetId'];
+    player.dramaQueenTargetAId = json['dramaQueenTargetAId'];
+    player.dramaQueenTargetBId = json['dramaQueenTargetBId'];
+
     return player;
   }
 }

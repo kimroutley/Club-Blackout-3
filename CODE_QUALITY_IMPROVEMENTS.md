@@ -285,3 +285,15 @@ These improvements transform the codebase from a functional prototype to a produ
 6. Add integration tests for error handling
 7. Create error analytics dashboard
 8. Add crash reporting integration
+
+## Code Quality Improvements (Backlog)
+
+- Centralize string enums (Medic choice, alliances) into typed constants.
+- Stop using `nightActions` dynamic map for core rule resolution; wrap in typed DTO.
+- Add golden tests for key screens and widget snapshots.
+
+## Code Quality Improvements
+
+- Replace stringly-typed role flags with enums/constants (Medic choice, alliances).
+- Keep `nightActions` as a typed structure (DTO) instead of `Map<String, dynamic>`.
+- Add CI job running `flutter analyze` and `flutter test`.

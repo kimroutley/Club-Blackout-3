@@ -1,5 +1,9 @@
-﻿        final msg =
+﻿final msg =
             "� ?? Someone was acting super creepy towards ${target.name}. Just a vibe check.";
         report.writeln(msg);
         hostReport.writeln(msg);
         processedAbilityIds.add('creep_mimic');
+        
+Paste interesting logcat excerpts here when triaging.
+
+(placeholder)

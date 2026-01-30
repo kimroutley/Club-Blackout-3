@@ -133,3 +133,78 @@ All critical and medium-priority issues have been resolved. The game is now:
 ## CONCLUSION
 
 **All identified issues have been successfully resolved.** The codebase is now more robust, maintainable, and provides better player experience through accurate death tracking and graveyard displays.
+
+## Audit Notes (Current Pass)
+
+### Critical fixes applied
+- Restored `lib/logic/game_engine.dart` (file was empty / non-compilable).
+- Added missing public API used by UI/insights:
+  - `guests`
+  - voting telemetry (`voteHistory`, `currentDayVotesByVoter`, `currentDayVotesByTarget`)
+  - win checks (`checkWinConditions`, `winner`, `winMessage`)
+  - recap/stats (`lastNightHostRecap`, `lastNightStats`)
+- Standardized Medic choice strings to: `PROTECT_DAILY` and `REVIVE`.
+- Added local `firstOrNull` extension to `ScriptBuilder` to prevent missing-extension compile errors.
+
+### Next things to verify locally
+- `flutter analyze` should be clean (no duplicate switch cases, missing members).
+- `flutter test -r expanded` should run; if failures remain, paste the first failing trace.
+
+## GameEngine Audit (Gaps + Fixes)
+
+### 1) Critical: Night action key mismatch (UI vs Engine)
+- UI writes selections as `nightActions[step.id]` (e.g. `dealer_act`, `medic_protect`, `bouncer_act`, `roofi_act`, `creep_act`)
+- Engine resolves using canonical keys (`kill`, `protect`, `bouncer_check`, `roofi`, `creep_target`)
+- Result: night resolution can miss actions and appear “quiet” or inconsistent.
+
+**Fix applied:** Engine canonicalizes `nightActions` before `_resolveNightPhase()`, and GameScreen now calls `handleScriptAction()` after confirmations.
+
+### 2) Second Wind trigger scope
+Rules text implies Second Wind conversion is only on Dealer kill. Engine previously intercepted on any cause, which breaks “refuse conversion” and vote deaths.
+
+**Fix applied:** Second Wind only intercepts dealer-kill causes; refusal sets `secondWindRefusedConversion` and proceeds to death.
+
+### 3) Bookkeeping: deadPlayerIds drift
+`deadPlayerIds` wasn’t rebuilt on load and could drift when players are removed.
+
+**Fix applied:** Rebuild `deadPlayerIds` from `players` on load; remove ids on removePlayer; clear/init on startGame.
+
+### Next recommended checks
+- Run `flutter analyze` and confirm no remaining references to stale `nightActions` keys.
+- Manually simulate: Dealer kill + Medic protect + Roofi silence + Second Wind conversion accept/refuse.
+
+## Audit Report
+
+### What was fixed to enable `flutter analyze`
+- Notebooks: fixed cell ids into `metadata.id`.
+- Project config: restored `pubspec.yaml`, lints, and basic tooling files.
+- UI compile blockers: stubbed/rewrote incomplete widgets/screens (InteractiveScriptCard, HostPlayerStatusCard, Guides/Home/RumourMill, DaySceneDialog).
+- Engine: already includes action canonicalization + dead list syncing.
+
+### Next
+- Run `flutter analyze` and fix remaining missing imports/files (if any).
+- Reintroduce the richer UI piece-by-piece behind green analysis.
+
+## APK extraction note (Flutter release)
+- Release APK does **not** contain Dart sources (e.g. `game_engine.dart`).
+- Dart code is AOT compiled into `lib/<abi>/libapp.so`.
+- Practical recovery is limited to reverse engineering native code; treat as last resort.
+
+Recommended for production diagnostics:
+- `flutter build apk --release --split-debug-info=./symbols`
+- Optionally add `--obfuscate` (store the symbols directory securely).
+
+## Bug capture workflow (ADB)
+
+Use `analyze.ps1` to:
+- run `flutter analyze`
+- clear logcat (optional)
+- capture logcat while reproducing the issue
+
+Command:
+`powershell -ExecutionPolicy Bypass -File .\analyze.ps1 -AdbOnly -ClearLogcat -Minutes 3 -Package "<your.package.id>"`
+
+Artifacts:
+- `logs/logcat_*.txt`
+- `logs/getprop_*.txt`
+- `logs/dumpsys_package_*.txt` (if Package was provided)

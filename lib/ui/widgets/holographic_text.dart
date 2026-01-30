@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
+import '../styles.dart';
+
 class HolographicText extends StatefulWidget {
   final String text;
   final TextStyle style;
@@ -30,7 +32,7 @@ class _HolographicTextState extends State<HolographicText> {
   }
 
   void _startListening() {
-    _gyroSubscription = gyroscopeEvents.listen((GyroscopeEvent event) {
+    _gyroSubscription = gyroscopeEventStream().listen((GyroscopeEvent event) {
       if (!mounted) return;
       // Y-rotation tilts the screen left/right -> shifts channels on X axis
       final double targetOffset = event.y * 2.0 * widget.intensity;
@@ -66,7 +68,8 @@ class _HolographicTextState extends State<HolographicText> {
                 child: Text(
                   widget.text,
                   style: widget.style.copyWith(
-                    color: const Color(0xFFFF0000).withOpacity(0.5),
+                    color: ClubBlackoutTheme.hologramRedChannel
+                        .withValues(alpha: 0.5),
                     shadows: [],
                   ),
                   maxLines: 1,
@@ -83,7 +86,8 @@ class _HolographicTextState extends State<HolographicText> {
                 child: Text(
                   widget.text,
                   style: widget.style.copyWith(
-                    color: const Color(0xFF00FFFF).withOpacity(0.5),
+                    color: ClubBlackoutTheme.hologramCyanChannel
+                        .withValues(alpha: 0.5),
                     shadows: [],
                   ),
                   maxLines: 1,

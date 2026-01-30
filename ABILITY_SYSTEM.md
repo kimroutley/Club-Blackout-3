@@ -368,3 +368,9 @@ Potential additions:
 - Event system only triggers for alive players
 - Status effects are cleaned up automatically
 - No circular dependencies in ability chains
+
+## Ability System Notes
+
+- Engine supports queued abilities via `AbilityResolver`.
+- UI should call `handleScriptAction` for canonical night keys (`kill`, `protect`, etc.).
+- Prefer deterministic resolution order (priority) and single source of truth for “who died and why”.

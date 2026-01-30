@@ -5,7 +5,9 @@ class ValidationResult {
   final bool isValid;
   final String? error;
 
-  const ValidationResult.valid() : isValid = true, error = null;
+  const ValidationResult.valid()
+      : isValid = true,
+        error = null;
   const ValidationResult.invalid(this.error) : isValid = false;
 
   bool get isInvalid => !isValid;

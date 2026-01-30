@@ -1,161 +1,135 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../../models/player.dart';
-import '../../logic/game_engine.dart';
-import '../styles.dart';
-import '../animations.dart';
-import 'host_player_status_card.dart';
 
-class NightPhasePlayerTile extends StatefulWidget {
+import '../../logic/game_engine.dart';
+import '../../models/player.dart';
+import '../styles.dart';
+import 'glow_button.dart';
+import 'player_icon.dart';
+
+class NightPhasePlayerTile extends StatelessWidget {
   final Player player;
   final bool isSelected;
-  final VoidCallback onTap;
-  final VoidCallback? onConfirm;
-  final String? statsText;
   final GameEngine gameEngine;
+  final String? statsText;
+  final VoidCallback? onTap;
+  final VoidCallback? onConfirm;
 
   const NightPhasePlayerTile({
     super.key,
     required this.player,
     required this.isSelected,
-    required this.onTap,
-    this.onConfirm,
     required this.gameEngine,
     this.statsText,
+    this.onTap,
+    this.onConfirm,
   });
 
   @override
-  State<NightPhasePlayerTile> createState() => _NightPhasePlayerTileState();
-}
-
-class _NightPhasePlayerTileState extends State<NightPhasePlayerTile>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _opacityAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: ClubMotion.short);
-    _opacityAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    );
-
-    if (widget.isSelected) {
-      _controller.value = 1.0;
-    }
-  }
-
-  @override
-  void didUpdateWidget(NightPhasePlayerTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isSelected != oldWidget.isSelected) {
-      if (widget.isSelected) {
-        _controller.forward();
-        HapticFeedback.lightImpact();
-      } else {
-        _controller.reverse();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // Reuse full host player card for consistent look/status chips
-    return Stack(
-      children: [
-        HostPlayerStatusCard(
-          player: widget.player,
-          gameEngine: widget.gameEngine,
-          showControls: false,
-          isSelected: widget.isSelected,
-          onTap: () {
-            if (widget.isSelected) {
-              _controller.value = 1.0;
-            } else {
-              _controller.reverse();
-            }
-            widget.onTap();
-          },
-          trailing: (widget.statsText != null && widget.statsText!.isNotEmpty)
-              ? Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: widget.player.role.color.withOpacity(0.18),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: widget.player.role.color.withOpacity(0.6),
-                    ),
-                  ),
-                  child: Text(
-                    widget.statsText!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                )
-              : null,
-        ),
+    // final cs = Theme.of(context).colorScheme;
 
-        // Selection check overlay - NOW INTERACTIVE FOR APPROVAL
-        if (widget.isSelected)
-          Positioned(
-            top: 8,
-            right: 8,
-            child: AnimatedBuilder(
-              animation: _opacityAnimation,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _opacityAnimation.value,
-                  child: Transform.scale(
-                    scale: 0.8 + (_opacityAnimation.value * 0.2),
-                    child: FilledButton.icon(
-                      onPressed: widget.onConfirm,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: ClubBlackoutTheme.neonGreen,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        elevation: 6,
-                        shadowColor: ClubBlackoutTheme.neonGreen.withOpacity(
-                          0.4,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          side: const BorderSide(color: Colors.white, width: 2),
+    final subtitle = statsText ?? player.role.name;
+    final accent = player.role.color;
+    final cs = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Card(
+        elevation: isSelected ? 4 : 1,
+        color: isSelected 
+             ? accent.withValues(alpha: 0.25) 
+             : cs.surfaceContainerHigh.withValues(alpha: 0.8),
+        shape: RoundedRectangleBorder(
+           borderRadius: BorderRadius.circular(20),
+           side: isSelected 
+               ? BorderSide(color: accent, width: 2) 
+               : BorderSide.none,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                PlayerIcon(
+                  assetPath: player.role.assetPath,
+                  glowColor: accent,
+                  glowIntensity: isSelected ? 0.5 : 0.0,
+                  size: 48,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        player.name,
+                        style: ClubBlackoutTheme.glowTextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          glow: false, // isSelected, // Maybe too much glow
                         ),
                       ),
-                      icon: const Icon(Icons.check, size: 18),
-                      label: const Text(
-                        "CONFIRM",
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle.toUpperCase(),
                         style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                          fontSize: 13,
+                          color: isSelected
+                              ? accent
+                              : Colors.white.withValues(alpha: 0.6),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (onConfirm != null) ...[
+                  const SizedBox(width: 16),
+                  IgnorePointer(
+                    ignoring: !isSelected,
+                    child: AnimatedOpacity(
+                      opacity: isSelected ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: SizedBox(
+                        height: 40,
+                        child: GlowButton(
+                          onPressed: onConfirm,
+                          glowColor: accent,
+                          // padding: const EdgeInsets.symmetric(horizontal: 16), // Tighter padding
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'CONFIRM',
+                              style: TextStyle(
+                                color: ClubBlackoutTheme.contrastOn(accent),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 16,
+                              color: ClubBlackoutTheme.contrastOn(accent),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                );
-              },
+                  ),
+                ],
+              ],
             ),
           ),
-      ],
+        ),
+      ),
     );
   }
 }

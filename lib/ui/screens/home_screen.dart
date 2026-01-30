@@ -1,217 +1,143 @@
-﻿import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
+
 import '../../logic/game_engine.dart';
 import '../styles.dart';
-class HomeScreen extends StatefulWidget {
+import '../widgets/glow_button.dart';
+
+class HomeScreen extends StatelessWidget {
   final GameEngine gameEngine;
   final VoidCallback onNavigateToLobby;
   final VoidCallback onNavigateToGuides;
 
   const HomeScreen({
-    super.key, 
-    required this.gameEngine, 
+    super.key,
+    required this.gameEngine,
     required this.onNavigateToLobby,
     required this.onNavigateToGuides,
   });
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late AnimationController _pulseController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _pulseAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    
-    // Fade in animation
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
+  void _showStartOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        return Container(
+          decoration: ClubBlackoutTheme.neonBottomSheetDecoration(
+            ctx,
+            accent: ClubBlackoutTheme.neonBlue,
+          ),
+          padding: ClubBlackoutTheme.sheetPadding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GlowButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  onNavigateToLobby();
+                },
+                glowColor: ClubBlackoutTheme.neonPurple,
+                child: const Text('Start a games night'),
+              ),
+              ClubBlackoutTheme.gap12,
+              GlowButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  onNavigateToLobby();
+                },
+                glowColor: ClubBlackoutTheme.neonPink,
+                child: const Text('Normal game'),
+              ),
+              ClubBlackoutTheme.gap12,
+            ],
+          ),
+        );
+      },
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
-    );
-    
-    // Pulse animation for primary button
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
-    
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-    
-    _fadeController.forward();
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    _pulseController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Phase-aware styling
+    final isNight = gameEngine.currentPhase == GamePhase.night;
+    // For 'Day/Lobby', we keep it bright/colorful (Neon theme), but using M3 structures.
+    
+    // Background
+    Widget background;
+    if (isNight) {
+      background = Container(color: Theme.of(context).colorScheme.surface);
+    } else {
+      background = Image.asset(
+        'Backgrounds/Club Blackout V2 Home Menu.png',
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+
+    // Buttons
+    // In Night mode, use standard scheme. In Day mode, use specific Neon accents.
+    final btnStylePrimary = isNight 
+        ? null // Default M3
+        : FilledButton.styleFrom(
+            backgroundColor: ClubBlackoutTheme.neonBlue, 
+            foregroundColor: Colors.white,
+          );
+    
+    final btnStyleSecondary = isNight
+        ? null // Default M3 tonal
+        : FilledButton.styleFrom(
+            backgroundColor: ClubBlackoutTheme.neonOrange,
+            foregroundColor: Colors.white,
+          );
+
     return Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background Image with parallax effect
-          /*Image.asset(
-            "Backgrounds/Club Blackout Home Menu Screen.png",
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.black,
-                    const Color(0xFF0D0221),
-                    const Color(0xFF000000),
+      children: [
+        Positioned.fill(child: background),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: const Text('Club Blackout'),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+          ),
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () => _showStartOptions(context),
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text("Let's get started"),
+                      style: btnStylePrimary,
+                    ),
+                    ClubBlackoutTheme.gap24,
+                    FilledButton.icon(
+                      onPressed: onNavigateToGuides,
+                      icon: const Icon(Icons.menu_book),
+                      label: const Text('Guides'),
+                      style: btnStyleSecondary,
+                    ),
                   ],
                 ),
               ),
             ),
-          ),*/
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.black,
-                  const Color(0xFF0D0221),
-                  const Color(0xFF000000),
-                ],
-              ),
-            ),
-          ),
-          
-          // Animated gradient overlay
-          AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, child) {
-              return Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.2),
-                      Colors.black.withOpacity(0.6 + _pulseAnimation.value * 0.1),
-                      Colors.black.withOpacity(0.9),
-                    ],
-                    stops: const [0.3, 0.5, 0.7, 1.0],
-                  ),
-                ),
-              );
-            },
-          ),
-
-          // Menu Content
-          SafeArea(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: ClubBlackoutTheme.centeredConstrained(
-                maxWidth: 520,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                    // Primary button with pulse animation
-                    AnimatedBuilder(
-                      animation: _pulseAnimation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _pulseAnimation.value,
-                          child: child,
-                        );
-                      },
-                      child: _buildMenuButton(
-                        context,
-                        "Start Game",
-                        ClubBlackoutTheme.neonBlue,
-                        widget.onNavigateToLobby,
-                        isPrimary: true,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    _buildMenuButton(
-                      context,
-                      "Guides",
-                      ClubBlackoutTheme.neonPurple,
-                      widget.onNavigateToGuides,
-                    ),
-                    const SizedBox(height: 32),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-  }
-
-
-  Widget _buildMenuButton(
-    BuildContext context,
-    String label,
-    Color color,
-    VoidCallback onPressed, {
-    bool isPrimary = false,
-  }) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 600 + (isPrimary ? 0 : 200)),
-      curve: Curves.elasticOut,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: Container(
-            height: isPrimary ? 72 : 64,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: ClubBlackoutTheme.boxGlow(color, intensity: isPrimary ? 1.2 : 0.8),
-            ),
-            child: child,
-          ),
-        );
-      },
-      child: FilledButton(
-        onPressed: () {
-          if (isPrimary) {
-            HapticFeedback.mediumImpact();
-          } else {
-            HapticFeedback.lightImpact();
-          }
-          onPressed();
-        },
-        style: ClubBlackoutTheme.neonButtonStyle(color, isPrimary: isPrimary),
-        child: Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            // Use default app font for main menu buttons
-            fontFamily: null,
-            shadows: ClubBlackoutTheme.textGlow(color, intensity: 0.8),
           ),
         ),
-      ),
+      ],
     );
   }
 }
-
-
-

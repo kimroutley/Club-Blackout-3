@@ -30,13 +30,15 @@ class LiveGameStats {
   });
 
   factory LiveGameStats.fromEngine(GameEngine engine) {
-    final players = engine.players;
+    // Host-only stats should reflect active guests in the game.
+    // Using engine.players can include the Host or disabled players and skew counts.
+    final players = engine.guests.where((p) => p.isEnabled).toList();
     final alivePlayers = players.where((p) => p.isAlive).toList();
     final deadPlayers = players.where((p) => !p.isAlive).toList();
 
-    var allianceMap = <String, int>{'Dealer': 0, 'Party': 0, 'Neutral': 0};
+    final allianceMap = <String, int>{'Dealer': 0, 'Party': 0, 'Neutral': 0};
 
-    var roleMap = <String, int>{};
+    final roleMap = <String, int>{};
 
     int dealerAlive = 0;
     int partyAlive = 0;
@@ -52,7 +54,7 @@ class LiveGameStats {
       // However, some roles might change alliance dynamically.
       // For now, we trust the mapped alliance string.
 
-      String allianceKey = _normalizeAlliance(p.role.alliance);
+      final String allianceKey = _normalizeAlliance(p.role.alliance);
       allianceMap[allianceKey] = (allianceMap[allianceKey] ?? 0) + 1;
 
       if (allianceKey == 'Dealer') {

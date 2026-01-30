@@ -4,14 +4,14 @@ import 'package:flutter/foundation.dart';
 /// Provides better debugging capabilities and production-ready logging
 class GameLogger {
   static const String _tag = 'ClubBlackout';
-  
+
   static bool get isDebugMode => kDebugMode;
 
   /// Log informational messages
   static void info(String message, {String? context}) {
     if (isDebugMode) {
       final contextStr = context != null ? '[$context] ' : '';
-      debugPrint('ℹ️ $_tag: $contextStr$message');
+      debugPrint('INFO $_tag: $contextStr$message');
     }
   }
 
@@ -19,7 +19,7 @@ class GameLogger {
   static void warning(String message, {String? context, Object? error}) {
     final contextStr = context != null ? '[$context] ' : '';
     final errorStr = error != null ? '\nError: $error' : '';
-    debugPrint('⚠️ $_tag: $contextStr$message$errorStr');
+    debugPrint('WARN $_tag: $contextStr$message$errorStr');
   }
 
   /// Log error messages with optional stack trace
@@ -32,14 +32,14 @@ class GameLogger {
     final contextStr = context != null ? '[$context] ' : '';
     final errorStr = error != null ? '\nError: $error' : '';
     final stackStr = stackTrace != null ? '\nStack trace:\n$stackTrace' : '';
-    debugPrint('❌ $_tag: $contextStr$message$errorStr$stackStr');
+    debugPrint('ERROR $_tag: $contextStr$message$errorStr$stackStr');
   }
 
   /// Log debug messages (only in debug mode)
   static void debug(String message, {String? context}) {
     if (isDebugMode) {
       final contextStr = context != null ? '[$context] ' : '';
-      debugPrint('🐛 $_tag: $contextStr$message');
+      debugPrint('DEBUG $_tag: $contextStr$message');
     }
   }
 
@@ -47,20 +47,22 @@ class GameLogger {
   static void gameEvent(String event, {Map<String, dynamic>? data}) {
     if (isDebugMode) {
       final dataStr = data != null ? '\nData: $data' : '';
-      debugPrint('🎮 $_tag [GameEvent]: $event$dataStr');
+      debugPrint('GAME_EVENT $_tag: $event$dataStr');
     }
   }
 
   /// Log ability resolutions
-  static void ability(String abilityName, {
+  static void ability(
+    String abilityName, {
     required String source,
     List<String>? targets,
     bool? success,
   }) {
     if (isDebugMode) {
-      final targetStr = targets != null ? ' → ${targets.join(', ')}' : '';
-      final successStr = success != null ? ' [${success ? '✓' : '✗'}]' : '';
-      debugPrint('⚡ $_tag [Ability]: $abilityName from $source$targetStr$successStr');
+      final targetStr = targets != null ? ' -> ${targets.join(', ')}' : '';
+      final successStr = success != null ? ' [${success ? 'OK' : 'FAIL'}]' : '';
+      debugPrint(
+          'ABILITY $_tag: $abilityName from $source$targetStr$successStr');
     }
   }
 
@@ -68,14 +70,14 @@ class GameLogger {
   static void stateTransition(String from, String to, {String? reason}) {
     if (isDebugMode) {
       final reasonStr = reason != null ? ' ($reason)' : '';
-      debugPrint('🔄 $_tag [State]: $from → $to$reasonStr');
+      debugPrint('STATE $_tag: $from -> $to$reasonStr');
     }
   }
 
   /// Log performance metrics
   static void performance(String operation, Duration duration) {
     if (isDebugMode) {
-      debugPrint('⏱️ $_tag [Performance]: $operation took ${duration.inMilliseconds}ms');
+      debugPrint('PERF $_tag: $operation took ${duration.inMilliseconds}ms');
     }
   }
 }

@@ -5,9 +5,10 @@
       "name": "The Dealer",
       "alliance": "The Dealers",
       "type": "aggressive",
-      "description": "OBJECTIVE: Work together to kill as many Party Animals as possible without getting caught.\n\nSPECIAL ABILITIES:\n The Murder: Choose a victim to murder each night with the other Dealers.\n\nSTRATEGY:\nRemain hidden. Coordinate with other Dealers and The Whore to eliminate the Party Animals. They do not die if The Whore dies.",
+      "description": "OBJECTIVE: Work together to kill as many Party Animals as possible without getting caught.\n\nSTRATEGY:\nRemain hidden. Coordinate with other Dealers and The Whore to eliminate the Party Animals. They do not die if The Whore dies.",
       "night_priority": 5,
-      "asset_path": "Icons/Icon-No text-Dealer-Fuschia.png",
+      "ability": "THE MURDER: Choose a victim to murder each night with the other Dealers.",
+      "asset_path": "Icons/Icon-No text-Dealer-Fuschia.webp",
       "color_hex": "#FF00FF"
     },
     {
@@ -15,9 +16,10 @@
       "name": "The Party Animal",
       "alliance": "The Party Animals",
       "type": "passive",
-      "description": "OBJECTIVE: To survive for as many nights as possible and find The Dealers.\n\nSPECIAL ABILITIES:\n None.\n\nSTRATEGY:\nObserve player behavior, discuss with others, and vote wisely during the day to identify and eliminate The Dealers before they kill everyone.",
+      "description": "OBJECTIVE: To survive for as many nights as possible and find The Dealers.\n\nSTRATEGY:\nObserve player behavior, discuss with others, and vote wisely during the day to identify and eliminate The Dealers before they kill everyone.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Party Animal-Peach.png",
+      "ability": "None. Your strength is in your vote and your survival.",
+      "asset_path": "Icons/Icon-No text-Party Animal-Peach.webp",
       "color_hex": "#FFDAB9"
     },
     {
@@ -25,9 +27,10 @@
       "name": "The Medic",
       "alliance": "The Party Animals",
       "type": "defensive",
-      "description": "OBJECTIVE: To help The Party Animals survive.\n\nSPECIAL ABILITIES:\n Choose ONE on Night 1:\n  1. REVIVE: Resurrect one dead Party Animal (including themselves) at any point in the game.\n  2. PROTECT: Choose one person to protect from murder at the start of every round.\n*Note:* Once the choice is made on Night 1, it cannot be changed.\n\nSTRATEGY:\nUse their chosen ability wisely to keep innocent players alive and reduce The Dealer's advantage.",
+      "description": "OBJECTIVE: To help The Party Animals survive.\n\nSTRATEGY:\nUse your chosen ability wisely to keep innocent players alive and reduce The Dealer's advantage. Remember: once the choice is made on Night 1, it cannot be changed.",
       "night_priority": 1,
-      "asset_path": "Icons/Icon-No text-Medic-Red.png",
+      "ability": "SETUP CHOICE (Night 0): Choose either PROTECT (each night, protect one player from death) or REVIVE (once per game, revive one Party Animal who died THIS night — you may self-revive if you died tonight).",
+      "asset_path": "Icons/Icon-No text-Medic-Red.webp",
       "color_hex": "#FF0000",
       "has_binary_choice_at_start": true,
       "choices": ["REVIVE", "PROTECT"]
@@ -37,9 +40,10 @@
       "name": "The Bouncer",
       "alliance": "The Party Animals",
       "type": "investigative",
-      "description": "OBJECTIVE: Use ID checking power to uncover The Dealers.\n\nSPECIAL ABILITIES:\n Check I.D.: Each night, select a player to ask the Host about. The Host will nod (if Dealer) or shake head (if Party Animal).\n Roofi Powers: Can take the paralyzing powers from The Roofi if they suspect they are abusing them. *Warning:* If they incorrectly suspect The Roofi, they lose their ability to check I.D.s forever.\n\nSTRATEGY:\nRemain hidden. Only expose themselves when they have enough support. Be cautious when challenging The Roofi.",
+      "description": "OBJECTIVE: Use ID checking power to uncover The Dealers.\n\nSTRATEGY:\nRemain hidden. Only expose themselves when they have enough support. Be cautious when challenging The Roofi.",
       "night_priority": 2,
-      "asset_path": "Icons/Icon-No text-Bouncer-Blue.png",
+      "ability": "CHECK I.D.: Each night, select a player. The Host reveals whether they are Dealer-side or not.\nCHALLENGE THE ROOFI (Once per game): Challenge a suspected Roofi. If correct, you steal their paralysis power (and they lose it). If wrong, you permanently lose your I.D. checks.",
+      "asset_path": "Icons/Icon-No text-Bouncer-Blue.webp",
       "color_hex": "#0000FF"
     },
     {
@@ -47,9 +51,10 @@
       "name": "The Messy Bitch",
       "alliance": "None (Neutral Survivor)",
       "type": "chaos",
-      "description": "OBJECTIVE: Spread rumours to everyone.\n\nSPECIAL ABILITIES:\n• The Rumour Mill: Each night, wakes up and chooses a player to start a rumour about.\n\nWIN CONDITION:\nWins immediately if every currently living player (besides herself) has heard a rumour.",
+      "description": "OBJECTIVE: Spread rumours to everyone.\n\nWIN CONDITION:\nWins immediately if every currently living player (besides herself) has heard a rumour.",
       "night_priority": 1,
-      "asset_path": "Icons/Icon-No text-Messy Bitch-Lavender.png",
+      "ability": "THE RUMOUR MILL: Each night, choose a player to start a rumour about.",
+      "asset_path": "Icons/Icon-No text-Messy Bitch-Lavender.webp",
       "color_hex": "#E6E6FA"
     },
     {
@@ -57,10 +62,10 @@
       "name": "The Wallflower",
       "alliance": "The Party Animals",
       "type": "investigative",
-      "description": "OBJECTIVE: To see the murders and provide hints without being discovered by The Dealers.\n\nSPECIAL ABILITIES:\n See the Murders: Can discreetly open eyes during the night phase to watch the murder happen (optional choice).\n\nSTRATEGY:\nBe discreet. Formulate hints during the day that guide The Party Animals toward The Dealers without explicitly revealing their role, or they will be killed next.",
+      "description": "OBJECTIVE: To see the murders and provide hints without being discovered by The Dealers.\n\nSTRATEGY:\nBe discreet. Formulate hints during the day that guide The Party Animals toward The Dealers without explicitly revealing your role.",
       "night_priority": 5,
-      "ability": "witness_murder",
-      "asset_path": "Icons/Icon-No text-Wallflower-Pink.png",
+      "ability": "WITNESS MURDER: You can discreetly open your eyes during the murder phase to watch it happen (optional choice).",
+      "asset_path": "Icons/Icon-No text-Wallflower-Pink.webp",
       "color_hex": "#FFC0CB"
     },
     {
@@ -68,9 +73,10 @@
       "name": "The Whore",
       "alliance": "The Dealers",
       "type": "defensive",
-      "description": "OBJECTIVE: Defend The Dealers as much as possible, even putting themselves in the firing line.\n\nSPECIAL ABILITIES:\n Deflection: Can choose to deflect a vote from a Dealer (or themselves) to another player.\n\nSTRATEGY:\nActively defend The Dealers during discussions. Redirect suspicion. They win if The Dealers win.",
+      "description": "OBJECTIVE: Defend The Dealers as much as possible, even putting yourself in the firing line.\n\nSTRATEGY:\nActively defend The Dealers during discussions. Redirect suspicion. You win if The Dealers win.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Whore-Teal.png",
+      "ability": "VOTE DEFLECTION (Once per game): On any night, choose a scapegoat (not you, not the Host, not a Dealer). The NEXT time a Dealer or the Whore would be voted out, the elimination is deflected to your scapegoat instead.",
+      "asset_path": "Icons/Icon-No text-Whore-Teal.webp",
       "color_hex": "#008080"
     },
     {
@@ -78,9 +84,10 @@
       "name": "The Clinger",
       "alliance": "Their Partner (Unconditional)",
       "type": "passive-aggressive",
-      "description": "OBJECTIVE: Survive by supporting their partner's vote unconditionally.\n\nSPECIAL ABILITIES:\n Obsession: Must support their partner's vote unconditionally. If their partner dies, they die.\n Attack Dog: If their obsession calls them a 'controller', they are freed from the obsession and gain the ability to kill one player immediately.\n\nSTRATEGY:\nInfluence their partner subtly. Always follow their partner's vote to avoid suspicion. If their obsession calls them a 'controller', they become an attack dog and can strike back.",
+      "description": "OBJECTIVE: Survive by supporting your partner's vote unconditionally.\n\nSTRATEGY:\nInfluence your partner subtly. Always follow their vote to avoid suspicion. If your obsession calls you a 'controller', strike back as an attack dog.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Clinger-Yellow.png",
+      "ability": "OBSESSION: Must support your partner's vote. If they die, you die.\nATTACK DOG: If your partner calls you a 'controller', you are freed and gain a one-time immediate kill ability.",
+      "asset_path": "Icons/Icon-No text-Clinger-Yellow.webp",
       "color_hex": "#FFFF00"
     },
     {
@@ -88,9 +95,10 @@
       "name": "The Roofi",
       "alliance": "The Party Animals",
       "type": "offensive",
-      "description": "OBJECTIVE: Help The Party Animals by neutralizing other players.\n\nSPECIAL ABILITIES:\n Paralyze: Each night, select a player. They cannot speak or move for that round. If a Dealer is Roofi'd, they are also paralyzed the following night.\n\nSTRATEGY:\nSilence key opponents (like The Messy Bitch or an outspoken Dealer). Be careful not to abuse power, or The Bouncer might strip your ability.",
+      "description": "OBJECTIVE: Help The Party Animals by neutralizing other players.\n\nSTRATEGY:\nSilence key opponents. Be careful not to abuse power, or The Bouncer might strip your ability.",
       "night_priority": 3,
-      "asset_path": "Icons/Icon-No text-Roofi-Green.png",
+      "ability": "PARALYZE: Select a player each night. They are silenced the next day (no speaking and no voting) and cannot act later in the night after being roofi'd. If you Roofi the ONLY Dealer, their next-night kill is blocked.",
+      "asset_path": "Icons/Icon-No text-Roofi-Green.webp",
       "color_hex": "#00FF00"
     },
     {
@@ -98,9 +106,10 @@
       "name": "The Lightweight",
       "alliance": "The Party Animals",
       "type": "passive",
-      "description": "OBJECTIVE: To survive and avoid dying by saying a 'taboo' name.\n\nSPECIAL ABILITIES:\n Memory Loss: After every night, the Host points to a player. That name becomes 'taboo'. If they speak that name, they die immediately.\n\nSTRATEGY:\nRemember which names are taboo. Use their 'drunkenness' to confuse Dealers without being discovered. Always deny being The Lightweight.",
+      "description": "OBJECTIVE: To survive and avoid dying by saying a 'taboo' name.\n\nSTRATEGY:\nRemember which names are taboo. Use your 'drunkenness' to confuse Dealers without being discovered. Always deny being The Lightweight.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Lightweight-Orange.png",
+      "ability": "MEMORY LOSS: After every night, a player is pointed to. That name becomes 'taboo'. If you speak that name, you die immediately.",
+      "asset_path": "Icons/Icon-No text-Lightweight-Orange.webp",
       "color_hex": "#FFA500"
     },
     {
@@ -108,9 +117,10 @@
       "name": "The Tea Spiller",
       "alliance": "The Party Animals",
       "type": "reactive",
-      "description": "OBJECTIVE: To expose a Dealer's role upon death.\n\nSPECIAL ABILITIES:\n Death Reveal: When The Tea Spiller dies, they get to expose 1 player's role as either a Dealer or Not.\n\nSTRATEGY:\nUse the threat of their final reveal to influence votes. If they strongly suspect a Dealer, they may sacrifice themselves to guarantee the reveal.",
+      "description": "OBJECTIVE: To expose a Dealer's role upon death.\n\nSTRATEGY:\nUse the threat of your final reveal to influence votes. If you strongly suspect a Dealer, you may sacrifice yourself to guarantee the reveal.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Tea Spiller-Gold.png",
+      "ability": "DEATH REVEAL (Vote only): If you are VOTED OUT, you may immediately expose the role of ONE of the players who voted against you.",
+      "asset_path": "Icons/Icon-No text-Tea Spiller-Gold.webp",
       "color_hex": "#FFD700"
     },
     {
@@ -118,9 +128,10 @@
       "name": "The Minor",
       "alliance": "The Party Animals",
       "type": "defensive",
-      "description": "OBJECTIVE: To survive until The Dealers are eliminated.\n\nSPECIAL ABILITIES:\n Death Protection: Cannot die unless The Bouncer has checked her identity (I.D.'d her). If Dealers try to kill her before she is I.D.'d, the attempt fails.\n\nSTRATEGY:\nRemain low-profile and avoid drawing The Bouncer's attention. Once she is I.D.'d, she is vulnerable.",
+      "description": "OBJECTIVE: To survive until The Dealers are eliminated. You can still be eliminated by a day vote.\n\nSTRATEGY:\nRemain low-profile and avoid drawing The Bouncer's attention. Once you are I.D.'d, you are vulnerable.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Minor-White.png",
+      "ability": "DEATH PROTECTION: Dealer murder attempts fail until the Bouncer has checked your identity (I.D.'d). You can still be voted out during the day.",
+      "asset_path": "Icons/Icon-No text-Minor-White.webp",
       "color_hex": "#FFFFFF"
     },
     {
@@ -128,10 +139,10 @@
       "name": "The Sober",
       "alliance": "The Party Animals",
       "type": "protective",
-      "description": "OBJECTIVE: Protect Party Animals and prevent night murders.\n\nSPECIAL ABILITIES:\n Drive Home: Once per game, choose one player to 'send home' at the start of the night. That player is safe from death. If you send a Dealer home, there are NO murders that night.\n\nSTRATEGY:\nUse your single power wisely to save a key player or block a suspected Dealer from killing.",
+      "description": "OBJECTIVE: Protect Party Animals and prevent night murders.\n\nSTRATEGY:\nUse your single power wisely to save a key player or block a suspected Dealer from killing.",
       "night_priority": 1,
-      "ability": "send_home",
-      "asset_path": "Icons/Icon-No text-Sober-Lime.png",
+      "ability": "DRIVE HOME (Once per game): Choose one player to send home at the start of the night. They are safe from night murders and do not act tonight, and they cannot vote the next day. Sending a Dealer home cancels all Dealer murders that night.",
+      "asset_path": "Icons/Icon-No text-Sober-Lime.webp",
       "color_hex": "#32CD32"
     },
     {
@@ -139,9 +150,10 @@
       "name": "The Seasoned Drinker",
       "alliance": "The Party Animals",
       "type": "tank",
-      "description": "OBJECTIVE: Soak up Dealer murder attempts.\n\nSPECIAL ABILITIES:\n Immunity: Has extra lives equal to the number of Dealers in the game. Each murder attempt removes one life. When all lives are gone, they die.\n\nSTRATEGY:\nBe a strong voice. Act as a shield for The Party Animals, forcing Dealers to waste multiple nights trying to kill them.",
+      "description": "OBJECTIVE: Soak up Dealer murder attempts.\n\nSTRATEGY:\nBe a strong voice. Act as a shield for The Party Animals, forcing Dealers to waste multiple nights trying to kill you.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Seasoned Drinker-Mint.png",
+      "ability": "IMMUNITY: You have extra lives equal to the number of Dealers in the game. Only Dealer kill attempts burn a life (other deaths still kill normally).",
+      "asset_path": "Icons/Icon-No text-Seasoned Drinker-Mint.webp",
       "color_hex": "#98FF98"
     },
     {
@@ -149,9 +161,10 @@
       "name": "The Drama Queen",
       "alliance": "The Party Animals",
       "type": "reactive",
-      "description": "OBJECTIVE: Use vendetta power upon death to help Party Animals.\n\nSPECIAL ABILITIES:\n Vendetta Power: When killed, can swap two cards with remaining players and look at the cards swapped. Can only be used once on the night they die.\n\nSTRATEGY:\nIf killed, use the swap to uncover a Dealer or mess up The Dealers' plans by swapping a Dealer's card with an innocent one.",
+      "description": "OBJECTIVE: Use vendetta power upon death to help Party Animals.\n\nSTRATEGY:\nIf killed, use the swap to uncover a Dealer or mess up The Dealers' plans by swapping a Dealer's card with an innocent one.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Drama Queen-Navy.png",
+      "ability": "VENDETTA POWER: When killed, you can swap two cards with remaining players and look at the cards swapped.",
+      "asset_path": "Icons/Icon-No text-Drama Queen-Navy.webp",
       "color_hex": "#000080"
     },
     {
@@ -159,10 +172,10 @@
       "name": "The Club Manager",
       "alliance": "None (Neutral)",
       "type": "investigative",
-      "description": "OBJECTIVE: To survive. Cares only about profit and herself.\n\nSPECIAL ABILITIES:\n Sight Card: Every night, can look at a fellow player's card without others seeing.\n\nSTRATEGY:\nUse the information to manipulate the game. Help whichever side ensures her survival.",
+      "description": "OBJECTIVE: To survive. Cares only about profit and herself.\n\nSTRATEGY:\nUse information to manipulate the game. Help whichever side ensures your survival.",
       "night_priority": 3,
-      "ability": "view_role",
-      "asset_path": "Icons/Icon-No text-Club Manager-Taupe.png",
+      "ability": "SIGHT CARD (Nightly): Every night, look at a fellow player's card without others seeing.",
+      "asset_path": "Icons/Icon-No text-Club Manager-Taupe.webp",
       "color_hex": "#483C32"
     },
     {
@@ -170,20 +183,21 @@
       "name": "The Ally Cat",
       "alliance": "The Party Animals",
       "type": "investigative",
-      "description": "OBJECTIVE: Help identify Dealers using the word 'Meow'.\n\nSPECIAL ABILITIES:\n Vantage Point: Can open eyes when The Bouncer checks I.D.s. Can only communicate findings using 'Meow'.\n Nine Lives: Has 9 lives. Needs 9 murder attempts to die. Each attack removes one life.\n\nSTRATEGY:\nGather info during The Bouncer's turn and use diverse 'Meows' to hint at the truth without revealing The Bouncer.",
+      "description": "OBJECTIVE: Help identify Dealers using the word 'Meow'.\n\nSTRATEGY:\nGather info during The Bouncer's turn and use diverse 'Meows' to hint at the truth without revealing The Bouncer.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Ally Cat-Lemon.png",
+      "ability": "VANTAGE POINT: Can open eyes when The Bouncer checks I.D.s. Must communicate findings using 'Meow'.\nNINE LIVES: You have 9 lives. Each time you would be eliminated (vote or night kill), you lose a life instead.",
+      "asset_path": "Icons/Icon-No text-Ally Cat-Lemon.webp",
       "color_hex": "#FFFACD"
     },
     {
       "id": "silver_fox",
       "name": "The Silver Fox",
-      "alliance": "The Party Animals",
+      "alliance": "The Dealers",
       "type": "disruptive",
-      "description": "OBJECTIVE: Force a player to expose their role.\n\nSPECIAL ABILITIES:\n Expose Secrets: Once per game, ply a player with alcohol at the start of the night. That player must hold up their role card for 5 seconds for the entire club to see.\n\nSTRATEGY:\nOnly use this when you are highly confident the target is a Dealer. Exposing an innocent player makes them vulnerable.",
+      "description": "OBJECTIVE: Help the Dealers win.\n\nSTRATEGY:\nUse the alibi to protect key Dealer players or sow chaos by shielding a trusted innocent.",
       "night_priority": 1,
-      "ability": "force_reveal",
-      "asset_path": "Icons/Icon-No text-Silver Fox-Olive.png",
+      "ability": "NIGHTLY ALIBI: At the end of each night, choose one player. During the following day, they cannot be voted out (votes against them do not count).",
+      "asset_path": "Icons/Icon-No text-Silver Fox-Olive.webp",
       "color_hex": "#808000"
     },
     {
@@ -191,9 +205,10 @@
       "name": "The Predator",
       "alliance": "The Party Animals",
       "type": "reactive",
-      "description": "OBJECTIVE: To survive and take down another player with him upon death.\n\nSPECIAL ABILITIES:\n Death Retaliation: If voted out, The Predator chooses one of the players who voted against him to die with him.\n\nSTRATEGY:\nFraternize with innocent players. If he is about to be voted out, try to get a Dealer to vote for him so he can take them down with him.",
+      "description": "OBJECTIVE: To survive and take down another player with him upon death.\n\nSTRATEGY:\nFraternize with innocent players. If you are voted out, try to get a Dealer to vote for you so you can take them down with you.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Predator-Grey.png",
+      "ability": "DEATH RETALIATION: If voted out, you choose one of the players who voted against you to die with you.",
+      "asset_path": "Icons/Icon-No text-Predator-Grey.webp",
       "color_hex": "#808080"
     },
     {
@@ -202,9 +217,10 @@
       "alliance": "Variable",
       "start_alliance": "PARTY_ANIMAL",
       "type": "convertible",
-      "description": "OBJECTIVE: Survive. Upon death, convince Dealers to convert her.\n\nSPECIAL ABILITIES:\n Conversion: If killed, can convince Dealers to turn her into one of them. If they agree, she revives as a Dealer and no one dies that night.\n\nSTRATEGY:\nPlay loyal initially. If killed, secure a second life by switching sides.",
+      "description": "OBJECTIVE: Survive. Upon death, convince Dealers to convert you.\n\nSTRATEGY:\nPlay loyal initially. If killed, secure a second life by switching sides.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Second Wind-Cherry.png",
+      "ability": "SECOND WIND: If the Dealers try to kill you at night, you don't die immediately. The next day, the Dealers choose to CONVERT you (you revive as a Dealer) or EXECUTE you (you stay dead).",
+      "asset_path": "Icons/Icon-No text-Second Wind-Cherry.webp",
       "color_hex": "#DE3163"
     },
     {
@@ -212,9 +228,10 @@
       "name": "The Creep",
       "alliance": "Variable",
       "type": "mimic",
-      "description": "OBJECTIVE: To survive and inherit a role.\n\nSPECIAL ABILITIES:\n• Pretend Role: At the start, choose a player to mimic. Your alliance becomes their alliance.\n• Inheritance: When the player they are pretending to be dies, The Creep takes over that role immediately.\n\nSTRATEGY:\nChoose a powerful role to copy. Stay alive until they die so you can become them.",
+      "description": "OBJECTIVE: To survive and inherit a role.\n\nSTRATEGY:\nChoose a powerful role to copy. Stay alive until they die so you can become them.",
       "night_priority": 0,
-      "asset_path": "Icons/Icon-No text-Creep-Purple.png",
+      "ability": "PRETEND ROLE: At the start, choose a player to mimic. Your alliance becomes theirs.\nINHERITANCE: When they die, you take over that role immediately.",
+      "asset_path": "Icons/Icon-No text-Creep-Purple.webp",
       "color_hex": "#800080"
     },
     {
@@ -222,10 +239,21 @@
       "name": "The Bartender",
       "alliance": "The Party Animals",
       "type": "investigative",
-      "description": "OBJECTIVE: To find The Dealers by checking if players are on the same team.\n\nSPECIAL ABILITIES:\n Mixology: Each night, choose two players. The Host will indicate if they are on the SAME team or DIFFERENT teams.\n\nSTRATEGY:\nUse the pairwise information to map out the network of alliances. If one person is known innocent, anyone who matches them is also innocent.",
+      "description": "OBJECTIVE: To find The Dealers by checking if players are on the same team.\n\nSTRATEGY:\nUse pairwise information to map out alliances. If one person is known innocent, anyone who matches them is also innocent.",
       "night_priority": 4,
-      "asset_path": "Icons/Icon-No text-Bartender-Brown.png",
+      "ability": "MIXOLOGY: Each night, choose two players. Learn if they are ALIGNED (same side) or NOT ALIGNED (different sides). You do NOT learn which side either player is on.",
+      "asset_path": "Icons/Icon-No text-Bartender-Indigo.webp",
       "color_hex": "#964B00"
+    },
+    {
+      "id": "host",
+      "name": "The Host",
+      "alliance": "Host",
+      "type": "meta",
+      "description": "OBJECTIVE: Run the game. Keep the rules straight and keep the suspense alive.\n\nNOTES:\nThe Host is excluded from role assignment and win conditions. This entry exists so the Host name can be tracked in history/stats.",
+      "night_priority": 0,
+      "asset_path": "",
+      "color_hex": "#B0B0B0"
     }
   ]
 }

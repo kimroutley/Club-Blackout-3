@@ -1,6 +1,6 @@
 class AppVersion {
   static const String version = '1.0.1';
-  
+
   static const List<ChangelogEntry> changelog = [
     ChangelogEntry(
       version: '1.0.1',
@@ -11,7 +11,7 @@ class AppVersion {
         'Host controls: toggle players on/off, revive all, kill all',
         'Setup night improvements: Medic ability selection, role card reveals',
         'Phase transitions now scroll inline instead of overlay dialogs',
-        'Enhanced guides with character cards table and alliance graph',
+        'Enhanced guides with roles table and alliance graph',
         'Improved UI formatting across all guide screens',
       ],
     ),
@@ -25,7 +25,7 @@ class AppVersion {
         'Phase transitions and sound effects',
         'Voting system with day/night cycles',
         'Game log and rumour mill features',
-        'Guides with role overviews',
+        'Roles and guides',
       ],
     ),
     ChangelogEntry(

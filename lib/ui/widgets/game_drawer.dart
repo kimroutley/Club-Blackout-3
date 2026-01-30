@@ -1,922 +1,548 @@
-﻿import 'dart:ui';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+
 import '../../logic/game_engine.dart';
-import '../../logic/game_state.dart';
-import '../../utils/app_version.dart';
-import '../screens/game_screen.dart';
-import '../screens/host_overview_screen.dart';
 import '../styles.dart';
-import 'package:intl/intl.dart';
+import 'club_alert_dialog.dart';
+import 'save_load_dialog.dart';
 
 class GameDrawer extends StatelessWidget {
-  final int selectedIndex;
   final GameEngine? gameEngine;
-  final Function(int) onNavigate;
   final VoidCallback? onGameLogTap;
+  final VoidCallback? onHostDashboardTap;
+  final VoidCallback? onContinueGameTap;
+  final void Function(int index)? onNavigate;
+  final int selectedIndex;
 
   const GameDrawer({
     super.key,
-    this.selectedIndex = 0,
     this.gameEngine,
-    required this.onNavigate,
     this.onGameLogTap,
+    this.onHostDashboardTap,
+    this.onContinueGameTap,
+    this.onNavigate,
+    this.selectedIndex = 0,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.transparent,
-      child: Stack(
+    final cs = Theme.of(context).colorScheme;
+
+    final useM3 = gameEngine?.currentPhase == GamePhase.night;
+
+    final accent = useM3
+        ? cs.primary
+        : switch (selectedIndex) {
+            0 => ClubBlackoutTheme.neonBlue,
+            1 => ClubBlackoutTheme.neonPink,
+            2 => ClubBlackoutTheme.neonOrange,
+            3 => ClubBlackoutTheme.neonGold,
+            _ => ClubBlackoutTheme.neonPurple,
+          };
+
+    final labelStyle = Theme.of(context)
+        .textTheme
+        .labelLarge
+        ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5);
+
+    final canContinueGame =
+      onContinueGameTap != null &&
+      gameEngine != null &&
+      gameEngine!.currentPhase != GamePhase.lobby;
+
+    return NavigationDrawerTheme(
+      data: NavigationDrawerThemeData(
+        backgroundColor:
+            useM3 ? cs.surfaceContainerLow : ClubBlackoutTheme.pureBlack,
+        surfaceTintColor: useM3 ? cs.surfaceTint : Colors.transparent,
+        indicatorColor: useM3
+            ? cs.secondaryContainer.withValues(alpha: 0.75)
+            : accent.withValues(alpha: 0.15),
+        indicatorShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: useM3 ? 1 : 0,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) {
+            final selected = states.contains(WidgetState.selected);
+            return labelStyle?.copyWith(
+              color: selected
+                  ? (useM3 ? cs.onSecondaryContainer : accent)
+                  : cs.onSurface.withValues(alpha: 0.70),
+              shadows: (!useM3 && selected)
+                  ? ClubBlackoutTheme.textGlow(accent, intensity: 0.8)
+                  : null,
+            );
+          },
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) {
+            final selected = states.contains(WidgetState.selected);
+            return IconThemeData(
+              color: selected
+                  ? (useM3 ? cs.onSecondaryContainer : accent)
+                  : cs.onSurface.withValues(alpha: 0.45),
+              size: 22,
+              shadows: (!useM3 && selected)
+                  ? ClubBlackoutTheme.iconGlow(accent, intensity: 0.6)
+                  : null,
+            );
+          },
+        ),
+      ),
+      child: NavigationDrawer(
+        selectedIndex: selectedIndex.clamp(0, 3),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        onDestinationSelected: (index) {
+          Navigator.pop(context);
+          onNavigate?.call(index);
+        },
         children: [
-          // Background with blur
-          Positioned.fill(
-            child: ClipRRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.black.withOpacity(0.85),
-                        const Color(0xFF0a0a0a).withOpacity(0.9),
-                        Colors.black.withOpacity(0.85),
-                      ],
-                    ),
-                    border: Border(
-                      right: BorderSide(
-                        color: ClubBlackoutTheme.neonBlue.withOpacity(0.3),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
+          _buildHeader(context, accent, useM3: useM3),
+
+          ClubBlackoutTheme.gap16,
+
+          const NavigationDrawerDestination(
+            label: Text('HOME'),
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+          ),
+          const NavigationDrawerDestination(
+            label: Text('LOBBY'),
+            icon: Icon(Icons.people_outline_rounded),
+            selectedIcon: Icon(Icons.people_alt_rounded),
+          ),
+          const NavigationDrawerDestination(
+            label: Text('GUIDES'),
+            icon: Icon(Icons.menu_book_outlined),
+            selectedIcon: Icon(Icons.menu_book_rounded),
+          ),
+          const NavigationDrawerDestination(
+            label: Text('GAMES NIGHT'),
+            icon: Icon(Icons.nights_stay_outlined),
+            selectedIcon: Icon(Icons.nights_stay_rounded),
+          ),
+          
+          if (gameEngine != null) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Divider(
+                height: 24,
+                thickness: 1,
               ),
             ),
-          ),
-
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: ClubBlackoutTheme.neonPink.withOpacity(0.3),
-                        width: 1.5,
-                      ),
-                    ),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        ClubBlackoutTheme.neonPink.withOpacity(0.1),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: ClubBlackoutTheme.neonPink,
-                                width: 2,
-                              ),
-                              boxShadow: ClubBlackoutTheme.circleGlow(
-                                ClubBlackoutTheme.neonPink,
-                              ),
-                            ),
-                            child: ClipOval(
-                              /*child: Image.asset(
-                                'Icons/Club Blackout App BLACK icon.png',
-                                fit: BoxFit.cover,
-                                errorBuilder: (c, o, s) => Icon(
-                                  Icons.shield,
-                                  color: ClubBlackoutTheme.neonPink,
-                                  size: 28,
-                                ),
-                              ),*/
-                              child: Icon(
-                                Icons.nightlife,
-                                color: ClubBlackoutTheme.neonPink,
-                                size: 28,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'CLUB\nBLACKOUT',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.1,
-                                  color: ClubBlackoutTheme.neonPink,
-                                  shadows: ClubBlackoutTheme.textGlow(
-                                    ClubBlackoutTheme.neonPink,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (gameEngine != null &&
-                          gameEngine!.players.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: ClubBlackoutTheme.neonBlue.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: ClubBlackoutTheme.neonBlue.withOpacity(
-                                0.5,
-                              ),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.people,
-                                color: ClubBlackoutTheme.neonBlue,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  '${gameEngine!.players.length} Players',
-                                  style: TextStyle(
-                                    color: ClubBlackoutTheme.neonBlue,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Icon(
-                                Icons.calendar_today,
-                                color: ClubBlackoutTheme.neonGreen,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  '${gameEngine!.currentPhase == GamePhase.day ? "Day" : "Night"} ${gameEngine!.dayCount}',
-                                  style: TextStyle(
-                                    color: ClubBlackoutTheme.neonGreen,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
+            Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'GAME CONTROLS',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.5),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
                   ),
                 ),
+            ),
+            const SizedBox(height: 8),
 
-                // Navigation items
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    children: [
-                      _buildNavItem(
-                        context: context,
-                        icon: Icons.home_outlined,
-                        selectedIcon: Icons.home,
-                        label: 'Home',
-                        color: ClubBlackoutTheme.neonBlue,
-                        isSelected: selectedIndex == 0,
-                        onTap: () {
-                          Navigator.pop(context);
-                          onNavigate(0);
-                        },
-                      ),
-                      _buildNavItem(
-                        context: context,
-                        icon: Icons.people_outline,
-                        selectedIcon: Icons.people,
-                        label: 'Lobby',
-                        color: ClubBlackoutTheme.neonPink,
-                        isSelected: selectedIndex == 1,
-                        onTap: () {
-                          Navigator.pop(context);
-                          onNavigate(1);
-                        },
-                      ),
-                      _buildNavItem(
-                        context: context,
-                        icon: Icons.style_outlined,
-                        selectedIcon: Icons.style,
-                        label: 'Guides',
-                        color: ClubBlackoutTheme.neonOrange,
-                        isSelected: selectedIndex == 2,
-                        onTap: () {
-                          Navigator.pop(context);
-                          onNavigate(2);
-                        },
-                      ),
-
-                      // Game Log navigation item
-                      if (gameEngine != null && onGameLogTap != null)
-                        _buildActionItem(
-                          context: context,
-                          icon: Icons.receipt_long,
-                          label: 'Game Log',
-                          color: ClubBlackoutTheme.neonBlue,
-                          onTap: () {
-                            Navigator.pop(context);
-                            onGameLogTap!();
-                          },
-                        ),
-
-                      // Host Overview navigation item
-                      if (gameEngine != null)
-                        _buildActionItem(
-                          context: context,
-                          icon: Icons.visibility,
-                          label: 'Host Overview',
-                          color: ClubBlackoutTheme.neonGreen,
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    HostOverviewScreen(gameEngine: gameEngine!),
-                              ),
-                            );
-                          },
-                        ),
-
-                      // Game controls section
-                      if (gameEngine != null) ...[
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-                          child: Row(
-                            children: [
-                              Container(
-                                height: 1.5,
-                                width: 30,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.transparent,
-                                      ClubBlackoutTheme.neonGreen.withOpacity(
-                                        0.5,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'GAME CONTROLS',
-                                style: TextStyle(
-                                  color: ClubBlackoutTheme.neonGreen,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Container(
-                                  height: 1.5,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        ClubBlackoutTheme.neonGreen.withOpacity(
-                                          0.5,
-                                        ),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        _buildActionItem(
-                          context: context,
-                          icon: Icons.play_arrow,
-                          label: 'Resume Game',
-                          color: ClubBlackoutTheme.neonGreen,
-                          onTap: () {
-                            Navigator.pop(context);
-                            if (gameEngine!.players.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      GameScreen(gameEngine: gameEngine!),
-                                ),
-                              );
-                            } else {
-                              showDialog(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  backgroundColor: Colors.black,
-                                  title: const Text(
-                                    'No Active Game',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  content: const Text(
-                                    'Start a new game from the Lobby.',
-                                    style: TextStyle(color: Colors.white70),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('OK'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                        _buildActionItem(
-                          context: context,
-                          icon: Icons.save,
-                          label: 'Save Game',
-                          color: ClubBlackoutTheme.neonBlue,
-                          onTap: () async {
-                            Navigator.pop(context);
-                            await _showSaveGameDialog(context);
-                          },
-                        ),
-                        _buildActionItem(
-                          context: context,
-                          icon: Icons.file_upload,
-                          label: 'Load Game',
-                          color: const Color(0xFF9D4EDD),
-                          onTap: () async {
-                            Navigator.pop(context);
-                            await _showLoadGameDialog(context);
-                          },
-                        ),
-                        _buildActionItem(
-                          context: context,
-                          icon: Icons.restart_alt,
-                          label: 'New Game / Reset',
-                          color: Colors.amber,
-                          onTap: () {
-                            _showResetConfirmation(context);
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // Footer - Clickable Version
-                InkWell(
+            if (canContinueGame)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _DrawerTile(
+                  label: 'Continue Game',
+                  icon: Icons.play_arrow_rounded,
+                  accent: useM3 ? cs.primary : ClubBlackoutTheme.neonGreen,
+                  useM3: useM3,
                   onTap: () {
                     Navigator.pop(context);
-                    _showChangelog(context);
+                    onContinueGameTap?.call();
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(
-                          color: ClubBlackoutTheme.neonBlue.withOpacity(0.2),
-                          width: 1,
+                ),
+              ),
+
+            if (onHostDashboardTap != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _DrawerTile(
+                  label: 'Host Dashboard',
+                  icon: Icons.dashboard_customize_outlined,
+                  accent: useM3 ? cs.primary : ClubBlackoutTheme.neonBlue,
+                  useM3: useM3,
+                  onTap: () {
+                    Navigator.pop(context);
+                    onHostDashboardTap?.call();
+                  },
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _DrawerTile(
+                label: 'Save / Load',
+                icon: Icons.save_outlined,
+                accent: useM3 ? cs.tertiary : ClubBlackoutTheme.neonGreen,
+                useM3: useM3,
+                onTap: () async {
+                  Navigator.pop(context);
+                  await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => useM3
+                        ? SaveLoadDialogM3(engine: gameEngine!)
+                        : SaveLoadDialog(engine: gameEngine!),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _DrawerTile(
+                label: 'Game Log',
+                icon: Icons.receipt_long_outlined,
+                accent: useM3 ? cs.primary : ClubBlackoutTheme.neonBlue,
+                useM3: useM3,
+                onTap: () {
+                  Navigator.pop(context);
+                  onGameLogTap?.call();
+                },
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Divider(
+                height: 24,
+                thickness: 1,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _DrawerTile(
+                label: 'Restart Lobby',
+                icon: Icons.restart_alt_rounded,
+                accent: useM3 ? cs.secondary : ClubBlackoutTheme.neonPurple,
+                useM3: useM3,
+                onTap: () async {
+                  Navigator.pop(context);
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) {
+                      final cs = Theme.of(ctx).colorScheme;
+                      final tt = Theme.of(ctx).textTheme;
+                      const accent = ClubBlackoutTheme.neonPurple;
+                      return ClubAlertDialog(
+                        title: Text(
+                          'Start new game?',
+                          style: (tt.titleLarge ?? const TextStyle()).copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: ClubBlackoutTheme.neonBlue.withOpacity(0.5),
-                          size: 14,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Club Blackout v${AppVersion.version}',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: ClubBlackoutTheme.neonBlue.withOpacity(0.5),
-                            fontSize: 11,
-                            letterSpacing: 1,
+                        content: Text(
+                          'This resets the current game back to the lobby and clears roles, but keeps the guest list.',
+                          style: (tt.bodyMedium ?? const TextStyle()).copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.88),
+                            height: 1.35,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          color: ClubBlackoutTheme.neonBlue.withOpacity(0.3),
-                          size: 10,
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: accent.withValues(alpha: 0.18),
+                              foregroundColor: cs.onSurface,
+                            ),
+                            child: const Text('Start new'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                  if (confirm != true) return;
+                  gameEngine!.resetToLobby(keepGuests: true, keepAssignedRoles: false);
+                  onNavigate?.call(1);
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _DrawerTile(
+                label: 'Full Reset',
+                icon: Icons.delete_forever_outlined,
+                accent: useM3 ? cs.error : ClubBlackoutTheme.neonRed,
+                useM3: useM3,
+                onTap: () async {
+                  Navigator.pop(context);
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) {
+                      final cs = Theme.of(ctx).colorScheme;
+                      final tt = Theme.of(ctx).textTheme;
+                      const accent = ClubBlackoutTheme.neonRed;
+                      return ClubAlertDialog(
+                        title: Text(
+                          'Full reset?',
+                          style: (tt.titleLarge ?? const TextStyle()).copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required BuildContext context,
-    required IconData icon,
-    required IconData selectedIcon,
-    required String label,
-    required Color color,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: isSelected
-            ? LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [color.withOpacity(0.2), color.withOpacity(0.05)],
-              )
-            : null,
-        border: isSelected
-            ? Border.all(color: color.withOpacity(0.5), width: 1.5)
-            : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: color.withOpacity(0.2),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? color.withOpacity(0.2)
-                        : Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isSelected ? color : Colors.white.withOpacity(0.1),
-                      width: isSelected ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Icon(
-                    isSelected ? selectedIcon : icon,
-                    color: isSelected ? color : Colors.white70,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: isSelected ? color : Colors.white70,
-                      fontSize: 15,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w500,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                if (isSelected)
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withOpacity(0.5),
-                          blurRadius: 4,
-                          spreadRadius: 1,
+                        content: Text(
+                          'This clears the entire roster and resets back to the lobby.',
+                          style: (tt.bodyMedium ?? const TextStyle()).copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.88),
+                            height: 1.35,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionItem({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          splashColor: color.withOpacity(0.2),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withOpacity(0.3), width: 1),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: color.withOpacity(0.5),
-                  size: 14,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showResetConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Colors.amber, width: 2),
-        ),
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber, color: Colors.amber, size: 28),
-            const SizedBox(width: 12),
-            const Text(
-              'Reset Game?',
-              style: TextStyle(
-                color: Colors.amber,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: accent.withValues(alpha: 0.18),
+                              foregroundColor: cs.onSurface,
+                            ),
+                            child: const Text('Reset'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                  if (confirm != true) return;
+                  gameEngine!.resetToLobby(keepGuests: false, keepAssignedRoles: false);
+                  onNavigate?.call(1);
+                },
               ),
             ),
           ],
-        ),
-        content: const Text(
-          'This will end the current game and return to the home screen. All unsaved progress will be lost.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'CANCEL',
-              style: TextStyle(color: Colors.white54),
-            ),
-          ),
-          FilledButton(
-            onPressed: () {
-              gameEngine!.resetGame();
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Close drawer
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            style: ButtonStyle(
-              backgroundColor: MaterialStateProperty.all(
-                Colors.amber.withOpacity(0.2),
-              ),
-              foregroundColor: MaterialStateProperty.all(Colors.amber),
-              side: MaterialStateProperty.all(
-                const BorderSide(color: Colors.amber, width: 1.5),
-              ),
-            ),
-            child: const Text('RESET'),
-          ),
+          
+          ClubBlackoutTheme.gap8,
+          _buildFooter(context),
         ],
       ),
     );
   }
 
-  void _showChangelog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        title: Text(
-          'CHANGELOG',
-          style: ClubBlackoutTheme.headingStyle.copyWith(
-            color: ClubBlackoutTheme.neonBlue,
+  Widget _buildHeader(BuildContext context, Color accent, {required bool useM3}) {
+    final scheme = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.only(
+        top: MediaQuery.paddingOf(context).top + 32,
+        bottom: 32,
+        left: 24,
+        right: 24,
+      ),
+      decoration: BoxDecoration(
+        color: useM3
+            ? scheme.surfaceContainerLow
+            : accent.withValues(alpha: 0.02),
+        border: Border(
+          bottom: BorderSide(
+            color: useM3
+                ? scheme.outlineVariant.withValues(alpha: 0.3)
+                : accent.withValues(alpha: 0.15),
+            width: 1,
           ),
         ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: const [
-              Text(
-                '- **v1.2.0 (Jan 2026)**: Interactive Gameplay Script, Enhanced Lobby UI.',
-                style: TextStyle(color: Colors.white70),
+        gradient: useM3
+            ? null
+            : LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  accent.withValues(alpha: 0.05),
+                  Colors.transparent,
+                ],
               ),
-              SizedBox(height: 12),
-              Text(
-                '- **v1.1.0 (Dec 2025)**: Added Messy Bitch & Clinger Abilities, Game Log, Save/Load Feature (Beta).',
-                style: TextStyle(color: Colors.white70),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: useM3
+                      ? null
+                      : ClubBlackoutTheme.boxGlow(accent, intensity: 0.8),
+                ),
               ),
-              SizedBox(height: 12),
-              Text(
-                '- **v1.0.0 (Nov 2025)**: Initial Release with core game mechanics and 10+ roles.',
-                style: TextStyle(color: Colors.white70),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'CLUB BLACKOUT',
+                    style: useM3
+                        ? (tt.headlineSmall ?? const TextStyle()).copyWith(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                            color: scheme.onSurface,
+                            fontSize: 22,
+                          )
+                        : ClubBlackoutTheme.neonGlowTextStyle(
+                            color: accent,
+                            fontSize: 24,
+                            letterSpacing: 3.5,
+                            glowIntensity: 1.2,
+                          ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'HOST DASHBOARD V1.0',
+                    style: TextStyle(
+                      color: useM3
+                          ? scheme.onSurfaceVariant.withValues(alpha: 0.7)
+                          : accent.withValues(alpha: 0.5),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2.5,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'CLOSE',
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showSaveGameDialog(BuildContext context) async {
-    final gameEngine =
-        this.gameEngine; // Use a local variable to avoid nullable checks
-    if (gameEngine == null) return;
-
-    String saveName = '';
-    final TextEditingController controller = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        title: Text(
-          'SAVE GAME',
-          style: ClubBlackoutTheme.headingStyle.copyWith(
-            color: ClubBlackoutTheme.neonBlue,
-          ),
-        ),
-        content: TextField(
-          controller: controller,
-          onChanged: (value) => saveName = value,
-          decoration: InputDecoration(
-            hintText: 'Enter save name',
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(
-                color: ClubBlackoutTheme.neonBlue.withOpacity(0.5),
+          if (gameEngine != null) ...[
+            ClubBlackoutTheme.gap24,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: useM3
+                    ? scheme.surfaceContainerHigh
+                    : scheme.onSurface.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: useM3
+                      ? scheme.outlineVariant.withValues(alpha: 0.3)
+                      : scheme.onSurface.withValues(alpha: 0.08),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.perm_identity, size: 16, color: accent.withValues(alpha: 0.8)),
+                  ClubBlackoutTheme.hGap12,
+                  Text(
+                    'Guests Registered: ${gameEngine!.guests.length}',
+                    style: TextStyle(
+                      color: scheme.onSurface.withValues(alpha: 0.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
               ),
             ),
-            focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: ClubBlackoutTheme.neonBlue),
-            ),
-          ),
-          style: const TextStyle(color: Colors.white),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'CANCEL',
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
-            ),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: ClubBlackoutTheme.neonBlue,
-            ),
-            onPressed: () async {
-              if (saveName.isNotEmpty) {
-                await gameEngine.saveGame(saveName);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  HapticFeedback.lightImpact(); // Feedback
-                }
-              }
-            },
-            child: const Text('SAVE', style: TextStyle(color: Colors.black)),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Future<void> _showLoadGameDialog(BuildContext context) async {
-    final gameEngine = this.gameEngine;
-    if (gameEngine == null) return;
-
-    final saves = await gameEngine.getSavedGames();
-    saves.sort((a, b) => b.savedAt.compareTo(a.savedAt));
-
-    if (!context.mounted) return;
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        title: Text(
-          'LOAD GAME',
-          style: ClubBlackoutTheme.headingStyle.copyWith(
-            color: ClubBlackoutTheme.neonPurple,
+  Widget _buildFooter(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: ClubBlackoutTheme.inset24,
+      child: Center(
+        child: Text(
+          'A GAME BY KYRIAN CO.',
+          style: TextStyle(
+            color: scheme.onSurface.withValues(alpha: 0.38),
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
           ),
         ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: saves.isEmpty
-              ? Center(
-                  child: Text(
-                    'No saved games found.',
-                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  ),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: saves.length,
-                  itemBuilder: (context, index) {
-                    final save = saves[index];
-                    final dateFormat = DateFormat('MMM d, yyyy HH:mm');
-                    final dateStr = dateFormat.format(save.savedAt);
-
-                    return Dismissible(
-                      key: Key(save.id),
-                      direction: DismissDirection.endToStart,
-                      onDismissed: (_) async {
-                        await gameEngine.deleteSavedGame(save.id);
-                        if (context.mounted) {
-                          HapticFeedback.lightImpact();
-                          Navigator.pop(context);
-                          _showLoadGameDialog(context);
-                        }
-                      },
-                      background: Container(
-                        color: Colors.red,
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: const Icon(Icons.delete, color: Colors.white),
-                      ),
-                      child: Card(
-                        color: Colors.black.withOpacity(0.7),
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ListTile(
-                          title: Text(
-                            save.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${save.alivePlayers}/${save.totalPlayers} Players Alive - Day ${save.dayCount} (${save.currentPhase})',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Text(
-                                dateStr,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.5),
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                          trailing: Icon(
-                            Icons.chevron_right,
-                            color: ClubBlackoutTheme.neonPurple,
-                          ),
-                          onTap: () async {
-                            Navigator.pop(context);
-                            final loaded = await gameEngine.loadGame(save.id);
-                            if (context.mounted && loaded) {
-                              HapticFeedback.mediumImpact();
-                              if (ModalRoute.of(context)?.settings.name !=
-                                  '/game') {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        GameScreen(gameEngine: gameEngine),
-                                    settings: const RouteSettings(
-                                      name: '/game',
-                                    ),
-                                  ),
-                                );
-                              }
-                            } else if (context.mounted) {
-                              showDialog(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  backgroundColor: Colors.black,
-                                  title: const Text(
-                                    'Error',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                  content: const Text(
-                                    'Failed to load game data.',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('OK'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-        actions: [
-          // TEST GAME BUTTON (Hidden in Load Game Menu)
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context); // Close dialog
-              HapticFeedback.heavyImpact();
-              await gameEngine.createTestGame(fullRoster: true);
-
-              if (context.mounted) {
-                // Return to lobby to see the new roster
-                Navigator.of(
-                  context,
-                ).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
-              }
-            },
-            child: Text(
-              'TEST',
-              style: TextStyle(color: Colors.white.withOpacity(0.1)),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'CLOSE',
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
-            ),
-          ),
-        ],
       ),
+    );
+  }
+}
+
+class _DrawerTile extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback onTap;
+  final bool useM3;
+
+  const _DrawerTile({
+    required this.label,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+    this.useM3 = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: useM3
+          ? Card(
+              elevation: 0,
+              color: scheme.surfaceContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: scheme.outlineVariant.withValues(alpha: 0.55),
+                ),
+              ),
+              child: ListTile(
+                onTap: onTap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                leading: Icon(icon, color: accent.withValues(alpha: 0.9)),
+                title: Text(
+                  label,
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.92),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            )
+          : Container(
+              decoration: ClubBlackoutTheme.neonFrame(
+                color: accent,
+                opacity: 0.06,
+                borderRadius: ClubBlackoutTheme.radiusSm,
+                borderWidth: 1.0,
+              ),
+              child: ListTile(
+                onTap: onTap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(ClubBlackoutTheme.radiusSm),
+                ),
+                leading: Icon(
+                  icon,
+                  color: accent.withValues(alpha: 0.90),
+                  shadows: ClubBlackoutTheme.iconGlow(accent, intensity: 0.35),
+                ),
+                title: Text(
+                  label,
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.80),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    letterSpacing: 1.3,
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }

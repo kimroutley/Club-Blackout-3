@@ -1,32 +1,25 @@
+import sys
+from pathlib import Path
 
-def analyze_braces(filename):
-    with open(filename, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    
-    depth = 0
-    class_found = False
-    game_engine_start = 0
-    
-    for i, line in enumerate(lines):
-        line_num = i + 1
-        
-        # Simple check for comments (imperfect but helps)
-        stripped = line.strip()
-        if stripped.startswith('//'):
-            continue
-            
-        if 'class GameEngine' in line:
-            class_found = True
-            game_engine_start = line_num
-            print(f"GameEngine starts at {line_num}")
-            
-        for char in line:
-            if char == '{':
-                depth += 1
-            elif char == '}':
-                depth -= 1
-                if class_found and depth == 0:
-                    print(f"GameEngine closes at {line_num}")
-                    print(f"Line content: {line.strip()}")
-                    return
-analyze_braces(r'c:\Users\kimro\Documents\Codex\Club Blackout Android Android\lib\logic\game_engine.dart')
+p = Path(sys.argv[1]) if len(sys.argv) > 1 else None
+if not p or not p.exists():
+    print("usage: python analyze_braces.py <file.dart>")
+    raise SystemExit(2)
+
+text = p.read_text(encoding="utf-8", errors="ignore")
+stack = []
+pairs = {"{": "}", "(": ")", "[": "]"}
+opens = set(pairs.keys())
+closes = set(pairs.values())
+rev = {v: k for k, v in pairs.items()}
+
+for i, ch in enumerate(text):
+    if ch in opens:
+        stack.append(ch)
+    elif ch in closes:
+        if not stack or stack[-1] != rev[ch]:
+            print(f"mismatch at char {i}: got {ch}")
+            break
+        stack.pop()
+else:
+    print("ok" if not stack else f"unclosed: {''.join(stack)}")

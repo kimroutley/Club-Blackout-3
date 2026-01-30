@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../services/sound_service.dart';
-import '../styles.dart';
 import '../animations.dart';
 
 class PhaseTransitionOverlay extends StatefulWidget {
@@ -27,7 +26,6 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _glowAnimation;
 
   @override
   void initState() {
@@ -54,13 +52,6 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 25),
     ]).animate(_controller);
 
-    _glowAnimation = Tween<double>(begin: 0.0, end: 36.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.5, curve: ClubMotion.easeOut),
-      ),
-    );
-
     _controller.forward();
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -77,6 +68,8 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -92,7 +85,8 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
                     sigmaY: 10 * _fadeAnimation.value,
                   ),
                   child: Container(
-                    color: Colors.black.withOpacity(0.7 * _fadeAnimation.value),
+                    color: cs.scrim
+                        .withValues(alpha: 0.7 * _fadeAnimation.value),
                   ),
                 ),
               ),
@@ -101,124 +95,52 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
               Center(
                 child: Transform.scale(
                   scale: _scaleAnimation.value,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 48,
-                      vertical: 32,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(
-                        color: widget.phaseColor.withOpacity(
-                          _fadeAnimation.value,
-                        ),
-                        width: 3,
+                  child: Card(
+                    elevation: 12,
+                    color: cs.surfaceContainerHigh,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                      side: BorderSide(
+                        color: cs.outlineVariant
+                            .withValues(alpha: 0.55 * _fadeAnimation.value),
                       ),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          widget.phaseColor.withOpacity(
-                            0.3 * _fadeAnimation.value,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 24,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            radius: 44,
+                            backgroundColor:
+                                widget.phaseColor.withValues(alpha: 0.18),
+                            child: Icon(
+                              widget.phaseIcon,
+                              size: 54,
+                              color: widget.phaseColor,
+                            ),
                           ),
-                          Colors.black.withOpacity(0.9 * _fadeAnimation.value),
-                          widget.phaseColor.withOpacity(
-                            0.3 * _fadeAnimation.value,
+                          const SizedBox(height: 16),
+                          Text(
+                            widget.phaseName,
+                            textAlign: TextAlign.center,
+                            style: (textTheme.headlineMedium ??
+                                    const TextStyle(fontSize: 28))
+                                .copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                              color: cs.onSurface,
+                            ),
                           ),
                         ],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: widget.phaseColor.withOpacity(
-                            0.6 * _fadeAnimation.value,
-                          ),
-                          blurRadius: _glowAnimation.value,
-                          spreadRadius: _glowAnimation.value * 0.3,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: widget.phaseColor.withOpacity(0.2),
-                            border: Border.all(
-                              color: widget.phaseColor,
-                              width: 3,
-                            ),
-                            boxShadow: ClubBlackoutTheme.circleGlow(
-                              widget.phaseColor,
-                              intensity: 1.0 + (_fadeAnimation.value * 0.6),
-                            ),
-                          ),
-                          child: Icon(
-                            widget.phaseIcon,
-                            size: 64,
-                            color: widget.phaseColor,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          widget.phaseName.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Hyperwave',
-                            color: widget.phaseColor,
-                            letterSpacing: 4,
-                            shadows: ClubBlackoutTheme.textGlow(
-                              widget.phaseColor,
-                              intensity: 2.0,
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ),
               ),
-
-              // Particles effect
-              ...List.generate(20, (index) {
-                final random = (index * 47) % 100 / 100;
-                final xPos = random;
-                final delay = random * 0.5;
-                final particleAnim = Tween<double>(begin: 0.0, end: 1.0)
-                    .animate(
-                      CurvedAnimation(
-                        parent: _controller,
-                        curve: Interval(delay, 1.0, curve: Curves.easeOut),
-                      ),
-                    );
-
-                return Positioned(
-                  left: MediaQuery.of(context).size.width * xPos,
-                  top:
-                      -50 +
-                      (MediaQuery.of(context).size.height * particleAnim.value),
-                  child: Opacity(
-                    opacity: (1 - particleAnim.value) * _fadeAnimation.value,
-                    child: Container(
-                      width: 4 + (index % 3) * 2,
-                      height: 4 + (index % 3) * 2,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: widget.phaseColor,
-                        boxShadow: [
-                          BoxShadow(
-                            color: widget.phaseColor,
-                            blurRadius: 8,
-                            spreadRadius: 0,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
             ],
           ),
         );
@@ -235,12 +157,21 @@ void showPhaseTransition(
   required IconData phaseIcon,
   VoidCallback? onComplete,
 }) {
-  final overlay = OverlayEntry(
+  bool removed = false;
+  void removeOnce(OverlayEntry entry) {
+    if (removed) return;
+    removed = true;
+    entry.remove();
+  }
+
+  late final OverlayEntry overlay;
+  overlay = OverlayEntry(
     builder: (context) => PhaseTransitionOverlay(
       phaseName: phaseName,
       phaseColor: phaseColor,
       phaseIcon: phaseIcon,
       onComplete: () {
+        removeOnce(overlay);
         onComplete?.call();
       },
     ),
@@ -248,7 +179,10 @@ void showPhaseTransition(
 
   Overlay.of(context).insert(overlay);
 
-  Future.delayed(const Duration(milliseconds: 1800), () {
-    overlay.remove();
+  // Fallback cleanup in case the overlay is still mounted (e.g. route change).
+  Future.delayed(const Duration(milliseconds: 2200), () {
+    if (!removed) {
+      removeOnce(overlay);
+    }
   });
 }

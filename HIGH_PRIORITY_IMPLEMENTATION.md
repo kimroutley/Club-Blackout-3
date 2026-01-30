@@ -129,3 +129,14 @@
 3. **Second Wind** - Death -> Party Animal conversion
 4. **Lightweight** - Taboo word mechanics
 
+---
+
+## High Priority Implementation
+
+1. Green `flutter analyze`
+2. Lock in script UI (selection steps, showInfo steps, day dialog, vote)
+3. Add 3-5 unit tests around:
+   - `_canonicalizeNightActions()`
+   - `processDeath()` Second Wind interception
+   - `deadPlayerIds` sync on save/load
+

@@ -27,11 +27,19 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
+.buildlog/
+.packages
 .pub/
-/build/
-/coverage/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+build/
+coverage/
+android/.gradle/
+android/local.properties
+ios/Pods/
+ios/Runner.xcworkspace/
 
 # Symbolication related
 app.*.symbols

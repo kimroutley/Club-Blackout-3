@@ -17,7 +17,7 @@ class PlayerNotFoundException extends GameException {
   final String playerId;
 
   const PlayerNotFoundException(this.playerId, {String? details})
-    : super('Player not found: $playerId', details: details);
+      : super('Player not found: $playerId', details: details);
 }
 
 class InvalidPlayerCountException extends GameException {
@@ -25,7 +25,7 @@ class InvalidPlayerCountException extends GameException {
   final int requiredCount;
 
   const InvalidPlayerCountException(this.currentCount, this.requiredCount)
-    : super('Invalid player count: $currentCount (required: $requiredCount)');
+      : super('Invalid player count: $currentCount (required: $requiredCount)');
 }
 
 class RoleAssignmentException extends GameException {
@@ -37,9 +37,9 @@ class GameStateException extends GameException {
   final String actualState;
 
   const GameStateException(this.expectedState, this.actualState)
-    : super(
-        'Invalid game state transition from $actualState to $expectedState',
-      );
+      : super(
+          'Invalid game state transition from $actualState to $expectedState',
+        );
 }
 
 class SaveLoadException extends GameException {
@@ -50,7 +50,7 @@ class AbilityResolutionException extends GameException {
   final String abilityId;
 
   const AbilityResolutionException(this.abilityId, {String? details})
-    : super('Failed to resolve ability: $abilityId', details: details);
+      : super('Failed to resolve ability: $abilityId', details: details);
 }
 
 class ValidationException extends GameException {
@@ -66,5 +66,5 @@ class InvalidTargetException extends GameException {
   final String abilityId;
 
   const InvalidTargetException(this.targetId, this.abilityId)
-    : super('Invalid target $targetId for ability $abilityId');
+      : super('Invalid target $targetId for ability $abilityId');
 }

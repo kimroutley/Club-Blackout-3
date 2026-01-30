@@ -1,26 +1,55 @@
 ﻿import 'package:flutter/material.dart';
+import '../../logic/game_engine.dart';
 import '../styles.dart';
 
 class PlayerGuideScreen extends StatelessWidget {
-  const PlayerGuideScreen({super.key});
+  final GameEngine? gameEngine;
+
+  const PlayerGuideScreen({super.key, this.gameEngine});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Player guide",
-          style: TextStyle(
-            fontSize: 29,
-            color: ClubBlackoutTheme.neonPink,
-            fontWeight: FontWeight.bold,
-            shadows: ClubBlackoutTheme.textGlow(ClubBlackoutTheme.neonPink),
+    if (gameEngine?.currentPhase == GamePhase.night) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Player Guide'),
+        ),
+        body: const SafeArea(
+          child: PlayerGuideBody(),
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Image.asset(
+            'Backgrounds/Club Blackout V2 Game Background.png',
+            fit: BoxFit.cover,
+            height: double.infinity,
+            width: double.infinity,
           ),
         ),
-        backgroundColor: Colors.transparent,
-      ),
-      extendBodyBehindAppBar: true,
-      body: const PlayerGuideBody(),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            title: null,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: Padding(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + kToolbarHeight,
+            ),
+            child: const PlayerGuideBody(),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -30,356 +59,254 @@ class PlayerGuideBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: const AssetImage(
-            "Backgrounds/Club Blackout App Background.png",
-          ),
-          fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(
-            Colors.black.withOpacity(0.85),
-            BlendMode.darken,
-          ),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      children: [
+        _buildSection(
+          context,
+          'Welcome to Club Blackout',
+          'Where the music is loud, the drinks are strong, and the survival rate is... debatable. '
+          'You are either a PARTY ANIMAL looking for a good time, or a DEALER looking for your next victim. '
+          'Try not to get thrown out (or worse).',
+          ClubBlackoutTheme.neonPink,
         ),
-      ),
-      child: SafeArea(
-        child: ClubBlackoutTheme.centeredConstrained(
-          maxWidth: 760,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        ClubBlackoutTheme.gap12,
+        _buildSection(
+          context,
+          'The vibe (flow)',
+          null,
+          ClubBlackoutTheme.neonBlue,
+          content: Column(
             children: [
-              _buildSectionCard(
-                title: "Welcome to Club Blackout",
-                children: [
-                  _buildParagraph(
-                    "Club Blackout is a high-energy social deduction game where players are guests at a nightclub. Hidden among the innocent \"Party Animals\" are the \"Dealers,\" who are looking to eliminate the guests one by one.\n\nThe game requires players to lie, betray, trust their gut, and survive the night.",
-                  ),
-                ],
-              ),
-              _buildSectionCard(
-                title: "The Golden Rules",
-                children: [
-                  _buildBulletPoint(
-                    "Eyes Shut",
-                    "When the Host calls for sleep, players must keep their eyes closed unless a specific role is called.",
-                  ),
-                  _buildBulletPoint(
-                    "Silence is Golden",
-                    "If a player is \"Roofi'd\" or dead, they cannot speak, point, or influence the game in any way, other than eye contact.",
-                  ),
-                  _buildBulletPoint(
-                    "Dead Men Tell No Tales",
-                    "Eliminated players cannot help their team; they can only watch the chaos.",
-                  ),
-                  _buildBulletPoint(
-                    "No Flashing",
-                    "Players must keep their cards hidden unless a specific ability (like the Silver Fox) forces them to reveal it.",
-                  ),
-                ],
-              ),
-              _buildSectionCard(
-                title: "How to Win",
-                children: [
-                  _buildBulletPoint(
-                    "The Dealers",
-                    "Eliminate all Party Animals until they hold the majority.",
-                  ),
-                  _buildBulletPoint(
-                    "The Party Animals",
-                    "Identify and vote out all the Dealers before everyone dies.",
-                  ),
-                  _buildBulletPoint(
-                    "Chaos Roles",
-                    "Roles like The Messy Bitch, Club Manager, or Clinger have their own unique agendas for survival.",
-                  ),
-                ],
-              ),
-              _buildSectionCard(
-                title: "The Game Loop",
-                children: [
-                  _buildParagraph(
-                    "The game cycles between two distinct phases: The Night (The Bender) and The Day (The Morning After).",
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSubTitle("Phase 1: The Night (The Bender)"),
-                  _buildParagraph(
-                    "This is where the secret actions happen. Players close their eyes, and the Host wakes up specific roles to perform actions.",
-                  ),
-                  _buildBulletPoint("The Murder", "Dealers choose a victim."),
-                  _buildBulletPoint(
-                    "The Help",
-                    "Roles like the Medic and Bouncer protect players or check IDs.",
-                  ),
-                  _buildBulletPoint(
-                    "The Sabotage",
-                    "The Roofi paralyzes players, and the Lightweight is given a forbidden word.",
-                  ),
-                  _buildBulletPoint(
-                    "The Intel",
-                    "The Wallflower and Ally Cat try to peek at what is happening.",
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSubTitle("Phase 2: The Day (The Morning After)"),
-                  _buildBulletPoint(
-                    "The Reveal",
-                    "The Host announces who died or was saved.",
-                  ),
-                  _buildBulletPoint(
-                    "The Discussion",
-                    "Players have a set time (e.g., 5 minutes) to discuss, lie, accuse, or share information.",
-                  ),
-                  _buildBulletPoint(
-                    "The Accusation",
-                    "A player can accuse someone of being a Dealer. This requires a \"second\" to proceed to a vote.",
-                  ),
-                  _buildBulletPoint(
-                    "The Vote",
-                    "If a majority votes \"Guilty,\" the accused is eliminated.",
-                  ),
-                ],
-              ),
-              _buildSectionCard(
-                title: "The Roles",
-                children: [
-                  _buildSubTitle("The Host"),
-                  _buildBulletPoint(
-                    "Objective",
-                    "Neutral facilitator. Ensures rules are followed and sets the tone.",
-                  ),
-                  _buildBulletPoint(
-                    "Ability",
-                    "Can put players to sleep to refresh memory.",
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSubTitle("The Bad Guys (The Dealers & Allies)"),
-                  _buildBulletPoint(
-                    "The Dealer",
-                    "The killers. They wake up at night to murder Party Animals.",
-                  ),
-                  _buildBulletPoint(
-                    "The Whore",
-                    "Innocent of murder but aligned with the Dealers. She acts as a distraction and tries to save them.",
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSubTitle("The Good Guys (The Party Animals)"),
-                  _buildBulletPoint(
-                    "Party Animal",
-                    "The innocent guests. Their goal is simply to survive and vote out Dealers.",
-                  ),
-                  _buildBulletPoint(
-                    "The Bouncer",
-                    "Can check one player's ID per night to see if they are a Dealer or not. Risk: If he checks the Roofi and is wrong, he loses his power.",
-                  ),
-                  _buildBulletPoint(
-                    "The Medic",
-                    "Chooses at setup (Night 0) to either REVIVE one dead player during any day phase OR PROTECT one player every night. This choice is PERMANENT for the entire game.",
-                  ),
-                  _buildBulletPoint(
-                    "The Wallflower",
-                    "Can open their eyes to watch the murder but must not get caught.",
-                  ),
-                  _buildBulletPoint(
-                    "The Roofi",
-                    "Can paralyze one player per night (preventing them from speaking/acting). If a Dealer is Roofi'd, they are paralyzed for the next night too.",
-                  ),
-                  _buildBulletPoint(
-                    "The Lightweight",
-                    "Given a \"taboo\" name by the Host each night. If they say that name the next day, they die.",
-                  ),
-                  _buildBulletPoint(
-                    "The Tea Spiller",
-                    "If they die, they get to expose one player's role (Dealer or Not) to the group.",
-                  ),
-                  _buildBulletPoint(
-                    "The Minor",
-                    "Cannot be killed by Dealers until the Bouncer has checked her ID.",
-                  ),
-                  _buildBulletPoint(
-                    "The Seasoned Drinker",
-                    "Has extra lives. It takes Dealers twice as many attempts to kill them.",
-                  ),
-                  _buildBulletPoint(
-                    "The Drama Queen",
-                    "If killed, she can swap two players' devices and look at them.",
-                  ),
-                  _buildBulletPoint(
-                    "The Ally Cat",
-                    "Can open eyes when the Bouncer checks IDs but can only communicate by saying \"Meow\".",
-                  ),
-                  _buildBulletPoint(
-                    "The Sober",
-                    "Can send one player \"home\" (protecting them) once per game. If a Dealer is sent home, no murder happens.",
-                  ),
-                  _buildBulletPoint(
-                    "The Silver Fox",
-                    "Once per game, can force a player to reveal their device to the room by \"plying them with alcohol\".",
-                  ),
-                  _buildBulletPoint(
-                    "The Predator",
-                    "If voted out, they choose one person who voted for them to die as well.",
-                  ),
-                  _buildBulletPoint(
-                    "The Creep",
-                    "Pretends to be another Party Animal role at the start; dies if the original role dies.",
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSubTitle("The Wild Cards (Neutral/Chaos)"),
-                  _buildBulletPoint(
-                    "The Messy Bitch",
-                    "No alliance. Her goal is to survive by causing chaos and blaming others.",
-                  ),
-                  _buildBulletPoint(
-                    "The Club Manager",
-                    "No alliance. She cares only about profits/survival. Can look at one player's device each night.",
-                  ),
-                  _buildBulletPoint(
-                    "The Clinger",
-                    "Alliance is to their partner only. They must vote exactly how their partner votes. If their obsession calls them 'controller', they become an attack dog and can kill immediately.",
-                  ),
-                  _buildBulletPoint(
-                    "The Second Wind",
-                    "Starts as a Party Animal. If killed by Dealers, she can convince them to convert her, bringing her back to life as a Dealer. If Dealers accept, no one dies that night.",
-                  ),
-                ],
-              ),
-              _buildSectionCard(
-                title: "Survival Strategy Guide",
-                children: [
-                  _buildBulletPoint(
-                    "Spotting The Clinger",
-                    "Watch the voting patterns. If two people always vote exactly the same way, they might be the Clinger and their partner.",
-                  ),
-                  _buildBulletPoint(
-                    "Protecting The Bouncer",
-                    "If you are the Bouncer, do not reveal yourself early. If Dealers know who you are, you will be the first target.",
-                  ),
-                  _buildBulletPoint(
-                    "Multiple Lives",
-                    "Seasoned Drinker has lives equal to the number of Dealers. Ally Cat has 9 lives. Each murder attempt removes one life. The host will announce when they're attacked but survive.",
-                  ),
-                  _buildBulletPoint(
-                    "Dealer Tactics",
-                    "Use \"The Whore\" as a shield. If they are willing to take the heat during the day, let them distract the Party Animals.",
-                  ),
-                  _buildBulletPoint(
-                    "Lightweight Warning",
-                    "Listen carefully to the Host. If you say the forbidden name, you are out instantly.",
-                  ),
-                ],
-              ),
+              _buildFlowStep(context, 'Pre-game', 'Lobby screen. Pick a name, grab a selfie, pray for a good role.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'NIGHT 0', 'Setup phase. No dying yet. Just awkward introductions.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'Blackout', 'Night phase. Eyes shut. Killers creep. Chaos ensues.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'Morning after', 'Host spills the tea on who died or got lucky.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'Vote', 'Accuse your friends. Lie to your family. Throw someone out.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'Repeat', 'Until the Dealers are gone or the Party is dead.'),
             ],
           ),
         ),
-      ),
+        ClubBlackoutTheme.gap12,
+        _buildSection(
+          context,
+          'Eyes & ears',
+          'When the Host says "Sleep", you sleep. No peeking, no twitching. '
+          'If you cheat, you ruin the vibe, and nobody likes a buzzkill.',
+          ClubBlackoutTheme.neonPurple,
+        ),
+        ClubBlackoutTheme.gap12,
+        _buildSection(
+          context,
+          'The throw out',
+          'During the day, figure out who the Dealers are. If you vote correctly, they get booted. '
+          'If you vote wrong... well, sorry Dave, but you looked suspicious.',
+          ClubBlackoutTheme.neonOrange,
+        ),
+        ClubBlackoutTheme.gap12,
+        _buildSection(
+          context,
+          'House rules',
+          null,
+          ClubBlackoutTheme.neonPurple,
+          content: Column(
+            children: [
+              _buildFlowStep(context, 'Don\'t be that guy', 'Don\'t peek. Don\'t cheat. It\'s a party game, chill.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'Play the role', 'Attack the character, not the player. Unless it\'s Steve. Steve knows what he did.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'Dead men tell no tales', 'If you die, shut up. Ghosts can\'t talk, they just haunt.'),
+            ],
+          ),
+        ),
+      ],
     );
   }
+}
 
-  Widget _buildSectionCard({
-    required String title,
-    required List<Widget> children,
-    Color? color,
-  }) {
-    final themeColor = color ?? ClubBlackoutTheme.neonBlue;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 24),
-      elevation: 0,
-      color: Colors.white.withOpacity(0.05),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: themeColor.withOpacity(0.3), width: 1),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontFamily: 'Hyperwave',
-                fontSize: 24,
-                color: themeColor,
-                shadows: ClubBlackoutTheme.textGlow(themeColor),
-                letterSpacing: 1.5,
+class HostGuideBody extends StatelessWidget {
+  const HostGuideBody({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      children: [
+        _buildSection(
+          context,
+          'You are the DJ',
+          'You run the Club. You control the chaos. You are the Host. '
+          'Your job is to keep the energy high and the game moving. '
+          'Think "Master of Ceremonies" meets "Grim Reaper".',
+          ClubBlackoutTheme.neonBlue,
+        ),
+        ClubBlackoutTheme.gap12,
+        _buildSection(
+          context,
+          'Your gig',
+          null,
+          ClubBlackoutTheme.neonPink,
+          content: Column(
+            children: [
+              _buildFlowStep(context, 'Set the tone', 'Use your "spooky narrator voice". Make them nervous.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'Keep tempo', 'Don\'t let them sleep all night. Wake \'em up, kill \'em off.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'God mode', 'The app tracks the logic. You bring the drama.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'Pause button', 'Need a break? Send everyone to sleep. Power trip approved.'),
+            ],
+          ),
+        ),
+        ClubBlackoutTheme.gap12,
+        _buildSection(
+          context,
+          'Setup night (Night 0)',
+          'The soft opening. Special roles (Medic, Clinger) do their thing. '
+          'Nobody dies tonight. It\'s just a vibe check.',
+          ClubBlackoutTheme.neonGold,
+        ),
+        ClubBlackoutTheme.gap12,
+        _buildSection(
+          context,
+          'Blackout phase',
+          'Follow the app prompts. Call roles by name. If they snore, wake them up. '
+          'If they peek, shame them publicly.',
+          ClubBlackoutTheme.neonPurple,
+        ),
+        ClubBlackoutTheme.gap12,
+        _buildSection(
+          context,
+          'Daylight drama',
+          null,
+          ClubBlackoutTheme.neonOrange,
+          content: Column(
+            children: [
+              _buildFlowStep(context, 'The reveal', 'Read the Morning Bulletin like it\'s breaking news.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'The showdown', 'Let them argue. Fuel the fire. Then call the vote.'),
+              ClubBlackoutTheme.gap8,
+              _buildFlowStep(context, 'The flush', 'When someone gets voted out, take their badge. They\'re done.'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+Widget _buildSection(
+  BuildContext context,
+  String title,
+  String? description,
+  Color accentColor, {
+  Widget? content,
+}) {
+  final cs = Theme.of(context).colorScheme;
+  return Container(
+    decoration: ClubBlackoutTheme.neonFrame(
+      color: accentColor,
+      opacity: 0.1,
+      borderRadius: ClubBlackoutTheme.radiusLg,
+      borderWidth: 1.5,
+      showGlow: false,
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(ClubBlackoutTheme.radiusLg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.12),
+              border: Border(
+                bottom: BorderSide(
+                  color: accentColor.withValues(alpha: 0.3),
+                  width: 1.0,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSubTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0, top: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: ClubBlackoutTheme.neonOrange,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildParagraph(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 15,
-          color: Colors.white70,
-          height: 1.5,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBulletPoint(String boldText, String description) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Icon(
-              Icons.circle,
-              size: 6,
-              color: ClubBlackoutTheme.neonPink,
+            child: Text(
+              title,
+              style: ClubBlackoutTheme.headingStyle.copyWith(
+                fontSize: 14,
+                color: accentColor.withValues(alpha: 0.9),
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+                shadows: null,
+              ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Colors.white70,
-                  height: 1.5,
-                ),
-                children: [
-                  if (boldText.isNotEmpty)
-                    TextSpan(
-                      text: '$boldText: ',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (description != null)
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: cs.onSurface.withValues(alpha: 0.9),
+                      fontSize: 14,
+                      height: 1.5,
+                      letterSpacing: 0.3,
                     ),
-                  TextSpan(text: description),
-                ],
-              ),
+                  ),
+                if (content != null) content,
+              ],
             ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+Widget _buildFlowStep(BuildContext context, String label, String desc) {
+  final cs = Theme.of(context).colorScheme;
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        width: 120,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: cs.onSurface.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(ClubBlackoutTheme.radiusSm),
+          border: Border.all(color: cs.onSurface.withValues(alpha: 0.15)),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            color: cs.onSurface.withValues(alpha: 0.8),
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            desc,
+            style: TextStyle(
+              color: cs.onSurface.withValues(alpha: 0.75),
+              fontSize: 14,
+              height: 1.3,
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
 }

@@ -12,31 +12,45 @@ class RoleValidationResult {
     this.warnings = const [],
   });
 
-  RoleValidationResult.valid() : isValid = true, error = null, warnings = const [];
-  RoleValidationResult.invalid(String message) : isValid = false, error = message, warnings = const [];
+  RoleValidationResult.valid()
+      : isValid = true,
+        error = null,
+        warnings = const [];
+  RoleValidationResult.invalid(String message)
+      : isValid = false,
+        error = message,
+        warnings = const [];
 }
 
 class RoleValidator {
   // Roles that can have multiple instances
+  // Global rule: only Dealers and Party Animals may repeat.
   static const Set<String> multipleAllowedRoles = {
     'dealer',
     'party_animal',
   };
 
-  /// Recommended Dealer scaling: 1 Dealer per 7 total players.
-  /// This matches "for every 6 other roles, add an extra Dealer".
+  /// Recommended Dealer scaling:
+  /// - 6 or fewer players: 1 Dealer
+  /// - 7-10 players: 2 Dealers
+  /// - For every 4 more players beyond 10, add 1 Dealer
   static int recommendedDealerCount(int enabledPlayerCount) {
     if (enabledPlayerCount <= 0) return 0;
-    return (enabledPlayerCount / 7).ceil();
+    if (enabledPlayerCount <= 6) return 1;
+    if (enabledPlayerCount <= 10) return 2;
+    final extraPlayers = enabledPlayerCount - 10;
+    final extraDealers = (extraPlayers / 4).ceil();
+    return 2 + extraDealers;
   }
 
   /// Validates if a role can be assigned to a player
-  static RoleValidationResult canAssignRole(Role? role, String playerId, List<Player> allPlayers) {
+  static RoleValidationResult canAssignRole(
+      Role? role, String playerId, List<Player> allPlayers) {
     if (role == null) {
       return RoleValidationResult.valid();
     }
 
-    // Allow multiple dealers and party animals
+    // Allow multiple dealers
     if (multipleAllowedRoles.contains(role.id)) {
       return RoleValidationResult.valid();
     }
@@ -62,8 +76,7 @@ class RoleValidator {
 
     if (existingPlayer.id != 'none') {
       return RoleValidationResult.invalid(
-        '${role.name} can only exist once in the game. ${existingPlayer.name} already has this role.'
-      );
+          '${role.name} can only exist once in the game. ${existingPlayer.name} already has this role.');
     }
 
     return RoleValidationResult.valid();
@@ -75,7 +88,9 @@ class RoleValidator {
       return RoleValidationResult.invalid('No players added to the game.');
     }
 
-    final enabledPlayers = players.where((p) => p.isEnabled).toList();
+    // Host is a facilitator placeholder and should not count toward setup requirements.
+    final enabledPlayers =
+        players.where((p) => p.isEnabled && p.role.id != 'host').toList();
 
     if (enabledPlayers.isEmpty) {
       return RoleValidationResult.invalid('All players are toggled off.');
@@ -110,7 +125,8 @@ class RoleValidator {
       final roleId = player.role.id;
       if (multipleAllowedRoles.contains(roleId) || roleId == 'temp') continue;
       if (!seenUniqueRoleIds.add(roleId)) {
-        return RoleValidationResult.invalid('Duplicate role detected: $roleId. Only Dealers and Party Animals can repeat.');
+        return RoleValidationResult.invalid(
+            'Duplicate role detected: $roleId. Only Dealers can repeat.');
       }
     }
 
@@ -120,36 +136,44 @@ class RoleValidator {
     }
 
     if (!hasPartyAnimal) {
-      return RoleValidationResult.invalid('Game requires at least 1 Party Animal.');
+      return RoleValidationResult.invalid(
+          'Game requires at least 1 Party Animal.');
     }
 
     if (!hasWallflower) {
-      return RoleValidationResult.invalid('Game requires at least 1 Wallflower.');
+      return RoleValidationResult.invalid(
+          'Game requires at least 1 Wallflower.');
     }
 
     final recommendedDealers = recommendedDealerCount(enabledPlayers.length);
     if (dealerCount < recommendedDealers) {
-      warnings.add('Recommended: $recommendedDealers Dealer(s) for ${enabledPlayers.length} players.');
+      warnings.add(
+          'Recommended: $recommendedDealers Dealer(s) for ${enabledPlayers.length} players.');
     }
 
     // Count total Party Animal-aligned roles (Party Animals + any role aligned with The Party Animals)
     final partyAlignedCount = enabledPlayers.where((p) {
       final alliance = p.role.alliance;
       final startAlliance = p.role.startAlliance;
-      return alliance == 'The Party Animals' || p.role.id == 'party_animal' || startAlliance == 'PARTY_ANIMAL';
+      return alliance == 'The Party Animals' ||
+          p.role.id == 'party_animal' ||
+          startAlliance == 'PARTY_ANIMAL';
     }).length;
 
     if (partyAlignedCount < 2) {
-      return RoleValidationResult.invalid('Game requires at least 2 Party Animal alliance members.');
+      return RoleValidationResult.invalid(
+          'Game requires at least 2 Party Animal alliance members.');
     }
 
     if (!hasMedic && !hasBouncer) {
-      return RoleValidationResult.invalid('Game requires at least 1 Medic and/or 1 Bouncer.');
+      return RoleValidationResult.invalid(
+          'Game requires at least 1 Medic and/or 1 Bouncer.');
     }
 
     // Warnings (not blocking)
     if (dealerCount > enabledPlayers.length ~/ 3) {
-      warnings.add('Warning: High dealer-to-player ratio may make the game difficult for Party Animals.');
+      warnings.add(
+          'Warning: High dealer-to-player ratio may make the game difficult for Party Animals.');
     }
 
     return RoleValidationResult(
@@ -160,7 +184,8 @@ class RoleValidator {
   }
 
   /// Get available roles for a player (excludes already-taken unique roles)
-  static List<Role> getAvailableRoles(List<Role> allRoles, String playerId, List<Player> allPlayers) {
+  static List<Role> getAvailableRoles(
+      List<Role> allRoles, String playerId, List<Player> allPlayers) {
     final available = allRoles.where((role) {
       final validation = canAssignRole(role, playerId, allPlayers);
       return validation.isValid;

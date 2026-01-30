@@ -1,247 +1,412 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../../models/player.dart';
-import '../../services/sound_service.dart';
-import '../styles.dart';
-import '../animations.dart';
 
-/// Interactive voting widget with live vote counts and animations
+import '../../logic/game_engine.dart';
+import '../../models/player.dart';
+import '../animations.dart';
+import '../styles.dart';
+import 'player_tile.dart';
+
 class VotingWidget extends StatefulWidget {
   final List<Player> players;
-  final Map<String, int> votes;
-  final Function(String playerId) onVote;
-  final VoidCallback onComplete;
-  final bool allowRevote;
+  final GameEngine gameEngine;
+  final Function(Player eliminated, String verdict) onComplete;
+  final ValueChanged<int>? onMaxVotesChanged;
+  final bool isVotingEnabled;
 
   const VotingWidget({
     super.key,
     required this.players,
-    required this.votes,
-    required this.onVote,
+    required this.gameEngine,
     required this.onComplete,
-    this.allowRevote = true,
+    this.onMaxVotesChanged,
+    this.isVotingEnabled = true,
   });
 
   @override
   State<VotingWidget> createState() => _VotingWidgetState();
 }
 
-class _VotingWidgetState extends State<VotingWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  String? _selectedPlayerId;
+class _VotingWidgetState extends State<VotingWidget> {
+  // Candidate ID -> List of Voter IDs
+  final Map<String, List<String>> _manualVotes = {};
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(duration: ClubMotion.short, vsync: this);
+  Player? _findEnginePlayer(String id) {
+    try {
+      return widget.gameEngine.players.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  void _removeVoterFromAll(String voterId) {
+    final toRemove = <String>[];
+    for (final entry in _manualVotes.entries) {
+      entry.value.removeWhere((id) => id == voterId);
+      if (entry.value.isEmpty) {
+        toRemove.add(entry.key);
+      }
+    }
+    for (final key in toRemove) {
+      _manualVotes.remove(key);
+    }
   }
 
-  void _vote(String playerId) {
-    if (!widget.allowRevote && _selectedPlayerId != null) {
-      SoundService().playError();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Revote disabled for this round'),
-          duration: Duration(milliseconds: 800),
-        ),
-      );
+  void _syncClingerBinding({required String triggerVoterId}) {
+    Player clinger;
+    try {
+      clinger = widget.gameEngine.players.firstWhere((p) => p.role.id == 'clinger');
+    } catch (_) {
+      return;
+    }
+
+    if (clinger.id.isEmpty) return;
+    if (!clinger.isActive) return;
+    if (clinger.clingerFreedAsAttackDog) return;
+    final partnerId = clinger.clingerPartnerId;
+    if (partnerId == null || partnerId.isEmpty) return;
+
+    if (triggerVoterId == partnerId) {
+      String? partnerTargetId;
+      for (final entry in _manualVotes.entries) {
+        if (entry.value.contains(partnerId)) {
+          partnerTargetId = entry.key;
+          break;
+        }
+      }
+
+      _removeVoterFromAll(clinger.id);
+      if (partnerTargetId != null) {
+        (_manualVotes[partnerTargetId] ??= <String>[]).add(clinger.id);
+      }
+    }
+  }
+
+  void _onVoterChanged(String candidateId, String voterId, bool select) {
+    Player? clinger;
+    try {
+      clinger = widget.gameEngine.players.firstWhere((p) => p.role.id == 'clinger');
+    } catch (_) {
+      clinger = null;
+    }
+
+    final isClingerBound =
+        clinger != null &&
+        clinger.id.isNotEmpty &&
+        clinger.isActive &&
+        !clinger.clingerFreedAsAttackDog &&
+        clinger.clingerPartnerId != null;
+
+    if (isClingerBound && voterId == clinger.id) {
       return;
     }
 
     setState(() {
-      _selectedPlayerId = playerId;
-    });
+      if (select) {
+        _removeVoterFromAll(voterId);
+        (_manualVotes[candidateId] ??= <String>[]).add(voterId);
+      } else {
+        _manualVotes[candidateId]?.removeWhere((id) => id == voterId);
+        if (_manualVotes[candidateId]?.isEmpty ?? false) {
+          _manualVotes.remove(candidateId);
+        }
+      }
 
-    _controller.forward(from: 0);
-    HapticFeedback.selectionClick();
-    SoundService().playSelect();
-    widget.onVote(playerId);
+      _syncClingerBinding(triggerVoterId: voterId);
+
+      widget.onMaxVotesChanged?.call(
+        _manualVotes.values.fold<int>(0, (max, v) => v.length > max ? v.length : max),
+      );
+    });
+  }
+
+  bool _canFinalize() {
+    final currentDay = widget.gameEngine.dayCount;
+    return _manualVotes.entries.any((e) {
+      final candidate = _findEnginePlayer(e.key);
+      if (candidate != null && candidate.alibiDay == currentDay) return false;
+      return e.value.length >= 2;
+    });
+  }
+
+  void _submit() {
+    String? eliminatedId;
+    int maxVotes = -1;
+    bool tie = false;
+
+    final currentDay = widget.gameEngine.dayCount;
+    final eligibleCandidates = _manualVotes.entries.where((e) {
+      if (e.value.length < 2) return false;
+      final candidate = _findEnginePlayer(e.key);
+      return candidate == null || candidate.alibiDay != currentDay;
+    }).toList();
+
+    if (eligibleCandidates.isEmpty) return;
+
+    for (final entry in eligibleCandidates) {
+      if (entry.value.length > maxVotes) {
+        maxVotes = entry.value.length;
+        eliminatedId = entry.key;
+        tie = false;
+      } else if (entry.value.length == maxVotes) {
+        tie = true;
+      }
+    }
+
+    if (tie || eliminatedId == null) {
+      widget.gameEngine.showToast(
+        'Tie vote or no majority.',
+        title: 'Voting',
+      );
+      return;
+    }
+
+    final eliminated = widget.players.firstWhere((p) => p.id == eliminatedId);
+
+    widget.gameEngine.clearDayVotes();
+    for (final entry in _manualVotes.entries) {
+      for (final voterId in entry.value) {
+        widget.gameEngine.recordVote(voterId: voterId, targetId: entry.key);
+      }
+    }
+
+    String verdict = 'INNOCENT';
+    if (eliminated.role.alliance == 'The Dealers' ||
+        eliminated.role.alliance == 'The Dealers (Converted)') {
+      verdict = 'DEALER';
+    } else if (eliminated.role.id == 'whore') {
+      verdict = 'DEALER ALLY';
+    }
+
+    widget.onComplete(eliminated, verdict);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Calculate leader for highlights
-    final maxVotes = widget.votes.values.fold(
-      0,
-      (prev, curr) => curr > prev ? curr : prev,
-    );
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: ClubBlackoutTheme.neonOrange.withOpacity(0.5),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: ClubBlackoutTheme.neonOrange.withOpacity(0.3),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'VOTE CASTING',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: ClubBlackoutTheme.neonOrange,
-              letterSpacing: 2.0,
-              shadows: ClubBlackoutTheme.textGlow(ClubBlackoutTheme.neonOrange),
-            ),
-          ),
-          const SizedBox(height: 20),
+    // Filter out silenced players from the voting pool entirely to reduce clutter.
+    // Includes: Ally Cat (mechanic), Sober-sent-home, and Roofi/Paralyzed targets.
+    final voters = widget.gameEngine.players.where((p) {
+      if (!p.isActive) return false;
+      if (p.role.id == 'ally_cat') return false;
+      if (p.soberSentHome) return false;
+      if (p.silencedDay == widget.gameEngine.dayCount) return false;
+      return true;
+    }).toList();
 
-          Flexible(
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 2.5,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
+    return Column(
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: widget.players.length,
+          separatorBuilder: (_, __) => ClubBlackoutTheme.gap12,
+          itemBuilder: (_, i) {
+            final candidate = widget.players[i];
+            final currentVotes = _manualVotes[candidate.id] ?? const <String>[];
+            final voteCount = currentVotes.length;
+            final isVoteImmune = candidate.alibiDay != null &&
+                candidate.alibiDay == widget.gameEngine.dayCount;
+
+            final clinger = widget.gameEngine.players.firstWhere(
+              (p) => p.role.id == 'clinger',
+              orElse: () => Player(id: '', name: '', role: candidate.role),
+            );
+            final isClingerBound = clinger.id != '' &&
+                !clinger.clingerFreedAsAttackDog &&
+                clinger.clingerPartnerId != null;
+
+            final accentColor = voteCount >= 2
+                ? ClubBlackoutTheme.neonRed
+                : ClubBlackoutTheme.neonBlue;
+
+            final tileBg = cs.surfaceContainerHighest.withValues(
+              alpha: voteCount > 0 ? 0.55 : 0.48,
+            );
+
+            return AnimatedContainer(
+              duration: ClubMotion.short,
+              decoration: BoxDecoration(
+                color: tileBg,
+                borderRadius: ClubBlackoutTheme.borderRadiusMdAll,
+                border: Border.all(
+                  color: accentColor.withValues(alpha: 0.55),
+                  width: voteCount >= 2 ? 2.0 : 1.2,
+                ),
+                boxShadow: voteCount >= 2
+                    ? ClubBlackoutTheme.circleGlow(accentColor, intensity: 1.15)
+                    : null,
               ),
-              itemCount: widget.players.length,
-              itemBuilder: (context, index) {
-                final player = widget.players[index];
-                final isSelected = player.id == _selectedPlayerId;
-                final voteCount = widget.votes[player.id] ?? 0;
-                // Calculate progress relative to max votes (or 1 if 0)
-                final progress = maxVotes > 0 ? (voteCount / maxVotes) : 0.0;
-
-                return AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    final scale = isSelected
-                        ? 1.0 + (_controller.value * 0.05)
-                        : 1.0;
-                    return Transform.scale(scale: scale, child: child);
-                  },
-                  child: InkWell(
-                    onTap: () => _vote(player.id),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? ClubBlackoutTheme.neonOrange.withOpacity(0.2)
-                            : Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected
-                              ? ClubBlackoutTheme.neonOrange
-                              : Colors.white24,
-                          width: isSelected ? 2 : 1,
+              child: Column(
+                children: [
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    title: PlayerTile(
+                      player: candidate,
+                      gameEngine: widget.gameEngine,
+                      isCompact: true,
+                      wrapInCard: false,
+                      effectChipsAsBanner: true,
+                      showEffectChips: true,
+                      enabledOverride: widget.isVotingEnabled,
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest.withValues(alpha: 0.75),
+                          borderRadius: ClubBlackoutTheme.borderRadiusSmAll,
+                          border: Border.all(
+                            color: accentColor.withValues(alpha: 0.55),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          '$voteCount',
+                          style: ClubBlackoutTheme.glowTextStyle(
+                            color: accentColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  player.name,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? ClubBlackoutTheme.neonOrange
-                                        : Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                              if (voteCount > 0)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: ClubBlackoutTheme.neonOrange,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    '$voteCount',
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 4,
-                              backgroundColor: Colors.white10,
-                              valueColor: AlwaysStoppedAnimation(
-                                isSelected
-                                    ? ClubBlackoutTheme.neonOrange
-                                    : Colors.white30,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      onTap: null,
                     ),
                   ),
-                );
-              },
+                  Divider(
+                      height: 1,
+                      color: cs.outlineVariant.withValues(alpha: 0.40)),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      runAlignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: voters.map((voter) {
+                        final isSelected = currentVotes.contains(voter.id);
+                        final isThisVoterBoundClinger =
+                            isClingerBound && voter.id == clinger.id;
+
+                        if (isThisVoterBoundClinger && !isSelected) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final isTapDisabled = isVoteImmune ||
+                            isThisVoterBoundClinger ||
+                            !widget.isVotingEnabled;
+
+                        return _VoterChip(
+                          voter: voter,
+                          isSelected: isSelected,
+                          isDisabled: isTapDisabled,
+                          accent: accentColor,
+                          onTap: isTapDisabled
+                              ? null
+                              : () {
+                                  if (voter.id == candidate.id) return;
+                                  _onVoterChanged(candidate.id, voter.id, !isSelected);
+                                },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        if (_canFinalize())
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: FilledButton(
+                style: ClubBlackoutTheme.neonButtonStyle(
+                  ClubBlackoutTheme.neonRed,
+                  isPrimary: true,
+                ),
+                onPressed: _submit,
+                child: Text(
+                  'Finalize elimination',
+                  style: tt.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: cs.onPrimary,
+                  ),
+                ),
+              ),
             ),
           ),
+      ],
+    );
+  }
+}
 
-          const SizedBox(height: 20),
+class _VoterChip extends StatelessWidget {
+  final Player voter;
+  final bool isSelected;
+  final bool isDisabled;
+  final Color accent;
+  final VoidCallback? onTap;
 
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: FilledButton(
-              onPressed: widget.onComplete,
-              style: FilledButton.styleFrom(
-                backgroundColor: ClubBlackoutTheme.neonOrange,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 5,
-                shadowColor: ClubBlackoutTheme.neonOrange.withOpacity(0.5),
-              ),
-              child: const Text(
-                'CONFIRM VOTES',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
-          ),
-        ],
+  const _VoterChip({
+    required this.voter,
+    required this.isSelected,
+    required this.isDisabled,
+    required this.accent,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    final bg = isSelected
+        ? accent.withValues(alpha: 0.22)
+        : cs.surfaceContainerHighest.withValues(alpha: 0.55);
+
+    final border = isSelected
+        ? accent.withValues(alpha: 0.75)
+        : cs.outlineVariant.withValues(alpha: 0.45);
+
+    return FilterChip(
+      selected: isSelected,
+      showCheckmark: false,
+      onSelected: isDisabled ? null : (_) => onTap?.call(),
+      shape: const RoundedRectangleBorder(
+        borderRadius: ClubBlackoutTheme.borderRadiusControl,
       ),
+      label: Text(
+        voter.name,
+        overflow: TextOverflow.ellipsis,
+        style: tt.labelLarge?.copyWith(
+          fontWeight: FontWeight.w800,
+          color: isDisabled ? cs.onSurfaceVariant : cs.onSurface,
+        ),
+      ),
+      avatar: isSelected
+          ? Icon(
+              Icons.check_circle_rounded,
+              size: 18,
+              color: accent,
+              shadows: ClubBlackoutTheme.iconGlow(accent, intensity: 0.9),
+            )
+          : Icon(
+              Icons.circle_outlined,
+              size: 18,
+              color: cs.onSurface.withValues(alpha: 0.40),
+            ),
+      side: BorderSide(color: border, width: isSelected ? 1.6 : 1.0),
+      backgroundColor: bg,
+      selectedColor: bg,
+      disabledColor: cs.surfaceContainerHighest.withValues(alpha: 0.28),
+      visualDensity: VisualDensity.comfortable,
+      materialTapTargetSize: MaterialTapTargetSize.padded,
     );
   }
 }

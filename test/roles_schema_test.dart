@@ -192,9 +192,8 @@ void main() {
 
     test('required roles exist (dealer, party_animal, medic, bouncer)', () {
       final roles = rolesData['roles'] as List;
-      final roleIds = roles
-          .map((r) => (r as Map<String, dynamic>)['id'] as String)
-          .toSet();
+      final roleIds =
+          roles.map((r) => (r as Map<String, dynamic>)['id'] as String).toSet();
 
       expect(
         roleIds,

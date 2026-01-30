@@ -33,19 +33,28 @@ class Role {
 
   // Helper to convert hex string to Color
   Color get color {
-    if (colorHex.startsWith('#')) {
-      final buffer = StringBuffer();
-      if (colorHex.length == 7) buffer.write('ff');
-      buffer.write(colorHex.replaceFirst('#', ''));
-      return Color(int.parse(buffer.toString(), radix: 16));
+    try {
+      final v = colorHex.trim();
+      if (!v.startsWith('#')) return const Color(0xFFFFFFFF);
+
+      // Accept #RRGGBB or #AARRGGBB.
+      final hex = v.substring(1);
+      if (hex.length == 6) {
+        return Color(int.parse('FF$hex', radix: 16));
+      }
+      if (hex.length == 8) {
+        return Color(int.parse(hex, radix: 16));
+      }
+      return const Color(0xFFFFFFFF);
+    } catch (_) {
+      return const Color(0xFFFFFFFF);
     }
-    return const Color(0xFFFFFFFF); // Default white
   }
 
   String get emoji => '';
 
   factory Role.fromJson(Map<String, dynamic> json) {
-    String rawAssetPath = json['asset_path'] as String? ?? '';
+    final String rawAssetPath = json['asset_path'] as String? ?? '';
 
     return Role(
       id: json['id'] as String,
@@ -56,8 +65,7 @@ class Role {
       nightPriority: json['night_priority'] as int? ?? 0,
       hasBinaryChoiceAtStart:
           json['has_binary_choice_at_start'] as bool? ?? false,
-      choices:
-          (json['choices'] as List<dynamic>?)
+      choices: (json['choices'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],

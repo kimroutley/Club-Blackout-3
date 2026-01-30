@@ -88,3 +88,21 @@ Prevents assigning unique roles that are already taken:
 - Visual indicators in role selection showing which roles are already taken
 - Role count display in lobby (e.g., "Dealers: 2, Party Animals: 5")
 - Recommended role distribution based on player count
+
+## Role Assignment Rules (Engine)
+
+- Dealers can repeat; most other roles are unique unless listed in `RoleValidator.multipleAllowedRoles`.
+- Party Animal is used as a safe filler role.
+- Manual assignments are respected; unassigned players get dealt from the remaining deck.
+
+## Role Assignment Rules
+
+- Host role is excluded from validation and gameplay.
+- Dealer can repeat; most other roles are unique unless listed in `RoleValidator.multipleAllowedRoles`.
+- RoleAssignmentDialog enforces:
+  - ≥1 Dealer
+  - Medic or Bouncer present
+  - Party Animal present
+  - Wallflower present
+  - ≥2 Party-aligned roles
+  - No Dealer majority at start

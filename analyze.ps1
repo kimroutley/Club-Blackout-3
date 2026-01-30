@@ -18,3 +18,19 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
         }
     }
 }
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+flutter --version
+flutter clean
+flutter pub get
+
+flutter analyze
+
+# Debug APK (fast sanity)
+flutter build apk --debug
+
+# Release APK
+flutter build apk --release
+Write-Host "APK outputs are under: build\app\outputs\flutter-apk\"

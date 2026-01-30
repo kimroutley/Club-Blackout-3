@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../models/player.dart';
-import 'game_engine.dart';
 import '../ui/styles.dart';
+import 'game_engine.dart';
 
 /// Represents a consolidated status to be displayed in the UI.
 class PlayerStatusDisplay {
@@ -53,7 +54,7 @@ class PlayerStatusResolver {
       if (effect.duration > 0) {
         label += " (${effect.duration} TURN${effect.duration > 1 ? 'S' : ''})";
       } else if (effect.isPermanent) {
-        label += " (PERM)";
+        label += ' (PERM)';
       }
 
       statuses.add(
@@ -154,21 +155,44 @@ class PlayerStatusResolver {
       statuses.add(
         PlayerStatusDisplay(
           label: 'SILENCED',
-          color: Colors.white,
+          color: ClubBlackoutTheme.pureWhite,
           description: 'Silenced for today.',
           icon: Icons.mic_off,
         ),
       );
     }
 
-    // 10. Minor - Immunity Lost
-    if (player.minorHasBeenIDd) {
+    // 10. Minor - Immunity / Vulnerable state
+    if (player.role.id == 'minor') {
+      if (player.minorHasBeenIDd) {
+        statuses.add(
+          PlayerStatusDisplay(
+            label: 'VULNERABLE',
+            color: ClubBlackoutTheme.neonRed,
+            description: 'The Minor can now be killed by the Dealers.',
+            icon: Icons.warning_amber_rounded,
+          ),
+        );
+      } else {
+        statuses.add(
+          PlayerStatusDisplay(
+            label: 'IMMUNE',
+            color: ClubBlackoutTheme.neonMint,
+            description: 'Immune to Dealer kills until ID checked by the Bouncer.',
+            icon: Icons.shield_outlined,
+          ),
+        );
+      }
+    }
+
+    // 10b. Silver Fox - Alibi (Vote Immunity)
+    if (player.alibiDay == gameEngine.dayCount) {
       statuses.add(
         PlayerStatusDisplay(
-          label: 'MINOR ID\'D',
-          color: ClubBlackoutTheme.neonOrange,
-          description: 'Immunity lost after ID check.',
-          icon: Icons.shield_outlined,
+          label: 'ALIBI (TODAY ONLY)',
+          color: ClubBlackoutTheme.neonBlue,
+          description: 'Votes against this player do not count today.',
+          icon: Icons.verified_user,
         ),
       );
     }
@@ -177,7 +201,7 @@ class PlayerStatusResolver {
     if (player.secondWindConverted) {
       statuses.add(
         PlayerStatusDisplay(
-          label: 'CONVERTED',
+          label: 'CONVERTED FROM SECOND',
           color: ClubBlackoutTheme.neonOrange,
           description: 'Converted to Dealer team.',
           icon: Icons.cached,

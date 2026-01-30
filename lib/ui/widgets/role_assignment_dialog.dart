@@ -1,12 +1,16 @@
-﻿import 'dart:math';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../../logic/game_engine.dart';
 import '../../models/player.dart';
 import '../../models/role.dart';
-import '../../utils/role_validator.dart';
 import '../../utils/game_exceptions.dart';
+import '../../utils/role_validator.dart';
 import '../styles.dart';
+import 'bulletin_dialog_shell.dart';
+import 'player_icon.dart';
 import 'role_avatar_widget.dart';
 
 enum GameMode { bloodbath, politicalNightmare, freeForAll, custom }
@@ -152,8 +156,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
     };
 
     // Only consider roles assigned if no temp roles exist AND counts match
-    _rolesAssigned =
-        !hasTempRoles &&
+    _rolesAssigned = !hasTempRoles &&
         _playerRoles.length == widget.players.where((p) => p.isEnabled).length;
   }
 
@@ -241,12 +244,11 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
 
     // Ensure at least 2 Party Animal-aligned players (incl Medic/Bouncer/etc).
     // Current count includes: First Support (maybe), PA, Wallflower, Second Wind (maybe)
-    int partyAlignedCount = selected.where(_isPartyAligned).length;
+    final int partyAlignedCount = selected.where(_isPartyAligned).length;
     if (partyAlignedCount < 2) {
       // Prefer adding the other of Medic/Bouncer if available
-      final otherSupport = (firstSupport.id == 'medic')
-          ? bouncerRole
-          : medicRole;
+      final otherSupport =
+          (firstSupport.id == 'medic') ? bouncerRole : medicRole;
       if (otherSupport != null && usedUniqueIds.add(otherSupport.id)) {
         selected.add(otherSupport);
       }
@@ -296,7 +298,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
       }
     }
 
-    var remainingSlots = playerCount - selected.length;
+    final remainingSlots = playerCount - selected.length;
     if (remainingSlots > 0) {
       switch (mode) {
         case GameMode.bloodbath:
@@ -422,7 +424,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
       // For now, assuming recommendedDealers is correct (max 3 for 15 players).
     }
 
-    List<Role> selectedRoles = selected;
+    final List<Role> selectedRoles = selected;
 
     // Shuffle and assign
     selectedRoles.shuffle(random);
@@ -444,86 +446,66 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
 
   void _showEditRoleDialog(Player player) {
     final availableRoles = _availableRolesForPlayerInDraft(player.id);
+    final scheme = Theme.of(context).colorScheme;
+
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
-            decoration: ClubBlackoutTheme.glassmorphism(
-              color: Colors.black,
-              opacity: 0.9,
-              borderColor: ClubBlackoutTheme.neonPink,
-            ),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Assign Role to ${player.name}',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+        return BulletinDialogShell(
+          accent: ClubBlackoutTheme.neonPink,
+          maxWidth: 520,
+          maxHeight: 720,
+          padding: EdgeInsets.zero,
+          showCloseButton: true,
+          title: Row(
+            children: [
+              const Icon(Icons.edit_rounded, color: ClubBlackoutTheme.neonPink),
+              ClubBlackoutTheme.hGap12,
+              Text(
+                'Assign role',
+                style: ClubBlackoutTheme.headingStyle.copyWith(
+                  fontSize: 20,
+                  color: scheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: ClubBlackoutTheme.neonPink.withValues(alpha: 0.1),
+                ),
+                child: Text(
+                  player.name,
+                  style: const TextStyle(
+                    fontSize: 18,
                     color: ClubBlackoutTheme.neonPink,
-                    shadows: ClubBlackoutTheme.textGlow(
-                      ClubBlackoutTheme.neonPink,
-                    ),
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: availableRoles.length,
-                    itemBuilder: (context, index) {
-                      final role = availableRoles[index];
-                      final isSelected = _playerRoles[player.id]?.id == role.id;
+              ),
+              Divider(
+                height: 1,
+                color: scheme.onSurface.withValues(alpha: 0.12),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: availableRoles.length,
+                  separatorBuilder: (_, __) => ClubBlackoutTheme.gap8,
+                  itemBuilder: (context, index) {
+                    final role = availableRoles[index];
+                    final isSelected = _playerRoles[player.id]?.id == role.id;
 
-                      return ListTile(
-                        selected: isSelected,
-                        selectedTileColor: role.color.withOpacity(0.2),
-                        leading: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: role.color, width: 1.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: role.color.withOpacity(0.4),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: Image.asset(
-                              role.assetPath,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
-                                  Icons.person,
-                                  color: role.color,
-                                  size: 20,
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          role.name,
-                          style: TextStyle(
-                            color: role.color,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Text(
-                          role.type,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
                         onTap: () {
                           setState(() {
                             _playerRoles[player.id] = role;
@@ -531,20 +513,67 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                           Navigator.pop(context);
                           HapticFeedback.selectionClick();
                         },
-                      );
-                    },
-                  ),
+                        borderRadius: ClubBlackoutTheme.borderRadiusSmAll,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: ClubBlackoutTheme.neonFrame(
+                            color: isSelected
+                                ? role.color
+                                : scheme.onSurface.withValues(alpha: 0.24),
+                            opacity: isSelected ? 0.2 : 0.05,
+                            borderWidth: isSelected ? 2 : 1,
+                            showGlow: isSelected,
+                          ),
+                          child: Row(
+                            children: [
+                              RoleAvatarWidget(
+                                role: role,
+                                size: 40,
+                                showGlow: isSelected,
+                              ),
+                              ClubBlackoutTheme.hGap16,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      role.name,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? scheme.onSurface
+                                            : scheme.onSurface
+                                                .withValues(alpha: 0.7),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                    Text(
+                                      role.type,
+                                      style: TextStyle(
+                                        color: role.color.withValues(alpha: 0.7),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: role.color,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.white54),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -557,24 +586,22 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
     final issues = _rolesAssigned ? _roleAssignmentIssues() : const <String>[];
     final isValid = _rolesAssigned ? issues.isEmpty : false;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
+    return BulletinDialogShell(
+      accent: ClubBlackoutTheme.neonPink,
+      maxWidth: 860,
+      maxHeight: 820,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: ClubBlackoutTheme.centeredConstrained(
-        child: Container(
-          decoration: ClubBlackoutTheme.glassmorphism(
-            color: Colors.black,
-            opacity: 0.85,
-            borderColor: ClubBlackoutTheme.neonPink.withOpacity(0.5),
-            borderRadius: 28,
-            borderWidth: 1.5,
-          ),
-          clipBehavior: Clip.hardEdge,
-          child: Column(
-            children: [
+      padding: EdgeInsets.zero,
+      content: ClipRRect(
+        borderRadius: BorderRadius.circular(ClubBlackoutTheme.radiusLg),
+        child: Column(
+          children: [
               // Header
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -584,18 +611,11 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: ClubBlackoutTheme.neonPink.withOpacity(0.3),
-                      width: 1,
+                      color: ClubBlackoutTheme.neonPink.withValues(alpha: 0.4),
+                      width: 1.5,
                     ),
                   ),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      ClubBlackoutTheme.neonPink.withOpacity(0.15),
-                      Colors.transparent,
-                    ],
-                  ),
+                  color: cs.surface.withValues(alpha: 0.2),
                 ),
                 child: Row(
                   children: [
@@ -607,29 +627,24 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                         ClubBlackoutTheme.neonPink,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    ClubBlackoutTheme.hGap16,
                     Expanded(
                       child: Text(
-                        'Role Assignments',
-                        style: ClubBlackoutTheme.headingStyle.copyWith(
-                          color: Colors.white,
-                          fontSize: 24,
-                          shadows: ClubBlackoutTheme.textGlow(
-                            ClubBlackoutTheme.neonPink,
-                          ),
+                        'ROLE ASSIGNMENTS',
+                        style: ClubBlackoutTheme.glowTextStyle(
+                          base: ClubBlackoutTheme.headingStyle,
+                          color: cs.onSurface,
+                          glowColor: ClubBlackoutTheme.neonPink,
+                          fontSize: 26,
                         ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
-                        color: Colors.white60,
+                        color: cs.onSurface.withValues(alpha: 0.7),
                       ),
                       onPressed: widget.onCancel,
-                      style: IconButton.styleFrom(
-                        hoverColor: Colors.white10,
-                        highlightColor: Colors.white10,
-                      ),
                     ),
                   ],
                 ),
@@ -638,30 +653,29 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
               Expanded(
                 child: !_rolesAssigned
                     ?
-                      // Mode Selection View
-                      SingleChildScrollView(
+                    // Mode Selection View
+                    SingleChildScrollView(
                         padding: const EdgeInsets.all(24),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
-                              'Select Game Mode',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              'SELECT GAME MODE',
+                              style: ClubBlackoutTheme.headingStyle.copyWith(
+                                color: cs.onSurface,
+                                fontSize: 24,
+                              ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 8),
+                            ClubBlackoutTheme.gap8,
                             Text(
                               'Choose how roles should be distributed among the ${widget.players.length} players.',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Colors.white70),
+                              style: tt.bodyMedium?.copyWith(
+                                color: cs.onSurfaceVariant,
+                              ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 32),
-
+                            ClubBlackoutTheme.gap32,
                             _buildGameModeButton(
                               'Bloodbath',
                               'High aggression. 60% Offensive roles.',
@@ -669,7 +683,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                               ClubBlackoutTheme.neonRed,
                               GameMode.bloodbath,
                             ),
-                            const SizedBox(height: 16),
+                            ClubBlackoutTheme.gap16,
                             _buildGameModeButton(
                               'Political Nightmare',
                               'High deception. 60% Defensive/Intel roles.',
@@ -677,7 +691,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                               ClubBlackoutTheme.neonPurple,
                               GameMode.politicalNightmare,
                             ),
-                            const SizedBox(height: 16),
+                            ClubBlackoutTheme.gap16,
                             _buildGameModeButton(
                               'Free For All',
                               'Chaos reigns. 70% Reactive/Wild roles.',
@@ -685,7 +699,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                               ClubBlackoutTheme.neonOrange,
                               GameMode.freeForAll,
                             ),
-                            const SizedBox(height: 16),
+                            ClubBlackoutTheme.gap16,
                             _buildGameModeButton(
                               'Custom Balance',
                               'Balanced mix of all role types.',
@@ -697,23 +711,18 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                         ),
                       )
                     :
-                      // Role Review View
-                      Column(
+                    // Role Review View
+                    Column(
                         children: [
                           Container(
                             margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                             padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isValid
-                                  ? ClubBlackoutTheme.neonGreen.withOpacity(0.1)
-                                  : Colors.red.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isValid
-                                    ? ClubBlackoutTheme.neonGreen
-                                    : Colors.red,
-                                width: 1,
-                              ),
+                            decoration: ClubBlackoutTheme.cardDecoration(
+                              glowColor:
+                                  isValid ? ClubBlackoutTheme.neonGreen : cs.error,
+                              surfaceColor: cs.surface,
+                              glowIntensity: 0.55,
+                              borderRadius: 16,
                             ),
                             child: Row(
                               children: [
@@ -723,9 +732,9 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                                       : Icons.warning_rounded,
                                   color: isValid
                                       ? ClubBlackoutTheme.neonGreen
-                                      : Colors.red,
+                                      : cs.error,
                                 ),
-                                const SizedBox(width: 12),
+                                ClubBlackoutTheme.hGap12,
                                 Expanded(
                                   child: Text(
                                     isValid
@@ -743,7 +752,6 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                               ],
                             ),
                           ),
-
                           if (!isValid)
                             Container(
                               margin: const EdgeInsets.symmetric(
@@ -752,14 +760,17 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                               ),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white10),
+                                color: cs.surface.withValues(alpha: 0.35),
+                                borderRadius: ClubBlackoutTheme.borderRadiusSmAll,
+                                border: Border.all(
+                                  color:
+                                      cs.outlineVariant.withValues(alpha: 0.45),
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  const Text(
                                     'REQUIREMENTS',
                                     style: TextStyle(
                                       color: ClubBlackoutTheme.neonBlue,
@@ -768,7 +779,7 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                                       letterSpacing: 1,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
+                                  ClubBlackoutTheme.gap8,
                                   _styledRequirementRow(
                                     'Dealer present',
                                     _playerRoles.values.any(_isDealerRole),
@@ -795,21 +806,17 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                                 ],
                               ),
                             ),
-
                           Padding(
                             padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                             child: Row(
                               children: [
                                 Expanded(
                                   child: Text(
-                                    'Assignments',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                    'ASSIGNMENTS',
+                                    style: ClubBlackoutTheme.headingStyle.copyWith(
+                                      color: cs.onSurface,
+                                      fontSize: 20,
+                                    ),
                                   ),
                                 ),
                                 Container(
@@ -819,11 +826,11 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: ClubBlackoutTheme.neonBlue
-                                        .withOpacity(0.1),
+                                        .withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: ClubBlackoutTheme.neonBlue
-                                          .withOpacity(0.3),
+                                          .withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: Text(
@@ -838,6 +845,8 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                               ],
                             ),
                           ),
+                          _buildCompositionSummary(),
+                          ClubBlackoutTheme.gap8,
                           Expanded(
                             child: ListView.separated(
                               padding: const EdgeInsets.symmetric(
@@ -846,72 +855,69 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                               ),
                               itemCount: widget.players.length,
                               separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 8),
+                                  ClubBlackoutTheme.gap8,
                               itemBuilder: (context, index) {
                                 final player = widget.players[index];
                                 final role = _playerRoles[player.id];
+                                final glow = role?.color ?? cs.outlineVariant;
 
                                 return Container(
-                                  decoration: BoxDecoration(
-                                    color: role != null
-                                        ? role.color.withOpacity(0.1)
-                                        : Colors.white.withOpacity(0.05),
-                                    border: Border.all(
-                                      color: role != null
-                                          ? role.color.withOpacity(0.3)
-                                          : Colors.white10,
-                                    ),
-                                    borderRadius: BorderRadius.circular(16),
+                                  decoration: ClubBlackoutTheme.neonFrame(
+                                    color: glow,
+                                    opacity: role == null ? 0.05 : 0.18,
+                                    borderWidth: role == null ? 1.0 : 2.0,
+                                    showGlow: role != null,
                                   ),
-                                  child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 4,
-                                    ),
-                                    leading: role != null
-                                        ? RoleAvatarWidget(
-                                            role: role,
-                                            size: 48,
-                                            showGlow: true,
-                                            borderWidth: 2,
-                                          )
-                                        : const CircleAvatar(
-                                            backgroundColor: Colors.white10,
-                                            child: Icon(
-                                              Icons.person,
-                                              color: Colors.white38,
-                                            ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () => _showEditRoleDialog(player),
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: ListTile(
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 4,
+                                        ),
+                                        leading: role != null
+                                            ? RoleAvatarWidget(role: role, size: 48)
+                                            : PlayerIcon(
+                                                assetPath: '',
+                                                glowColor: cs.onSurface.withValues(alpha: 0.2),
+                                                size: 48,
+                                              ),
+                                        title: Text(
+                                          player.name,
+                                          style: TextStyle(
+                                            color: cs.onSurface,
+                                            fontSize: 18,
+                                            letterSpacing: 1.2,
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                    title: Text(
-                                      player.name,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                                        ),
+                                        subtitle: role != null
+                                            ? Text(
+                                                '${role.name} · ${role.type}',
+                                                style: TextStyle(
+                                                  color: role.color,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: 0.8,
+                                                ),
+                                              )
+                                            : Text(
+                                                'No role assigned',
+                                                style: TextStyle(
+                                                  color: cs.onSurface.withValues(alpha: 0.38),
+                                                  fontSize: 11,
+                                                  letterSpacing: 0.8,
+                                                ),
+                                              ),
+                                        trailing: Icon(
+                                          Icons.chevron_right_rounded,
+                                          color: role?.color.withValues(alpha: 0.5) ??
+                                              cs.onSurface.withValues(alpha: 0.2),
+                                        ),
                                       ),
-                                    ),
-                                    subtitle: role != null
-                                        ? Text(
-                                            '${role.name} • ${role.type}',
-                                            style: TextStyle(
-                                              color: role.color,
-                                              fontSize: 13,
-                                            ),
-                                          )
-                                        : const Text(
-                                            'No role assigned',
-                                            style: TextStyle(
-                                              color: Colors.white38,
-                                            ),
-                                          ),
-                                    trailing: IconButton(
-                                      icon: Icon(
-                                        Icons.edit_rounded,
-                                        color: role?.color ?? Colors.white54,
-                                      ),
-                                      onPressed: () =>
-                                          _showEditRoleDialog(player),
-                                      tooltip: 'Edit Role',
                                     ),
                                   ),
                                 );
@@ -924,104 +930,78 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
 
               // Footer Buttons
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   border: Border(
                     top: BorderSide(
-                      color: ClubBlackoutTheme.neonPink.withOpacity(0.3),
-                      width: 1,
+                      color: ClubBlackoutTheme.neonPink.withValues(alpha: 0.4),
+                      width: 1.5,
                     ),
                   ),
-                  color: Colors.white.withOpacity(0.02),
+                  color: cs.surface.withValues(alpha: 0.2),
                 ),
                 child: Row(
                   children: [
                     if (!_rolesAssigned)
-                      TextButton.icon(
+                      IconButton(
                         onPressed: widget.onCancel,
-                        icon: const Icon(Icons.arrow_back_rounded),
-                        label: const Text('Back'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white70,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
+                        tooltip: 'Close',
+                        icon: const Icon(Icons.close_rounded),
+                        style: IconButton.styleFrom(
+                          foregroundColor: cs.onSurface.withValues(alpha: 0.7),
                         ),
                       )
                     else
-                      OutlinedButton.icon(
+                      IconButton(
                         onPressed: () {
                           setState(() {
                             _rolesAssigned = false;
                           });
                         },
+                        tooltip: 'Back to Modes',
                         icon: const Icon(Icons.arrow_back_rounded),
-                        label: const Text('Modes'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
-                          side: const BorderSide(color: Colors.white24),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
+                        style: IconButton.styleFrom(
+                          foregroundColor: ClubBlackoutTheme.neonBlue,
                         ),
                       ),
                     const Spacer(),
-
                     if (!_rolesAssigned) ...[
-                      TextButton(
+                      IconButton(
                         onPressed: widget.onConfirm,
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white60,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
+                        tooltip: 'Skip to Gameplay',
+                        icon: const Icon(Icons.skip_next_rounded),
+                        style: IconButton.styleFrom(
+                          foregroundColor: cs.onSurface.withValues(alpha: 0.6),
                         ),
-                        child: const Text('Skip'),
                       ),
-                      const SizedBox(width: 12),
-                      FilledButton.icon(
+                      ClubBlackoutTheme.hGap12,
+                      FilledButton(
                         onPressed: () {
                           _assignRolesByMode(_selectedMode);
                           HapticFeedback.mediumImpact();
                         },
-                        style:
-                            FilledButton.styleFrom(
-                              backgroundColor: ClubBlackoutTheme.neonPink,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16, // Reduced from 24
-                                vertical: 16,
-                              ),
-                              elevation: 2,
-                            ).copyWith(
-                              shadowColor: WidgetStateProperty.all(
-                                ClubBlackoutTheme.neonPink.withOpacity(0.5),
-                              ),
-                            ),
-                        icon: const Icon(Icons.casino_rounded),
-                        label: const Text('ROLL'),
+                        style: ClubBlackoutTheme.neonButtonStyle(
+                          ClubBlackoutTheme.neonPink,
+                          isPrimary: true,
+                        ).copyWith(
+                          padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
+                        ),
+                        child: const Icon(Icons.casino_rounded),
                       ),
                     ] else ...[
-                      TextButton.icon(
+                      IconButton(
                         onPressed: () {
                           _assignRolesByMode(_selectedMode);
                           HapticFeedback.lightImpact();
                         },
+                        tooltip: 'Reroll All Roles',
                         icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Reroll'),
-                        style: TextButton.styleFrom(
+                        style: IconButton.styleFrom(
                           foregroundColor: ClubBlackoutTheme.neonBlue,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12, // Reduced from 16
-                            vertical: 12,
-                          ),
                         ),
                       ),
-                      const SizedBox(width: 8), // Reduced from 12
-                      FilledButton.icon(
+                      ClubBlackoutTheme.hGap12,
+                      FilledButton(
                         onPressed: isValid
                             ? () {
                                 try {
@@ -1038,47 +1018,25 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                                   HapticFeedback.heavyImpact();
                                   widget.onConfirm();
                                 } on GameException catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(e.message),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
+                                  widget.gameEngine.showToast(e.message);
                                 } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(e.toString()),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
+                                  widget.gameEngine.showToast(e.toString());
                                 }
                               }
                             : null,
-                        style:
-                            FilledButton.styleFrom(
-                              backgroundColor: ClubBlackoutTheme.neonGreen,
-                              foregroundColor: Colors.black,
-                              disabledBackgroundColor: Colors.white10,
-                              disabledForegroundColor: Colors.white38,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16, // Reduced from 24
-                                vertical: 16,
-                              ),
-                              elevation: 2,
-                            ).copyWith(
-                              shadowColor: WidgetStateProperty.all(
-                                ClubBlackoutTheme.neonGreen.withOpacity(0.5),
-                              ),
-                            ),
-                        icon: const Icon(Icons.check_circle_rounded),
-                        label: const Text('CONFIRM'),
+                        style: ClubBlackoutTheme.neonButtonStyle(
+                          ClubBlackoutTheme.neonGreen,
+                          isPrimary: true,
+                        ).copyWith(
+                          padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
+                        ),
+                        child: const Icon(Icons.check_circle_rounded),
                       ),
                     ],
                   ],
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -1092,9 +1050,14 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
     GameMode mode,
   ) {
     final isSelected = _selectedMode == mode;
+    final cs = Theme.of(context).colorScheme;
 
-    return Material(
-      color: Colors.transparent,
+    return AnimatedScale(
+      scale: isSelected ? 1.02 : 1.0,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutBack,
+      child: Material(
+        color: Colors.transparent,
       child: InkWell(
         onTap: () {
           setState(() {
@@ -1105,37 +1068,31 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? color.withOpacity(0.15)
-                : Colors.black.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? color : Colors.white24,
-              width: isSelected ? 2 : 1,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: color.withOpacity(0.4),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                    ),
-                  ]
-                : null,
+          decoration: ClubBlackoutTheme.neonFrame(
+            color: isSelected ? color : cs.outlineVariant,
+            opacity: isSelected ? 0.35 : 0.05,
+            borderWidth: isSelected ? 2.5 : 1.2,
+            showGlow: isSelected,
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
-                  border: Border.all(color: color, width: 2),
+                  border: Border.all(
+                    color: color.withValues(alpha: isSelected ? 1.0 : 0.3),
+                    width: 2,
+                  ),
                 ),
-                child: Icon(icon, color: color, size: 28),
+                child: Icon(
+                  icon,
+                  color: isSelected ? color : color.withValues(alpha: 0.5),
+                  size: 28,
+                ),
               ),
-              const SizedBox(width: 16),
+              ClubBlackoutTheme.hGap16,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1143,18 +1100,18 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: color,
+                        fontSize: 20,
                         letterSpacing: 1.2,
+                        color: isSelected ? cs.onSurface : cs.onSurface.withValues(alpha: 0.7),
+                        shadows: isSelected ? ClubBlackoutTheme.textGlow(color) : null,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    ClubBlackoutTheme.gap4,
                     Text(
                       description,
-                      style: const TextStyle(
+                      style: TextStyle(
+                        color: cs.onSurface.withValues(alpha: isSelected ? 0.8 : 0.5),
                         fontSize: 12,
-                        color: Colors.white70,
                       ),
                     ),
                   ],
@@ -1166,13 +1123,75 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
           ),
         ),
       ),
+    ));
+  }
+
+  Widget _buildCompositionSummary() {
+    final cs = Theme.of(context).colorScheme;
+    final roles = _playerRoles.values;
+    final aggressive = roles.where((r) => r.type == 'aggressive' || r.type == 'offensive').length;
+    final defensive = roles.where((r) => r.type == 'defensive' || r.type == 'protective').length;
+    final chaos = roles.where((r) => r.type == 'chaos' || r.type == 'disruptive' || r.type == 'wild').length;
+    final other = roles.length - aggressive - defensive - chaos;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: ClubBlackoutTheme.controlPadding,
+      decoration: BoxDecoration(
+        color: cs.surface.withValues(alpha: 0.3),
+        borderRadius: ClubBlackoutTheme.borderRadiusMdAll,
+        border: Border.all(
+          color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _summaryChip('Aggressive', aggressive, ClubBlackoutTheme.neonPink),
+          _summaryChip('Defensive', defensive, ClubBlackoutTheme.neonBlue),
+          _summaryChip('Chaos', chaos, Colors.orange),
+          _summaryChip('Other', other, cs.onSurface.withValues(alpha: 0.7)),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryChip(String label, int count, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          count.toString(),
+          style: TextStyle(
+            color: color,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(
+                color: color.withValues(alpha: 0.5),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: color.withValues(alpha: 0.7),
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _styledRequirementRow(String label, bool ok) {
-    final color = ok ? ClubBlackoutTheme.neonGreen : Colors.red;
+    final cs = Theme.of(context).colorScheme;
+    final color = ok ? ClubBlackoutTheme.neonGreen : cs.error;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           Icon(
@@ -1180,12 +1199,12 @@ class _RoleAssignmentDialogState extends State<RoleAssignmentDialog> {
             color: color,
             size: 18,
           ),
-          const SizedBox(width: 10),
+          ClubBlackoutTheme.hGap8,
           Expanded(
             child: Text(
               label,
               style: TextStyle(
-                color: ok ? Colors.white : Colors.white60,
+                color: ok ? cs.onSurface : cs.onSurfaceVariant,
                 fontSize: 13,
               ),
             ),

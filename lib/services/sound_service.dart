@@ -1,4 +1,3 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
 
 /// Service for managing game sound effects
@@ -7,9 +6,6 @@ class SoundService {
   factory SoundService() => _instance;
   SoundService._internal();
 
-  final AudioPlayer _effectsPlayer = AudioPlayer();
-  final AudioPlayer _musicPlayer = AudioPlayer();
-  
   bool _soundEnabled = true;
   bool _musicEnabled = true;
   double _effectsVolume = 0.7;
@@ -17,6 +13,8 @@ class SoundService {
 
   bool get soundEnabled => _soundEnabled;
   bool get musicEnabled => _musicEnabled;
+  double get effectsVolume => _effectsVolume;
+  double get musicVolume => _musicVolume;
 
   void setSoundEnabled(bool enabled) {
     _soundEnabled = enabled;
@@ -24,19 +22,14 @@ class SoundService {
 
   void setMusicEnabled(bool enabled) {
     _musicEnabled = enabled;
-    if (!enabled) {
-      _musicPlayer.stop();
-    }
   }
 
   void setEffectsVolume(double volume) {
     _effectsVolume = volume.clamp(0.0, 1.0);
-    _effectsPlayer.setVolume(_effectsVolume);
   }
 
   void setMusicVolume(double volume) {
     _musicVolume = volume.clamp(0.0, 1.0);
-    _musicPlayer.setVolume(_musicVolume);
   }
 
   // Play UI interaction sounds
@@ -104,8 +97,5 @@ class SoundService {
   }
 
   // Cleanup
-  void dispose() {
-    _effectsPlayer.dispose();
-    _musicPlayer.dispose();
-  }
+  void dispose() {}
 }

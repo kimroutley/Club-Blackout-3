@@ -3,3 +3,27 @@
 // Wait, I can't read a file unless I know it exists. 
 // But "lib/ui/widgets/player_tile.dart" was seen in the import of game_screen.dart:
 // import '../widgets/player_tile.dart';
+
+// ADB device debug checklist:
+//
+// 1) Verify device:
+//    adb devices
+//
+// 2) Run analyzer:
+//    flutter pub get
+//    flutter analyze
+//
+// 3) Capture logs while reproducing (recommended):
+//    powershell -ExecutionPolicy Bypass -File .\analyze.ps1 -AdbOnly -ClearLogcat -Minutes 3 -Package "<your.package.id>"
+//
+// If you hit a bug, paste back:
+// - the first ERROR/EXCEPTION section from logs\logcat_*.txt
+// - any "E/flutter" lines around it
+// - the action you performed right before it
+
+Run:
+  flutter pub get
+  flutter analyze
+  flutter build apk --release
+
+Paste errors here.

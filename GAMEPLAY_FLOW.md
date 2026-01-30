@@ -1,5 +1,13 @@
 # Club Blackout - Gameplay Flow Reference
 
+## Gameplay Flow
+
+- Lobby: add players, assign roles, start game
+- Setup Night (Night 0): Clinger/Creep/Medic setup (no deaths)
+- Night: actions -> resolution -> morning report
+- Day: discussion + voting -> elimination
+- Repeat until win condition
+
 ## Game Setup
 
 1. **Player Addition** (`addPlayer`)

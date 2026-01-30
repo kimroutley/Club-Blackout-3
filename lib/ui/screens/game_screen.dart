@@ -1,25 +1,29 @@
 // ignore_for_file: use_build_context_synchronously, unnecessary_null_comparison, invalid_null_aware_operator, prefer_interpolation_to_compose_strings
 
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
-import 'package:flutter/rendering.dart';
 import 'dart:math';
-import '../../logic/game_engine.dart';
-import '../../logic/game_state.dart';
-import '../../utils/game_exceptions.dart';
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
+
 import '../../logic/ability_system.dart';
-import '../../models/script_step.dart';
+import '../../logic/game_engine.dart';
 import '../../models/player.dart';
+import '../../models/script_step.dart';
+import '../../utils/game_exceptions.dart';
 import '../styles.dart';
 import '../utils/player_sort.dart';
-import '../widgets/game_drawer.dart';
+import '../widgets/club_alert_dialog.dart';
 import '../widgets/day_scene_dialog.dart';
+import '../widgets/game_drawer.dart';
 import '../widgets/interactive_script_card.dart';
+import '../widgets/neon_page_scaffold.dart';
+import '../widgets/night_phase_player_tile.dart';
 import '../widgets/phase_card.dart';
 import '../widgets/player_tile.dart';
 import '../widgets/role_reveal_widget.dart';
-import '../widgets/night_phase_player_tile.dart';
 
 class GameScreen extends StatefulWidget {
   final GameEngine gameEngine;
@@ -32,6 +36,7 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen>
     with SingleTickerProviderStateMixin {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
   final Map<int, GlobalKey> _stepKeys = {};
   int _lastScriptIndex = 0;
@@ -150,9 +155,13 @@ class _GameScreenState extends State<GameScreen>
         final viewport = box != null ? RenderAbstractViewport.of(box) : null;
         if (box is RenderBox && viewport != null) {
           final offset = viewport.getOffsetToReveal(box, alignment).offset;
+          
+          // Adjustment: Ensure the active card sits below the top AppBar.
+          final targetOffset = offset - 110.0;
+
           final current = _scrollController.offset;
-          final distance = (offset - current).abs();
-          final clampedOffset = offset.clamp(
+          final distance = (targetOffset - current).abs();
+          final clampedOffset = targetOffset.clamp(
             _scrollController.position.minScrollExtent,
             _scrollController.position.maxScrollExtent,
           );
@@ -247,8 +256,8 @@ class _GameScreenState extends State<GameScreen>
             if (topVoters.length > 1) {
               // Tie handled silently (logged via engine if needed)
               widget.gameEngine.logAction(
-                "Voting",
-                "Vote tie! No one is eliminated.",
+                'Voting',
+                'Vote tie! No one is eliminated.',
               );
 
               _voteCounts.clear();
@@ -264,7 +273,7 @@ class _GameScreenState extends State<GameScreen>
             );
             final wasDealer = widget.gameEngine.voteOutPlayer(playerId);
             _voteCounts.clear();
-            Player? victim = player;
+            final Player victim = player;
 
             // Check if victim survived (e.g. Second Wind)
             // If they are alive and have pending conversion, it's Second Wind.
@@ -274,15 +283,15 @@ class _GameScreenState extends State<GameScreen>
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => AlertDialog(
+              builder: (context) => ClubAlertDialog(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
                     color: survivedVote
                         ? Colors.amber
                         : (wasDealer
-                              ? ClubBlackoutTheme.neonGreen.withOpacity(0.6)
-                              : ClubBlackoutTheme.neonRed.withOpacity(0.6)),
+                              ? ClubBlackoutTheme.neonGreen.withValues(alpha: 0.6)
+                              : ClubBlackoutTheme.neonRed.withValues(alpha: 0.6)),
                     width: 2,
                   ),
                 ),
@@ -311,7 +320,7 @@ class _GameScreenState extends State<GameScreen>
                   children: [
                     if (survivedVote) ...[
                       const Text(
-                        "SECOND WIND!",
+                        'SECOND WIND!',
                         style: TextStyle(
                           color: Colors.amber,
                           fontSize: 28,
@@ -328,7 +337,7 @@ class _GameScreenState extends State<GameScreen>
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        "The Dealers must decide their fate.",
+                        'The Dealers must decide their fate.',
                         style: TextStyle(color: Colors.amber),
                       ),
                     ] else ...[
@@ -360,7 +369,7 @@ class _GameScreenState extends State<GameScreen>
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.2),
+                          color: Colors.amber.withValues(alpha: 0.2),
                           border: Border.all(color: Colors.amber),
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -375,7 +384,7 @@ class _GameScreenState extends State<GameScreen>
                                 ),
                                 SizedBox(width: 8),
                                 Text(
-                                  "REACTIVE ROLE",
+                                  'REACTIVE ROLE',
                                   style: TextStyle(
                                     color: Colors.amber,
                                     fontWeight: FontWeight.bold,
@@ -445,14 +454,14 @@ class _GameScreenState extends State<GameScreen>
     } on GameException catch (e) {
       _showError(e.message);
     } catch (e) {
-      _showError("An unexpected error occurred: $e");
+      _showError('An unexpected error occurred: $e');
     }
   }
 
   void _showError(String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => ClubAlertDialog(
         backgroundColor: Colors.grey[900],
         title: const Text('Error', style: TextStyle(color: Colors.redAccent)),
         content: Text(message, style: const TextStyle(color: Colors.white70)),
@@ -478,8 +487,8 @@ class _GameScreenState extends State<GameScreen>
         .join(', ');
 
     widget.gameEngine.logAction(
-      "Action Confirmed: ${step.title}",
-      "Host selected: $selectedNames",
+      'Action Confirmed: ${step.title}',
+      'Host selected: $selectedNames',
     );
 
     // 2. Store Action in Engine
@@ -662,33 +671,33 @@ class _GameScreenState extends State<GameScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     border: Border.all(color: Colors.redAccent),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.warning_amber_rounded,
                         color: Colors.redAccent,
                         size: 28,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "MINOR ID CHECKED",
+                              'MINOR ID CHECKED',
                               style: TextStyle(
                                 color: Colors.redAccent,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
-                              "Immunity stripped! The Minor is now vulnerable to Dealer attacks.",
+                              'Immunity stripped! The Minor is now vulnerable to Dealer attacks.',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
@@ -740,10 +749,10 @@ class _GameScreenState extends State<GameScreen>
       body: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: ClubBlackoutTheme.neonPink.withOpacity(0.1),
+          color: ClubBlackoutTheme.neonPink.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: ClubBlackoutTheme.neonPink.withOpacity(0.3),
+            color: ClubBlackoutTheme.neonPink.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -761,7 +770,7 @@ class _GameScreenState extends State<GameScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (context) => ClubAlertDialog(
         backgroundColor: Colors.black,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
@@ -773,7 +782,7 @@ class _GameScreenState extends State<GameScreen>
           ),
         ),
         title: Text(
-          winner.toUpperCase() + " WIN!",
+          winner.toUpperCase() + ' WIN!',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Hyperwave',
@@ -805,7 +814,7 @@ class _GameScreenState extends State<GameScreen>
                     ? ClubBlackoutTheme.neonRed
                     : ClubBlackoutTheme.neonGreen,
               ),
-              child: const Text("RETURN TO LOBBY"),
+              child: const Text('RETURN TO LOBBY'),
             ),
           ),
         ],
@@ -817,14 +826,14 @@ class _GameScreenState extends State<GameScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (context) => ClubAlertDialog(
         backgroundColor: Colors.black,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: Colors.orange, width: 2),
         ),
         title: const Text(
-          "DOUBLE DEATH!",
+          'DOUBLE DEATH!',
           style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
         ),
         content: Text(
@@ -835,47 +844,7 @@ class _GameScreenState extends State<GameScreen>
           FilledButton(
             onPressed: () => Navigator.pop(context),
             style: ClubBlackoutTheme.neonButtonStyle(Colors.orange),
-            child: const Text("CLOSE"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showMessyBitchVictoryDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: Color(0xFFE6E6FA), width: 3),
-        ),
-        title: const Text(
-          "MESSY BITCH WINS!",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Hyperwave',
-            fontSize: 32,
-            color: Color(0xFFE6E6FA),
-          ),
-        ),
-        content: const Text(
-          "Every single alive player has a rumour. The Messy Bitch has successfully ruined the party!",
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 18),
-        ),
-        actions: [
-          Center(
-            child: FilledButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              style: ClubBlackoutTheme.neonButtonStyle(const Color(0xFFE6E6FA)),
-              child: const Text("RETURN TO LOBBY"),
-            ),
+            child: const Text('CLOSE'),
           ),
         ],
       ),
@@ -900,7 +869,7 @@ class _GameScreenState extends State<GameScreen>
               border: Border.all(color: ClubBlackoutTheme.neonPurple, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: ClubBlackoutTheme.neonPurple.withOpacity(0.4),
+                  color: ClubBlackoutTheme.neonPurple.withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -910,7 +879,7 @@ class _GameScreenState extends State<GameScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.block,
                   size: 50,
                   color: ClubBlackoutTheme.neonPurple,
@@ -959,23 +928,23 @@ class _GameScreenState extends State<GameScreen>
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: ClubBlackoutTheme.neonPurple
-                                        .withOpacity(0.5),
+                                        .withValues(alpha: 0.5),
                                     width: 1.5,
                                   ),
                                   gradient: LinearGradient(
                                     colors: [
-                                      ClubBlackoutTheme.neonPurple.withOpacity(
-                                        0.2,
+                                      ClubBlackoutTheme.neonPurple.withValues(
+                                        alpha: 0.2,
                                       ),
-                                      ClubBlackoutTheme.neonPurple.withOpacity(
-                                        0.05,
+                                      ClubBlackoutTheme.neonPurple.withValues(
+                                        alpha: 0.05,
                                       ),
                                     ],
                                   ),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.cancel,
                                       size: 20,
                                       color: ClubBlackoutTheme.neonPurple,
@@ -1024,7 +993,7 @@ class _GameScreenState extends State<GameScreen>
         ),
       );
     } catch (e) {
-      debugPrint("Error showing taboo list: $e");
+      debugPrint('Error showing taboo list: $e');
     }
   }
 
@@ -1067,7 +1036,7 @@ class _GameScreenState extends State<GameScreen>
               border: Border.all(color: ClubBlackoutTheme.neonGreen, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: ClubBlackoutTheme.neonGreen.withOpacity(0.4),
+                  color: ClubBlackoutTheme.neonGreen.withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -1077,13 +1046,13 @@ class _GameScreenState extends State<GameScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.medical_services,
                   size: 60,
                   color: ClubBlackoutTheme.neonGreen,
                 ),
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   'MEDIC REVIVE',
                   style: TextStyle(
                     fontSize: 24,
@@ -1121,16 +1090,16 @@ class _GameScreenState extends State<GameScreen>
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: ClubBlackoutTheme.neonGreen
-                                      .withOpacity(0.5),
+                                      .withValues(alpha: 0.5),
                                   width: 1.5,
                                 ),
                                 gradient: LinearGradient(
                                   colors: [
-                                    ClubBlackoutTheme.neonGreen.withOpacity(
-                                      0.2,
+                                    ClubBlackoutTheme.neonGreen.withValues(
+                                      alpha: 0.2,
                                     ),
-                                    ClubBlackoutTheme.neonGreen.withOpacity(
-                                      0.05,
+                                    ClubBlackoutTheme.neonGreen.withValues(
+                                      alpha: 0.05,
                                     ),
                                   ],
                                 ),
@@ -1172,7 +1141,7 @@ class _GameScreenState extends State<GameScreen>
         ),
       );
     } catch (e) {
-      debugPrint("Error showing Medic revive: $e");
+      debugPrint('Error showing Medic revive: $e');
     }
   }
 
@@ -1194,7 +1163,7 @@ class _GameScreenState extends State<GameScreen>
         sourcePlayerId: medic.id,
         targetPlayerIds: [target.id],
         trigger: AbilityTrigger.dayAction,
-        effect: AbilityEffect.heal,
+        effect: AbilityEffect.other,
         priority: 1,
       ),
     );
@@ -1202,19 +1171,19 @@ class _GameScreenState extends State<GameScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (context) => ClubAlertDialog(
         backgroundColor: Colors.black,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: ClubBlackoutTheme.neonGreen, width: 2),
+          side: const BorderSide(color: ClubBlackoutTheme.neonGreen, width: 2),
         ),
-        title: Icon(
+        title: const Icon(
           Icons.check_circle,
           color: ClubBlackoutTheme.neonGreen,
           size: 50,
         ),
         content: Text(
-          "${target.name} has been revived!",
+          '${target.name} has been revived!',
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.white, fontSize: 18),
         ),
@@ -1256,7 +1225,7 @@ class _GameScreenState extends State<GameScreen>
               border: Border.all(color: ClubBlackoutTheme.neonBlue, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: ClubBlackoutTheme.neonBlue.withOpacity(0.4),
+                  color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -1266,13 +1235,13 @@ class _GameScreenState extends State<GameScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.visibility,
                   size: 60,
                   color: ClubBlackoutTheme.neonBlue,
                 ),
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   'SILVER FOX REVEAL',
                   style: TextStyle(
                     fontSize: 24,
@@ -1297,12 +1266,12 @@ class _GameScreenState extends State<GameScreen>
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
+                    color: Colors.red.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withOpacity(0.5)),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
                   ),
                   child: const Text(
-                    "ONE TIME USE ONLY",
+                    'ONE TIME USE ONLY',
                     style: TextStyle(
                       color: Colors.redAccent,
                       fontWeight: FontWeight.bold,
@@ -1332,10 +1301,10 @@ class _GameScreenState extends State<GameScreen>
                               ),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
-                                color: Colors.white.withOpacity(0.05),
+                                color: Colors.white.withValues(alpha: 0.05),
                                 border: Border.all(
-                                  color: ClubBlackoutTheme.neonBlue.withOpacity(
-                                    0.3,
+                                  color: ClubBlackoutTheme.neonBlue.withValues(
+                                    alpha: 0.3,
                                   ),
                                   width: 1,
                                 ),
@@ -1355,7 +1324,7 @@ class _GameScreenState extends State<GameScreen>
                                   Icon(
                                     Icons.wine_bar,
                                     color: ClubBlackoutTheme.neonBlue
-                                        .withOpacity(0.7),
+                                        .withValues(alpha: 0.7),
                                   ),
                                 ],
                               ),
@@ -1370,7 +1339,7 @@ class _GameScreenState extends State<GameScreen>
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text(
-                    "CANCEL",
+                    'CANCEL',
                     style: TextStyle(color: Colors.white38),
                   ),
                 ),
@@ -1380,7 +1349,7 @@ class _GameScreenState extends State<GameScreen>
         ),
       );
     } catch (e) {
-      debugPrint("Error showing Silver Fox ability: $e");
+      debugPrint('Error showing Silver Fox ability: $e');
     }
   }
 
@@ -1429,7 +1398,7 @@ class _GameScreenState extends State<GameScreen>
               border: Border.all(color: const Color(0xFFDE3163), width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFDE3163).withOpacity(0.4),
+                  color: const Color(0xFFDE3163).withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -1476,11 +1445,11 @@ class _GameScreenState extends State<GameScreen>
                         _refuseSecondWindConversion(secondWind);
                       },
                       style: ButtonStyle(
-                        backgroundColor: MaterialStateProperty.all(
-                          Colors.red.withOpacity(0.2),
+                        backgroundColor: WidgetStateProperty.all(
+                          Colors.red.withValues(alpha: 0.2),
                         ),
-                        foregroundColor: MaterialStateProperty.all(Colors.red),
-                        side: MaterialStateProperty.all(
+                        foregroundColor: WidgetStateProperty.all(Colors.red),
+                        side: WidgetStateProperty.all(
                           const BorderSide(color: Colors.red, width: 1.5),
                         ),
                       ),
@@ -1493,13 +1462,13 @@ class _GameScreenState extends State<GameScreen>
                         _acceptSecondWindConversion(secondWind);
                       },
                       style: ButtonStyle(
-                        backgroundColor: MaterialStateProperty.all(
-                          const Color(0xFFDE3163).withOpacity(0.2),
+                        backgroundColor: WidgetStateProperty.all(
+                          const Color(0xFFDE3163).withValues(alpha: 0.2),
                         ),
-                        foregroundColor: MaterialStateProperty.all(
+                        foregroundColor: WidgetStateProperty.all(
                           const Color(0xFFDE3163),
                         ),
-                        side: MaterialStateProperty.all(
+                        side: WidgetStateProperty.all(
                           const BorderSide(
                             color: Color(0xFFDE3163),
                             width: 1.5,
@@ -1517,7 +1486,7 @@ class _GameScreenState extends State<GameScreen>
         ),
       );
     } catch (e) {
-      debugPrint("Error showing Second Wind conversion: $e");
+      debugPrint('Error showing Second Wind conversion: $e');
     }
   }
 
@@ -1549,7 +1518,7 @@ class _GameScreenState extends State<GameScreen>
         );
       }
     } catch (e) {
-      debugPrint("Error converting Second Wind: $e");
+      debugPrint('Error converting Second Wind: $e');
     }
     setState(() {});
   }
@@ -1591,7 +1560,7 @@ class _GameScreenState extends State<GameScreen>
               border: Border.all(color: const Color(0xFFFFFF00), width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFFFF00).withOpacity(0.4),
+                  color: const Color(0xFFFFFF00).withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -1632,13 +1601,13 @@ class _GameScreenState extends State<GameScreen>
                         _convertToAttackDog(clinger);
                       },
                       style: ButtonStyle(
-                        backgroundColor: MaterialStateProperty.all(
-                          const Color(0xFFFFFF00).withOpacity(0.2),
+                        backgroundColor: WidgetStateProperty.all(
+                          const Color(0xFFFFFF00).withValues(alpha: 0.2),
                         ),
-                        foregroundColor: MaterialStateProperty.all(
+                        foregroundColor: WidgetStateProperty.all(
                           const Color(0xFFFFFF00),
                         ),
-                        side: MaterialStateProperty.all(
+                        side: WidgetStateProperty.all(
                           const BorderSide(
                             color: Color(0xFFFFFF00),
                             width: 1.5,
@@ -1656,7 +1625,7 @@ class _GameScreenState extends State<GameScreen>
         ),
       );
     } catch (e) {
-      debugPrint("Error showing attack dog conversion: $e");
+      debugPrint('Error showing attack dog conversion: $e');
     }
   }
 
@@ -1685,7 +1654,7 @@ class _GameScreenState extends State<GameScreen>
             border: Border.all(color: const Color(0xFFFFFF00), width: 2),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFFFF00).withOpacity(0.4),
+                color: const Color(0xFFFFFF00).withValues(alpha: 0.4),
                 blurRadius: 20,
                 spreadRadius: 2,
               ),
@@ -1955,12 +1924,12 @@ class _GameScreenState extends State<GameScreen>
                         width: isSelected ? 3 : 2,
                       ),
                       color: isSelected
-                          ? optionColor.withOpacity(0.2)
-                          : Colors.black.withOpacity(0.3),
+                          ? optionColor.withValues(alpha: 0.2)
+                          : Colors.black.withValues(alpha: 0.3),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: optionColor.withOpacity(0.5),
+                                color: optionColor.withValues(alpha: 0.5),
                                 blurRadius: 12,
                                 spreadRadius: 2,
                               ),
@@ -1991,7 +1960,7 @@ class _GameScreenState extends State<GameScreen>
   void _skipToNextPhase() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => ClubAlertDialog(
         title: const Text('SKIP TO NEXT PHASE?'),
         actions: [
           TextButton(
@@ -2019,13 +1988,6 @@ class _GameScreenState extends State<GameScreen>
         _checkScroll();
         _checkAbilityNotifications(); // Check for new ability availability
 
-        if (widget.gameEngine.messyBitchVictoryPending) {
-          SchedulerBinding.instance.addPostFrameCallback((_) {
-            widget.gameEngine.clearMessyBitchVictoryPending();
-            _showMessyBitchVictoryDialog();
-          });
-        }
-
         final steps = widget.gameEngine.scriptQueue;
         final safeIndex = widget.gameEngine.currentScriptIndex.clamp(
           0,
@@ -2040,21 +2002,28 @@ class _GameScreenState extends State<GameScreen>
         }
 
         return Scaffold(
-          drawer: GameDrawer(
-            gameEngine: widget.gameEngine,
-            onGameLogTap: _showLog,
-            onNavigate: (index) {
-              Navigator.pop(context); // Close drawer
-              // For GameScreen, we probably want to leave and go to home?
-              if (index == 0) {
-                Navigator.pop(context);
-              }
-            },
-          ),
+          key: _scaffoldKey,
           extendBodyBehindAppBar: true,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
+            flexibleSpace: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.7),
+                        Colors.black.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
             leading: Builder(
               builder: (BuildContext context) {
                 return IconButton(
@@ -2070,11 +2039,22 @@ class _GameScreenState extends State<GameScreen>
             centerTitle: true,
             actions: const [],
           ),
+          drawer: GameDrawer(
+            gameEngine: widget.gameEngine,
+            onGameLogTap: _showLog,
+            onNavigate: (index) {
+              Navigator.pop(context); // Close drawer
+              // For GameScreen, we probably want to leave and go to home?
+              if (index == 0) {
+                Navigator.pop(context);
+              }
+            },
+          ),
           body: Stack(
             children: [
               Positioned.fill(
                 child: Image.asset(
-                  "Backgrounds/Club Blackout App Background.png",
+                  'Backgrounds/Club Blackout App Background.png',
                   fit: BoxFit.cover,
                   errorBuilder: (c, o, s) => Container(color: Colors.black),
                 ),
@@ -2084,7 +2064,7 @@ class _GameScreenState extends State<GameScreen>
                   child: SafeArea(
                     child: ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.only(top: 120, bottom: 200),
+                      padding: const EdgeInsets.only(top: 88, bottom: 200),
                       itemCount: visibleCount,
                       itemBuilder: (context, index) {
                         final step = steps[index];
@@ -2181,10 +2161,17 @@ class _GameScreenState extends State<GameScreen>
               else if (isWaiting)
                 const Center(
                   child: Text(
-                    "Phase Complete",
+                    'Phase Complete',
                     style: TextStyle(fontSize: 32, color: Colors.white),
                   ),
                 ),
+
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _buildPinnedTopBar(context),
+              ),
 
               if (!isWaiting && currentStep != null)
                 Positioned(
@@ -2202,7 +2189,7 @@ class _GameScreenState extends State<GameScreen>
                   child: Center(
                     child: FilledButton(
                       onPressed: _advanceScript,
-                      child: const Text("CONTINUE"),
+                      child: const Text('CONTINUE'),
                     ),
                   ),
                 ),
@@ -2214,6 +2201,65 @@ class _GameScreenState extends State<GameScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPinnedTopBar(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        child: NeonGlassCard(
+          glowColor: ClubBlackoutTheme.neonBlue,
+          opacity: 0.35,
+          borderRadius: 18,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                tooltip: 'Game Menu',
+                icon: const Icon(Icons.menu, color: Colors.white),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 44,
+                  minHeight: 44,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'CLUB BLACKOUT',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Hyperwave',
+                    fontSize: 18,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                    shadows: ClubBlackoutTheme.textGlow(
+                      ClubBlackoutTheme.neonBlue,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _showLog,
+                tooltip: 'Game Log',
+                icon: const Icon(Icons.history, color: Colors.white),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 44,
+                  minHeight: 44,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -2308,12 +2354,12 @@ class _GameScreenState extends State<GameScreen>
                   boxShadow: _abilityFabExpanded
                       ? [
                           BoxShadow(
-                            color: Colors.pinkAccent.withOpacity(0.8),
+                            color: Colors.pinkAccent.withValues(alpha: 0.8),
                             blurRadius: 25,
                             spreadRadius: 4,
                           ),
                           BoxShadow(
-                            color: Colors.pink.withOpacity(0.4),
+                            color: Colors.pink.withValues(alpha: 0.4),
                             blurRadius: 40,
                             spreadRadius: 8,
                           ),
@@ -2496,9 +2542,9 @@ class _GameScreenState extends State<GameScreen>
                   _scrollToBottom();
                 },
                 icon: const Icon(Icons.close),
-                label: const Text("NO (KILL)"),
+                label: const Text('NO (KILL)'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red.withOpacity(0.2),
+                  backgroundColor: Colors.red.withValues(alpha: 0.2),
                   foregroundColor: Colors.red,
                   side: const BorderSide(color: Colors.red, width: 2),
                   padding: const EdgeInsets.symmetric(vertical: 24),
@@ -2518,11 +2564,11 @@ class _GameScreenState extends State<GameScreen>
                   _scrollToBottom();
                 },
                 icon: const Icon(Icons.check),
-                label: const Text("YES (CONVERT)"),
+                label: const Text('YES (CONVERT)'),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(
                     0xFFDE3163,
-                  ).withOpacity(0.2), // Second Wind Pink
+                  ).withValues(alpha: 0.2), // Second Wind Pink
                   foregroundColor: const Color(0xFFDE3163),
                   side: const BorderSide(color: Color(0xFFDE3163), width: 2),
                   padding: const EdgeInsets.symmetric(vertical: 24),
@@ -2546,7 +2592,7 @@ class _GameScreenState extends State<GameScreen>
         child: FilledButton.icon(
           onPressed: () => _handleShowInfoAction(step),
           icon: const Icon(Icons.visibility),
-          label: const Text("REVEAL INFORMATION"),
+          label: const Text('REVEAL INFORMATION'),
           style: ClubBlackoutTheme.neonButtonStyle(Colors.white),
         ),
       ),
@@ -2585,7 +2631,7 @@ class _GameScreenState extends State<GameScreen>
           'condition': widget.gameEngine.players.any(
             (p) => p.role.id == 'messy_bitch' && p.isActive,
           ),
-          'msg': "Messy Bitch: Rumour Mill is active! Open FAB to view.",
+          'msg': 'Messy Bitch: Rumour Mill is active! Open FAB to view.',
         },
         {
           'id_base': 'clinger_attack_ready',
@@ -2596,7 +2642,7 @@ class _GameScreenState extends State<GameScreen>
                 p.clingerPartnerId != null &&
                 !p.clingerAttackDogUsed,
           ),
-          'msg': "Clinger Notification: Attack Dog ability available!",
+          'msg': 'Clinger Notification: Attack Dog ability available!',
         },
         {
           'id_base': 'second_wind_ready',
@@ -2606,12 +2652,12 @@ class _GameScreenState extends State<GameScreen>
                 p.secondWindPendingConversion &&
                 !p.secondWindConverted,
           ),
-          'msg': "Second Wind Notification: Conversion opportunity available!",
+          'msg': 'Second Wind Notification: Conversion opportunity available!',
         },
         {
           'id_base': 'silver_fox_ready',
           'condition': false,
-          'msg': "Silver Fox disabled.",
+          'msg': 'Silver Fox disabled.',
         },
         {
           'id_base': 'tea_spiller_ready',
@@ -2620,7 +2666,7 @@ class _GameScreenState extends State<GameScreen>
                 p.role.id == 'tea_spiller' &&
                 widget.gameEngine.deadPlayerIds.contains(p.id),
           ),
-          'msg': "Tea Spiller DIED: Check menu for Tea Spilling opportunity.",
+          'msg': 'Tea Spiller DIED: Check menu for Tea Spilling opportunity.',
         },
         {
           'id_base': 'predator_ready',
@@ -2629,12 +2675,12 @@ class _GameScreenState extends State<GameScreen>
                 p.role.id == 'predator' &&
                 widget.gameEngine.deadPlayerIds.contains(p.id),
           ),
-          'msg': "Predator DIED: Check menu for Retaliation opportunity.",
+          'msg': 'Predator DIED: Check menu for Retaliation opportunity.',
         },
         {
           'id_base': 'drama_queen_ready',
           'condition': widget.gameEngine.dramaQueenSwapPending,
-          'msg': "Drama Queen died: swap two players now.",
+          'msg': 'Drama Queen died: swap two players now.',
         },
         {
           'id_base': 'medic_ready',
@@ -2645,7 +2691,7 @@ class _GameScreenState extends State<GameScreen>
                 p.medicChoice == 'REVIVE' &&
                 !p.hasReviveToken,
           ),
-          'msg': "Medic: Revive ability is available.",
+          'msg': 'Medic: Revive ability is available.',
         },
         {
           'id_base': 'bouncer_ready',
@@ -2655,7 +2701,7 @@ class _GameScreenState extends State<GameScreen>
                 p.isActive &&
                 !p.bouncerAbilityRevoked,
           ),
-          'msg': "The Bouncer: Confront Roofi ability available.",
+          'msg': 'The Bouncer: Confront Roofi ability available.',
         },
       ];
 
@@ -2860,7 +2906,7 @@ class _GameScreenState extends State<GameScreen>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.6),
+                color: color.withValues(alpha: 0.6),
                 blurRadius: 15,
                 spreadRadius: 2,
               ),
@@ -2888,7 +2934,7 @@ class _GameScreenState extends State<GameScreen>
     final totalTargets = alivePlayers.length;
 
     return Container(
-      color: Colors.black.withOpacity(0.95),
+      color: Colors.black.withValues(alpha: 0.95),
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
       child: Column(
         children: [
@@ -2901,7 +2947,7 @@ class _GameScreenState extends State<GameScreen>
           const SizedBox(height: 8),
           Text(
             '$heardCount / $totalTargets Targets Reached',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
+            style: const TextStyle(color: Colors.white70, fontSize: 16),
           ),
           const SizedBox(height: 8),
           LinearProgressIndicator(
@@ -2925,8 +2971,8 @@ class _GameScreenState extends State<GameScreen>
                   ),
                   decoration: BoxDecoration(
                     color: hasHeard
-                        ? ClubBlackoutTheme.neonGreen.withOpacity(0.1)
-                        : Colors.white.withOpacity(0.05),
+                        ? ClubBlackoutTheme.neonGreen.withValues(alpha: 0.1)
+                        : Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: hasHeard
@@ -2960,7 +3006,7 @@ class _GameScreenState extends State<GameScreen>
                               ),
                             ),
                             Text(
-                              hasHeard ? "Has heard the rumour" : "Uninformed",
+                              hasHeard ? 'Has heard the rumour' : 'Uninformed',
                               style: TextStyle(
                                 color: hasHeard
                                     ? ClubBlackoutTheme.neonGreen
@@ -2972,7 +3018,7 @@ class _GameScreenState extends State<GameScreen>
                         ),
                       ),
                       if (hasHeard)
-                        Icon(
+                        const Icon(
                           Icons.check_circle,
                           color: ClubBlackoutTheme.neonGreen,
                         ),
@@ -3003,11 +3049,11 @@ class _GameScreenState extends State<GameScreen>
   void _showBouncerConfrontDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => ClubAlertDialog(
         backgroundColor: Colors.black,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: ClubBlackoutTheme.neonBlue, width: 2),
+          side: const BorderSide(color: ClubBlackoutTheme.neonBlue, width: 2),
         ),
         title: Text(
           'CONFRONT THE ROOFI',
@@ -3019,12 +3065,12 @@ class _GameScreenState extends State<GameScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              "Does the Bouncer suspect someone? Select their target.",
+              'Does the Bouncer suspect someone? Select their target.',
               style: TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 16),
             const Text(
-              "⚠️ RISK: If Bouncer is wrong, they lose their I.D. checking ability forever.",
+              '⚠️ RISK: If Bouncer is wrong, they lose their I.D. checking ability forever.',
               style: TextStyle(color: Colors.redAccent, fontSize: 13),
             ),
             const SizedBox(height: 16),
@@ -3072,7 +3118,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _processBouncerConfrontation(Player target) {
-    bool success = target.role.id == 'roofi';
+    final bool success = target.role.id == 'roofi';
 
     setState(() {
       if (success) {
@@ -3084,12 +3130,12 @@ class _GameScreenState extends State<GameScreen>
         } catch (_) {}
 
         widget.gameEngine.logAction(
-          "Bouncer Confrontation",
-          "Bouncer correctly identified Roofi (${target.name})!",
+          'Bouncer Confrontation',
+          'Bouncer correctly identified Roofi (${target.name})!',
         );
         _showBouncerResultDialog(
-          "SUCCESS",
-          "You caught The Roofi!\nTheir power is neutralized.",
+          'SUCCESS',
+          'You caught The Roofi!\nTheir power is neutralized.',
           ClubBlackoutTheme.neonGreen,
         );
       } else {
@@ -3101,12 +3147,12 @@ class _GameScreenState extends State<GameScreen>
         } catch (_) {}
 
         widget.gameEngine.logAction(
-          "Bouncer Confrontation",
-          "Bouncer incorrectly suspected ${target.name} as Roofi and lost their ability.",
+          'Bouncer Confrontation',
+          'Bouncer incorrectly suspected ${target.name} as Roofi and lost their ability.',
         );
         _showBouncerResultDialog(
-          "FAILURE",
-          "That was not The Roofi.\nYou have lost your I.D. checking ability.",
+          'FAILURE',
+          'That was not The Roofi.\nYou have lost your I.D. checking ability.',
           Colors.red,
         );
       }
@@ -3116,7 +3162,7 @@ class _GameScreenState extends State<GameScreen>
   void _showBouncerResultDialog(String title, String body, Color color) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => ClubAlertDialog(
         backgroundColor: Colors.black,
         shape: RoundedRectangleBorder(
           side: BorderSide(color: color, width: 2),
@@ -3131,7 +3177,7 @@ class _GameScreenState extends State<GameScreen>
           FilledButton(
             onPressed: () => Navigator.pop(context),
             style: FilledButton.styleFrom(backgroundColor: color),
-            child: const Text("OK", style: TextStyle(color: Colors.black)),
+            child: const Text('OK', style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -3145,7 +3191,7 @@ class _GameScreenState extends State<GameScreen>
         backgroundColor: Colors.black,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: ClubBlackoutTheme.neonOrange, width: 2),
+          side: const BorderSide(color: ClubBlackoutTheme.neonOrange, width: 2),
         ),
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -3153,14 +3199,14 @@ class _GameScreenState extends State<GameScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "TEA SPILLER REVEAL",
+                'TEA SPILLER REVEAL',
                 style: ClubBlackoutTheme.headingStyle.copyWith(
                   color: ClubBlackoutTheme.neonOrange,
                 ),
               ),
               const SizedBox(height: 16),
               const Text(
-                "The Tea Spiller has died. Select a player to reveal their role.",
+                'The Tea Spiller has died. Select a player to reveal their role.',
                 style: TextStyle(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
@@ -3193,14 +3239,14 @@ class _GameScreenState extends State<GameScreen>
                           onTap: () {
                             Navigator.pop(context);
                             widget.gameEngine.logAction(
-                              "Tea Spiller Reveal",
-                              "Tea Spiller revealed ${p.name} as ${p.role.name}.",
+                              'Tea Spiller Reveal',
+                              'Tea Spiller revealed ${p.name} as ${p.role.name}.',
                             );
                             showRoleReveal(
                               context,
                               p.role,
                               p.name,
-                              subtitle: "Tea Spilled by the Dead!",
+                              subtitle: 'Tea Spilled by the Dead!',
                             );
                           },
                         ),
@@ -3223,7 +3269,7 @@ class _GameScreenState extends State<GameScreen>
         backgroundColor: Colors.black,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.grey, width: 2),
+          side: const BorderSide(color: Colors.grey, width: 2),
         ),
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -3231,14 +3277,14 @@ class _GameScreenState extends State<GameScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "PREDATOR RETALIATION",
+                'PREDATOR RETALIATION',
                 style: ClubBlackoutTheme.headingStyle.copyWith(
                   color: Colors.grey,
                 ),
               ),
               const SizedBox(height: 16),
               const Text(
-                "The Predator was voted out. Select a player to take down with them.",
+                'The Predator was voted out. Select a player to take down with them.',
                 style: TextStyle(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
@@ -3271,8 +3317,8 @@ class _GameScreenState extends State<GameScreen>
                             p.die(widget.gameEngine.dayCount);
                             widget.gameEngine.deadPlayerIds.add(p.id);
                             widget.gameEngine.logAction(
-                              "Predator Retaliation",
-                              "The Predator took ${p.name} down with them!",
+                              'Predator Retaliation',
+                              'The Predator took ${p.name} down with them!',
                             );
 
                             // Refresh UI
@@ -3281,18 +3327,18 @@ class _GameScreenState extends State<GameScreen>
                             // Show confirmation
                             showDialog(
                               context: context,
-                              builder: (ctx) => AlertDialog(
+                              builder: (ctx) => ClubAlertDialog(
                                 title: const Text(
-                                  "ELIMINATED",
+                                  'ELIMINATED',
                                   style: TextStyle(color: Colors.red),
                                 ),
                                 content: Text(
-                                  "${p.name} has been eliminated by The Predator.",
+                                  '${p.name} has been eliminated by The Predator.',
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx),
-                                    child: const Text("OK"),
+                                    child: const Text('OK'),
                                   ),
                                 ],
                               ),
@@ -3333,7 +3379,7 @@ class _GameScreenState extends State<GameScreen>
               backgroundColor: Colors.black,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: ClubBlackoutTheme.neonPurple, width: 2),
+                side: const BorderSide(color: ClubBlackoutTheme.neonPurple, width: 2),
               ),
               child: Container(
                 padding: const EdgeInsets.all(24),
@@ -3342,14 +3388,14 @@ class _GameScreenState extends State<GameScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "DRAMA QUEEN SWAP",
+                      'DRAMA QUEEN SWAP',
                       style: ClubBlackoutTheme.headingStyle.copyWith(
                         color: ClubBlackoutTheme.neonPurple,
                       ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      "Drama Queen is dead. Pick two players to swap devices, then confirm.",
+                      'Drama Queen is dead. Pick two players to swap devices, then confirm.',
                       style: TextStyle(color: Colors.white70),
                     ),
                     const SizedBox(height: 12),
@@ -3426,16 +3472,16 @@ class _GameScreenState extends State<GameScreen>
 
                                   showDialog(
                                     context: this.context,
-                                    builder: (ctx) => AlertDialog(
+                                    builder: (ctx) => ClubAlertDialog(
                                       backgroundColor: Colors.black,
                                       shape: RoundedRectangleBorder(
-                                        side: BorderSide(
+                                        side: const BorderSide(
                                           color: ClubBlackoutTheme.neonPurple,
                                         ),
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       title: const Text(
-                                        "SWAP COMPLETE",
+                                        'SWAP COMPLETE',
                                         style: TextStyle(color: Colors.white),
                                       ),
                                       content: Column(
@@ -3444,21 +3490,21 @@ class _GameScreenState extends State<GameScreen>
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "${p1.name} is now ${p1.role.name}",
+                                            '${p1.name} is now ${p1.role.name}',
                                             style: const TextStyle(
                                               color: Colors.white,
                                             ),
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
-                                            "${p2.name} is now ${p2.role.name}",
+                                            '${p2.name} is now ${p2.role.name}',
                                             style: const TextStyle(
                                               color: Colors.white,
                                             ),
                                           ),
                                           const SizedBox(height: 16),
                                           const Text(
-                                            "Host instructions:\n1) Ask all players to close their eyes.\n2) Swap the devices/cards.\n3) Give everyone 10 seconds to check their role.\n4) Resume into the next night.",
+                                            'Host instructions:\n1) Ask all players to close their eyes.\n2) Swap the devices/cards.\n3) Give everyone 10 seconds to check their role.\n4) Resume into the next night.',
                                             style: TextStyle(
                                               color: Colors.white70,
                                             ),
@@ -3468,7 +3514,7 @@ class _GameScreenState extends State<GameScreen>
                                       actions: [
                                         TextButton(
                                           onPressed: () => Navigator.pop(ctx),
-                                          child: const Text("ACKNOWLEDGE"),
+                                          child: const Text('ACKNOWLEDGE'),
                                         ),
                                       ],
                                     ),
@@ -3477,7 +3523,7 @@ class _GameScreenState extends State<GameScreen>
                                 }
                               : null,
                           icon: const Icon(Icons.check),
-                          label: const Text("CONFIRM SWAP"),
+                          label: const Text('CONFIRM SWAP'),
                         ),
                       ],
                     ),
@@ -3496,17 +3542,17 @@ class _GameScreenState extends State<GameScreen>
     final isActive = widget.gameEngine.currentScriptStep?.id == step.id;
 
     if (!isActive) {
-      return Card(
+      return const Card(
         color: Colors.white10,
-        margin: const EdgeInsets.all(16),
+        margin: EdgeInsets.all(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           child: Row(
             children: [
               Icon(Icons.wb_sunny, color: Colors.white30),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Text(
-                "Day Phase Completed",
+                'Day Phase Completed',
                 style: TextStyle(color: Colors.white30, fontSize: 18),
               ),
             ],
@@ -3561,7 +3607,7 @@ class _GameScreenState extends State<GameScreen>
           icon: const Icon(Icons.meeting_room, size: 28),
           label: const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: Text("BEGIN DAY PHASE", style: TextStyle(fontSize: 20)),
+            child: Text('BEGIN DAY PHASE', style: TextStyle(fontSize: 20)),
           ),
           style: FilledButton.styleFrom(
             backgroundColor: ClubBlackoutTheme.neonOrange,
@@ -3593,12 +3639,12 @@ class _GameLogDialog extends StatelessWidget {
           color: const Color(0xFF1A1A1A),
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: ClubBlackoutTheme.neonBlue.withOpacity(0.5),
+            color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.5),
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               blurRadius: 20,
               spreadRadius: 5,
             ),
@@ -3610,14 +3656,14 @@ class _GameLogDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: ClubBlackoutTheme.neonBlue.withOpacity(0.1),
+                color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.1),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(26),
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.history,
                     color: ClubBlackoutTheme.neonBlue,
                     size: 28,
@@ -3646,7 +3692,7 @@ class _GameLogDialog extends StatelessWidget {
                       child: Text(
                         'No events recorded yet.',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -3665,7 +3711,7 @@ class _GameLogDialog extends StatelessWidget {
                         final timeLabel = '$hh:$mm:$ss';
                         final headerLine =
                             'Turn ${entry.turn}  ·  ${entry.phase.toUpperCase()}  ·  $timeLabel';
-                        final dotted = '···························';
+                        const dotted = '···························';
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -3673,12 +3719,12 @@ class _GameLogDialog extends StatelessWidget {
                             color: const Color(0xFF111111),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.08),
+                              color: Colors.white.withValues(alpha: 0.08),
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.35),
+                                color: Colors.black.withValues(alpha: 0.35),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -3692,7 +3738,7 @@ class _GameLogDialog extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'CLUB BLACKOUT RECEIPT',
                                   style: TextStyle(
                                     color: Colors.white70,
@@ -3716,7 +3762,7 @@ class _GameLogDialog extends StatelessWidget {
                                 Text(
                                   dotted,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.25),
+                                    color: Colors.white.withValues(alpha: 0.25),
                                     fontSize: 12,
                                     letterSpacing: 1.5,
                                     fontFamily: 'RobotoMono',
@@ -3725,7 +3771,7 @@ class _GameLogDialog extends StatelessWidget {
                                 const SizedBox(height: 8),
                                 Text(
                                   entry.action.toUpperCase(),
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: ClubBlackoutTheme.neonBlue,
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
@@ -3747,7 +3793,7 @@ class _GameLogDialog extends StatelessWidget {
                                 Text(
                                   dotted,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.25),
+                                    color: Colors.white.withValues(alpha: 0.25),
                                     fontSize: 12,
                                     letterSpacing: 1.5,
                                     fontFamily: 'RobotoMono',
@@ -3758,14 +3804,14 @@ class _GameLogDialog extends StatelessWidget {
                                   children: [
                                     Text(
                                       'REF: ${entry.hashCode & 0xFFFF}',
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white54,
                                         fontSize: 11,
                                         fontFamily: 'RobotoMono',
                                       ),
                                     ),
                                     const Spacer(),
-                                    Text(
+                                    const Text(
                                       'KEEP FOR YOUR RECORDS',
                                       style: TextStyle(
                                         color: Colors.white38,
@@ -3860,7 +3906,7 @@ class _PulsingFabState extends State<_PulsingFab>
               BoxShadow(
                 color: const Color(
                   0xFFDE3163,
-                ).withOpacity(0.6 + (_animation.value * 0.4)),
+                ).withValues(alpha: 0.6 + (_animation.value * 0.4)),
                 blurRadius: 10 + (_animation.value * 10),
                 spreadRadius: 2 + (_animation.value * 4),
               ),

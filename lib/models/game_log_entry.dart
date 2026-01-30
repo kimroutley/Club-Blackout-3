@@ -1,4 +1,4 @@
-﻿enum GameLogType { script, action, system }
+enum GameLogType { script, action, system }
 
 class GameLogEntry {
   final int turn;

@@ -1,206 +1,12 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:club_blackout/logic/game_engine.dart';
 import 'package:club_blackout/data/role_repository.dart';
+import 'package:club_blackout/logic/game_engine.dart';
 import 'package:club_blackout/models/player.dart';
-import 'package:club_blackout/models/role.dart';
+import 'package:club_blackout/models/script_step.dart';
 import 'package:club_blackout/utils/role_validator.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class MockRoleRepository extends RoleRepository {
-  final List<Role> _mockRoles = [
-    Role(
-      id: 'dealer',
-      name: 'The Dealer',
-      alliance: 'The Dealers',
-      type: 'aggressive',
-      description: '...',
-      nightPriority: 5,
-      assetPath: 'path',
-      colorHex: '#FF00FF',
-    ),
-    Role(
-      id: 'party_animal',
-      name: 'The Party Animal',
-      alliance: 'The Party Animals',
-      type: 'passive',
-      description: '...',
-      nightPriority: 0,
-      assetPath: 'path',
-      colorHex: '#FFDAB9',
-    ),
-    Role(
-      id: 'medic',
-      name: 'The Medic',
-      alliance: 'The Party Animals',
-      type: 'defensive',
-      description: '...',
-      nightPriority: 1,
-      hasBinaryChoiceAtStart: true,
-      choices: ['REVIVE', 'PROTECT'],
-      assetPath: 'path',
-      colorHex: '#FF0000',
-    ),
-    Role(
-      id: 'bouncer',
-      name: 'The Bouncer',
-      alliance: 'The Party Animals',
-      type: 'investigative',
-      description: '...',
-      nightPriority: 2,
-      assetPath: 'path',
-      colorHex: '#0000FF',
-    ),
-    Role(
-      id: 'wallflower',
-      name: 'The Wallflower',
-      alliance: 'The Party Animals',
-      type: 'investigative',
-      description: '...',
-      nightPriority: 5,
-      ability: 'witness_murder',
-      assetPath: 'path',
-      colorHex: '#FFC0CB',
-    ),
-    Role(
-      id: 'club_manager',
-      name: 'Club Manager',
-      alliance: 'None',
-      type: 'neutral',
-      description: '...',
-      nightPriority: 0,
-      assetPath: 'path',
-      colorHex: '#888888',
-    ),
-    Role(
-      id: 'messy_bitch',
-      name: 'The Messy Bitch',
-      alliance: 'None (Neutral Survivor)',
-      type: 'chaos',
-      description: '...',
-      nightPriority: 1,
-      assetPath: 'path',
-      colorHex: '#E6E6FA',
-    ),
-    Role(
-      id: 'minor',
-      name: 'The Minor',
-      alliance: 'The Party Animals',
-      type: 'defensive',
-      description: '...',
-      nightPriority: 0,
-      assetPath: 'path',
-      colorHex: '#FFFFFF',
-    ),
-    Role(
-      id: 'seasoned_drinker',
-      name: 'The Seasoned Drinker',
-      alliance: 'The Party Animals',
-      type: 'tank',
-      description: '...',
-      nightPriority: 0,
-      assetPath: 'path',
-      colorHex: '#98FF98',
-    ),
-    Role(
-      id: 'ally_cat',
-      name: 'Ally Cat',
-      alliance: 'The Party Animals',
-      type: 'special',
-      description: '...',
-      nightPriority: 0,
-      assetPath: 'path',
-      colorHex: '#000000',
-    ),
-    Role(
-      id: 'second_wind',
-      name: 'Second Wind',
-      alliance: 'The Party Animals',
-      type: 'special',
-      description: '...',
-      nightPriority: 0,
-      assetPath: 'path',
-      colorHex: '#AAAAAA',
-    ),
-    Role(
-      id: 'roofi',
-      name: 'The Roofi',
-      alliance: 'The Party Animals',
-      type: 'offensive',
-      description: '...',
-      nightPriority: 3,
-      assetPath: 'path',
-      colorHex: '#00FF00',
-    ),
-    Role(
-      id: 'sober',
-      name: 'The Sober',
-      alliance: 'The Party Animals',
-      type: 'protective',
-      description: '...',
-      nightPriority: 1,
-      ability: 'send_home',
-      assetPath: 'path',
-      colorHex: '#32CD32',
-    ),
-    Role(
-      id: 'tea_spiller',
-      name: 'The Tea Spiller',
-      alliance: 'The Party Animals',
-      type: 'reactive',
-      description: '...',
-      nightPriority: 0,
-      assetPath: 'path',
-      colorHex: '#FFD700',
-    ),
-    Role(
-      id: 'lightweight',
-      name: 'The Lightweight',
-      alliance: 'The Party Animals',
-      type: 'passive',
-      description: '...',
-      nightPriority: 0,
-      assetPath: 'path',
-      colorHex: '#FFA500',
-    ),
-    Role(
-      id: 'silver_fox',
-      name: 'Silver Fox',
-      alliance: 'The Party Animals',
-      type: 'special',
-      description: '...',
-      nightPriority: 0,
-      assetPath: 'path',
-      colorHex: '#C0C0C0',
-    ),
-    Role(
-      id: 'clinger',
-      name: 'The Clinger',
-      alliance: 'The Party Animals',
-      type: 'special',
-      description: '...',
-      nightPriority: 0,
-      assetPath: 'path',
-      colorHex: '#FFFF00',
-    ),
-  ];
-
-  @override
-  Future<void> loadRoles() async {
-    // No-op for mock
-  }
-
-  @override
-  List<Role> get roles => _mockRoles;
-
-  @override
-  Role? getRoleById(String id) {
-    try {
-      return _mockRoles.firstWhere((role) => role.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
-}
+import 'support/file_role_repository.dart';
 
 /// Comprehensive gameplay scenario tests to validate all possible player combinations
 /// and ensure logical game flow and win conditions work correctly.
@@ -212,7 +18,8 @@ void main() {
   late GameEngine gameEngine;
 
   setUp(() async {
-    roleRepository = MockRoleRepository();
+    roleRepository = FileRoleRepository();
+    await roleRepository.loadRoles();
     gameEngine = GameEngine(roleRepository: roleRepository);
   });
 
@@ -264,11 +71,11 @@ void main() {
         'PA1',
         role: roleRepository.getRoleById('party_animal'),
       );
-      gameEngine.addPlayer(
-        'PA2',
-        role: roleRepository.getRoleById('party_animal'),
-      );
       gameEngine.addPlayer('Medic1', role: roleRepository.getRoleById('medic'));
+      gameEngine.addPlayer(
+        'Bouncer1',
+        role: roleRepository.getRoleById('bouncer'),
+      );
 
       final validation = RoleValidator.validateGameSetup(gameEngine.players);
       expect(validation.isValid, false);
@@ -285,12 +92,12 @@ void main() {
         role: roleRepository.getRoleById('party_animal'),
       );
       gameEngine.addPlayer(
-        'PA2',
-        role: roleRepository.getRoleById('party_animal'),
-      );
-      gameEngine.addPlayer(
         'WF1',
         role: roleRepository.getRoleById('wallflower'),
+      );
+      gameEngine.addPlayer(
+        'CM1',
+        role: roleRepository.getRoleById('club_manager'),
       );
 
       final validation = RoleValidator.validateGameSetup(gameEngine.players);
@@ -344,9 +151,8 @@ void main() {
       // This is actually validated in lobby, not in validateGameSetup
       // But we can check the ratio
       final enabledPlayers = gameEngine.enabledPlayers;
-      final dealerCount = enabledPlayers
-          .where((p) => p.role.id == 'dealer')
-          .length;
+      final dealerCount =
+          enabledPlayers.where((p) => p.role.id == 'dealer').length;
       final totalCount = enabledPlayers.length;
       expect(dealerCount, greaterThan(totalCount - dealerCount));
     });
@@ -372,29 +178,100 @@ void main() {
   });
 
   group('Win Condition Scenarios', () {
-    test('Dealers win when they outnumber Party Animals', () {
-      // Setup: 3 dealers, 2 party animals (dealers outnumber)
+    test('Dealers win in a 1v1 showdown vs a Party Animal', () {
       gameEngine.addPlayer(
         'Dealer1',
-        role: roleRepository.getRoleById('dealer'),
-      );
-      gameEngine.addPlayer(
-        'Dealer2',
-        role: roleRepository.getRoleById('dealer'),
-      );
-      gameEngine.addPlayer(
-        'Dealer3',
         role: roleRepository.getRoleById('dealer'),
       );
       gameEngine.addPlayer(
         'PA1',
         role: roleRepository.getRoleById('party_animal'),
       );
+
+      final result = gameEngine.checkGameEnd();
+      expect(result, isNotNull);
+      expect(result!.winner, 'DEALER');
+    });
+
+    test('Converted Second Wind counts as a Dealer for game end', () {
       gameEngine.addPlayer(
-        'PA2',
+        'Dealer1',
+        role: roleRepository.getRoleById('dealer'),
+      );
+      gameEngine.addPlayer(
+        'SW1',
+        role: roleRepository.getRoleById('second_wind'),
+      );
+      gameEngine.addPlayer(
+        'PA1',
         role: roleRepository.getRoleById('party_animal'),
       );
 
+      final dealerRole = roleRepository.getRoleById('dealer');
+      expect(dealerRole, isNotNull);
+
+      final secondWind =
+          gameEngine.players.firstWhere((p) => p.role.id == 'second_wind');
+      secondWind.secondWindConverted = true;
+      secondWind.role = dealerRole!;
+      secondWind.alliance = dealerRole.alliance;
+
+      // Original Dealer dies; converted Second Wind is now the last Dealer.
+      gameEngine.players.firstWhere((p) => p.name == 'Dealer1').die();
+
+      final result = gameEngine.checkGameEnd();
+      expect(result, isNotNull);
+      expect(result!.winner, 'DEALER');
+    });
+
+    test('Creep mimicking Dealer does not immediately become a Dealer', () {
+      gameEngine.addPlayer(
+        'Dealer1',
+        role: roleRepository.getRoleById('dealer'),
+      );
+      gameEngine.addPlayer(
+        'Creep1',
+        role: roleRepository.getRoleById('creep'),
+      );
+
+      final dealer = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
+      final creep = gameEngine.players.firstWhere((p) => p.name == 'Creep1');
+      expect(creep.role.id, 'creep');
+
+      // Resolve a night where the Creep chooses Dealer1.
+      gameEngine.currentPhase = GamePhase.night;
+      gameEngine.nightActions['creep_target'] = dealer.id;
+      gameEngine.skipToNextPhase();
+
+      expect(creep.creepTargetId, dealer.id);
+      expect(creep.role.id, 'creep');
+      expect(creep.alliance.toLowerCase().contains('dealer'), false);
+    });
+
+    test('Creep inherits Dealer on death and takes their place', () {
+      gameEngine.addPlayer(
+        'Dealer1',
+        role: roleRepository.getRoleById('dealer'),
+      );
+      gameEngine.addPlayer(
+        'Creep1',
+        role: roleRepository.getRoleById('creep'),
+      );
+      gameEngine.addPlayer(
+        'PA1',
+        role: roleRepository.getRoleById('party_animal'),
+      );
+
+      final dealer = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
+      final creep = gameEngine.players.firstWhere((p) => p.name == 'Creep1');
+
+      creep.creepTargetId = dealer.id;
+      gameEngine.processDeath(dealer, cause: 'vote');
+
+      expect(creep.role.id, 'dealer');
+      expect(creep.creepTargetId, isNull);
+
+      // Now the last two alive are Dealer (former Creep) vs Party Animal.
       final result = gameEngine.checkGameEnd();
       expect(result, isNotNull);
       expect(result!.winner, 'DEALER');
@@ -410,14 +287,14 @@ void main() {
         role: roleRepository.getRoleById('party_animal'),
       );
       gameEngine.addPlayer(
-        'PA2',
-        role: roleRepository.getRoleById('party_animal'),
-      );
-      gameEngine.addPlayer(
         'WF1',
         role: roleRepository.getRoleById('wallflower'),
       );
       gameEngine.addPlayer('Medic1', role: roleRepository.getRoleById('medic'));
+      gameEngine.addPlayer(
+        'Bouncer1',
+        role: roleRepository.getRoleById('bouncer'),
+      );
 
       // Kill all dealers
       final dealers = gameEngine.players.where((p) => p.role.id == 'dealer');
@@ -440,10 +317,6 @@ void main() {
         role: roleRepository.getRoleById('party_animal'),
       );
       gameEngine.addPlayer(
-        'PA2',
-        role: roleRepository.getRoleById('party_animal'),
-      );
-      gameEngine.addPlayer(
         'WF1',
         role: roleRepository.getRoleById('wallflower'),
       );
@@ -457,39 +330,152 @@ void main() {
       expect(result, isNull); // Game should continue
     });
 
-    test('Neutral (Club Manager) wins if they survive to the end', () {
+    test('Club Manager wins if only they and a Dealer remain', () {
       gameEngine.addPlayer(
         'Dealer1',
         role: roleRepository.getRoleById('dealer'),
       );
       gameEngine.addPlayer(
-        'PA1',
-        role: roleRepository.getRoleById('party_animal'),
-      );
-      gameEngine.addPlayer(
-        'WF1',
-        role: roleRepository.getRoleById('wallflower'),
-      );
-      gameEngine.addPlayer(
         'CM1',
         role: roleRepository.getRoleById('club_manager'),
       );
-
-      // Kill all dealers (Party Animals would win, but Club Manager should also survive)
-      final dealer = gameEngine.players.firstWhere(
-        (p) => p.role.id == 'dealer',
+      gameEngine.addPlayer(
+        'PA1',
+        role: roleRepository.getRoleById('party_animal'),
       );
-      dealer.die();
+
+      // Eliminate the Party Animal so it's Dealer vs Club Manager.
+      gameEngine.players.where((p) => p.role.id == 'party_animal').first.die();
 
       final result = gameEngine.checkGameEnd();
       expect(result, isNotNull);
-      expect(result!.winner, 'PARTY_ANIMAL');
+      expect(result!.winner, 'CLUB_MANAGER');
+    });
+  });
 
-      // Club Manager should still be alive
-      final clubManager = gameEngine.players.firstWhere(
-        (p) => p.role.id == 'club_manager',
+  group('Clinger Mechanics', () {
+    test('Clinger votes always mirror obsession partner', () {
+      gameEngine.addPlayer('Clinger1', role: roleRepository.getRoleById('clinger'));
+      gameEngine.addPlayer('PA1', role: roleRepository.getRoleById('party_animal'));
+      gameEngine.addPlayer('Dealer1', role: roleRepository.getRoleById('dealer'));
+
+      final clinger = gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
+      final partner = gameEngine.players.firstWhere((p) => p.name == 'PA1');
+      final dealer = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
+
+      clinger.clingerPartnerId = partner.id;
+      clinger.clingerFreedAsAttackDog = false;
+
+      // Partner votes Dealer -> Clinger should follow.
+      gameEngine.recordVote(voterId: partner.id, targetId: dealer.id);
+      expect(gameEngine.currentDayVotesByVoter[clinger.id], dealer.id);
+
+      // Clinger tries to vote differently -> should snap back to partner.
+      gameEngine.recordVote(voterId: clinger.id, targetId: partner.id);
+      expect(gameEngine.currentDayVotesByVoter[clinger.id], dealer.id);
+
+      // Partner clears vote -> Clinger should clear too.
+      gameEngine.recordVote(voterId: partner.id, targetId: null);
+      expect(gameEngine.currentDayVotesByVoter[clinger.id], isNull);
+    });
+
+    test('Clinger dies of heartbreak when obsession dies', () {
+      gameEngine.addPlayer('Clinger1', role: roleRepository.getRoleById('clinger'));
+      gameEngine.addPlayer('PA1', role: roleRepository.getRoleById('party_animal'));
+
+      final clinger = gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
+      final partner = gameEngine.players.firstWhere((p) => p.name == 'PA1');
+
+      clinger.clingerPartnerId = partner.id;
+      clinger.clingerFreedAsAttackDog = false;
+
+      gameEngine.processDeath(partner, cause: 'test');
+      expect(partner.isAlive, isFalse);
+      expect(clinger.isAlive, isFalse);
+    });
+
+    test('Freed Clinger does not sync votes or heartbreak', () {
+      gameEngine.addPlayer('Clinger1', role: roleRepository.getRoleById('clinger'));
+      gameEngine.addPlayer('PA1', role: roleRepository.getRoleById('party_animal'));
+      gameEngine.addPlayer('Dealer1', role: roleRepository.getRoleById('dealer'));
+
+      final clinger = gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
+      final partner = gameEngine.players.firstWhere((p) => p.name == 'PA1');
+      final dealer = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
+
+      clinger.clingerPartnerId = partner.id;
+      expect(gameEngine.freeClingerFromObsession(clinger.id), isTrue);
+
+      // Votes should no longer mirror.
+      gameEngine.recordVote(voterId: partner.id, targetId: dealer.id);
+      expect(gameEngine.currentDayVotesByVoter[clinger.id], isNull);
+
+      // Heartbreak should no longer apply.
+      gameEngine.processDeath(partner, cause: 'test');
+      expect(partner.isAlive, isFalse);
+      expect(clinger.isAlive, isTrue);
+    });
+
+    test('Freed Clinger can use Attack Dog exactly once', () {
+      gameEngine.addPlayer('Clinger1', role: roleRepository.getRoleById('clinger'));
+      gameEngine.addPlayer('PA1', role: roleRepository.getRoleById('party_animal'));
+      gameEngine.addPlayer('Dealer1', role: roleRepository.getRoleById('dealer'));
+
+      final clinger = gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
+      final partner = gameEngine.players.firstWhere((p) => p.name == 'PA1');
+      final target = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
+
+      clinger.clingerPartnerId = partner.id;
+      expect(gameEngine.freeClingerFromObsession(clinger.id), isTrue);
+      expect(clinger.clingerFreedAsAttackDog, isTrue);
+
+      const step = ScriptStep(
+        id: 'clinger_act',
+        title: 'Clinger',
+        readAloudText: '',
+        instructionText: '',
+        actionType: ScriptActionType.selectPlayer,
+        roleId: 'clinger',
+        isNight: true,
       );
-      expect(clubManager.isAlive, true);
+
+      // First use: kill resolves immediately.
+      gameEngine.handleScriptAction(step, [target.id]);
+      expect(target.isAlive, isFalse);
+      expect(clinger.clingerAttackDogUsed, isTrue);
+
+      // Second use: should be blocked (no new kill).
+      final stillAlive = gameEngine.players.firstWhere((p) => p.name == 'PA1');
+      gameEngine.handleScriptAction(step, [stillAlive.id]);
+      expect(stillAlive.isAlive, isTrue);
+    });
+
+    test('Non-freed Clinger cannot use Attack Dog', () {
+      gameEngine.addPlayer('Clinger1', role: roleRepository.getRoleById('clinger'));
+      gameEngine.addPlayer('PA1', role: roleRepository.getRoleById('party_animal'));
+      gameEngine.addPlayer('Dealer1', role: roleRepository.getRoleById('dealer'));
+
+      final clinger = gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
+      final partner = gameEngine.players.firstWhere((p) => p.name == 'PA1');
+      final target = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
+
+      clinger.clingerPartnerId = partner.id;
+      clinger.clingerFreedAsAttackDog = false;
+      clinger.clingerAttackDogUsed = false;
+
+      const step = ScriptStep(
+        id: 'clinger_act',
+        title: 'Clinger',
+        readAloudText: '',
+        instructionText: '',
+        actionType: ScriptActionType.selectPlayer,
+        roleId: 'clinger',
+        isNight: true,
+      );
+
+      gameEngine.handleScriptAction(step, [target.id]);
+      expect(target.isAlive, isTrue);
+      expect(clinger.clingerAttackDogUsed, isFalse);
     });
   });
 
@@ -546,13 +532,12 @@ void main() {
       );
 
       // Set lives based on dealer count
-      final dealerCount = gameEngine.players
-          .where((p) => p.role.id == 'dealer')
-          .length;
+      final dealerCount =
+          gameEngine.players.where((p) => p.role.id == 'dealer').length;
       sd.setLivesBasedOnDealers(dealerCount);
 
-      expect(sd.lives, dealerCount);
-      expect(sd.lives, 2); // We have 2 dealers
+      expect(sd.lives, dealerCount + 1);
+      expect(sd.lives, 3); // We have 2 dealers
     });
 
     test('Ally Cat has 9 lives', () {
@@ -646,10 +631,6 @@ void main() {
         role: roleRepository.getRoleById('party_animal'),
       );
       gameEngine.addPlayer(
-        'PA2',
-        role: roleRepository.getRoleById('party_animal'),
-      );
-      gameEngine.addPlayer(
         'WF1',
         role: roleRepository.getRoleById('wallflower'),
       );
@@ -659,15 +640,15 @@ void main() {
         role: roleRepository.getRoleById('bouncer'),
       );
       gameEngine.addPlayer('Roofi1', role: roleRepository.getRoleById('roofi'));
+      gameEngine.addPlayer('MB1', role: roleRepository.getRoleById('messy_bitch'));
 
       expect(gameEngine.players.length, 8);
-      final dealerCount = gameEngine.players
-          .where((p) => p.role.id == 'dealer')
-          .length;
-      expect(dealerCount, 2); // 1 per 7 total = 2 for 8 players
+      final dealerCount =
+          gameEngine.players.where((p) => p.role.id == 'dealer').length;
+      expect(dealerCount, 2); // 7-10 players => 2 Dealers
     });
 
-    test('Valid 15-player game with 3 dealers', () {
+    test('Valid 15-player game with 4 dealers', () {
       gameEngine.addPlayer(
         'Dealer1',
         role: roleRepository.getRoleById('dealer'),
@@ -680,13 +661,15 @@ void main() {
         'Dealer3',
         role: roleRepository.getRoleById('dealer'),
       );
+      gameEngine.addPlayer(
+        'Dealer4',
+        role: roleRepository.getRoleById('dealer'),
+      );
 
-      for (var i = 1; i <= 4; i++) {
-        gameEngine.addPlayer(
-          'PA$i',
-          role: roleRepository.getRoleById('party_animal'),
-        );
-      }
+      gameEngine.addPlayer(
+        'PA1',
+        role: roleRepository.getRoleById('party_animal'),
+      );
       gameEngine.addPlayer(
         'WF1',
         role: roleRepository.getRoleById('wallflower'),
@@ -710,12 +693,19 @@ void main() {
         'Silver Fox1',
         role: roleRepository.getRoleById('silver_fox'),
       );
+      gameEngine.addPlayer(
+        'Bartender1',
+        role: roleRepository.getRoleById('bartender'),
+      );
+      gameEngine.addPlayer(
+        'AllyCat1',
+        role: roleRepository.getRoleById('ally_cat'),
+      );
 
       expect(gameEngine.players.length, 15);
-      final dealerCount = gameEngine.players
-          .where((p) => p.role.id == 'dealer')
-          .length;
-      expect(dealerCount, 3); // 1 per 7 total = 3 for 15 players
+      final dealerCount =
+          gameEngine.players.where((p) => p.role.id == 'dealer').length;
+      expect(dealerCount, 4); // 11-14 => 3, 15-18 => 4
     });
   });
 
@@ -782,8 +772,11 @@ void main() {
       ); // Unique role already used
       expect(
         roleIds,
-        contains('party_animal'),
-      ); // Can repeat (always available)
+        isNot(contains('party_animal')),
+      ); // Party Animal is unique and already used
+
+      // Some other unused role should still be available (example: Bouncer).
+      expect(roleIds, contains('bouncer'));
       // Dealer not available here because we already have 1/1 recommended dealers for 5 total players
       expect(roleIds, isNot(contains('dealer')));
     });
@@ -856,9 +849,8 @@ void main() {
         role: roleRepository.getRoleById('dealer'),
       );
 
-      final dealerCount = gameEngine.players
-          .where((p) => p.role.id == 'dealer')
-          .length;
+      final dealerCount =
+          gameEngine.players.where((p) => p.role.id == 'dealer').length;
       expect(dealerCount, 3);
     });
 
@@ -867,19 +859,20 @@ void main() {
         'PA1',
         role: roleRepository.getRoleById('party_animal'),
       );
-      gameEngine.addPlayer(
-        'PA2',
-        role: roleRepository.getRoleById('party_animal'),
-      );
-      gameEngine.addPlayer(
-        'PA3',
-        role: roleRepository.getRoleById('party_animal'),
+
+      final pa2 = Player(
+        id: 'pa2_id',
+        name: 'PA2',
+        role: roleRepository.getRoleById('party_animal')!,
       );
 
-      final paCount = gameEngine.players
-          .where((p) => p.role.id == 'party_animal')
-          .length;
-      expect(paCount, 3);
+      final validation = RoleValidator.canAssignRole(
+        roleRepository.getRoleById('party_animal'),
+        pa2.id,
+        gameEngine.players,
+      );
+
+      expect(validation.isValid, true);
     });
   });
 
@@ -910,7 +903,7 @@ void main() {
       expect(result.message, contains('No one wins'));
     });
 
-    test('Dealers can win even with neutrals alive', () {
+    test('Game continues when Dealers outnumber but not 1v1', () {
       gameEngine.addPlayer(
         'Dealer1',
         role: roleRepository.getRoleById('dealer'),
@@ -937,14 +930,7 @@ void main() {
       gameEngine.players.where((p) => p.role.id == 'wallflower').first.die();
 
       final result = gameEngine.checkGameEnd();
-      expect(result, isNotNull);
-      expect(result!.winner, 'DEALER');
-
-      // Club Manager should still be alive
-      final cm = gameEngine.players.firstWhere(
-        (p) => p.role.id == 'club_manager',
-      );
-      expect(cm.isAlive, true);
+      expect(result, isNull);
     });
 
     test('Single dealer vs many party animals - game continues', () {
@@ -957,24 +943,24 @@ void main() {
         role: roleRepository.getRoleById('party_animal'),
       );
       gameEngine.addPlayer(
-        'PA2',
-        role: roleRepository.getRoleById('party_animal'),
-      );
-      gameEngine.addPlayer(
-        'PA3',
-        role: roleRepository.getRoleById('party_animal'),
-      );
-      gameEngine.addPlayer(
         'WF1',
         role: roleRepository.getRoleById('wallflower'),
       );
       gameEngine.addPlayer('Medic1', role: roleRepository.getRoleById('medic'));
+      gameEngine.addPlayer(
+        'Bouncer1',
+        role: roleRepository.getRoleById('bouncer'),
+      );
+      gameEngine.addPlayer(
+        'Roofi1',
+        role: roleRepository.getRoleById('roofi'),
+      );
 
       final result = gameEngine.checkGameEnd();
-      expect(result, isNull); // 1 dealer vs 5 party animals = game continues
+      expect(result, isNull); // 1 dealer vs many Party-aligned roles => continues
     });
 
-    test('1v1 Standoff is a Draw', () {
+    test('1v1 Dealer vs Party Animal is a Dealer win', () {
       gameEngine.addPlayer(
         'Dealer1',
         role: roleRepository.getRoleById('dealer'),
@@ -986,19 +972,14 @@ void main() {
 
       final result = gameEngine.checkGameEnd();
       expect(result, isNotNull);
-      expect(result!.winner, 'DRAW');
-      expect(result.message, contains('Standoff'));
+      expect(result!.winner, 'DEALER');
+      expect(result.message, contains('Final showdown'));
     });
 
-    test('Messy Bitch steals win if alive when Dealers would win', () {
-      // Setup: 2 Dealers, 1 Party Animal, 1 Messy Bitch
-      // Total 4. Dealers (2) > PAs (1).
+    test('Messy Bitch wins when a rumour reaches every player', () {
+      // Setup: 1 Dealer, 1 Party Animal, 1 Messy Bitch
       gameEngine.addPlayer(
         'Dealer1',
-        role: roleRepository.getRoleById('dealer'),
-      );
-      gameEngine.addPlayer(
-        'Dealer2',
         role: roleRepository.getRoleById('dealer'),
       );
       gameEngine.addPlayer(
@@ -1010,10 +991,53 @@ void main() {
         role: roleRepository.getRoleById('messy_bitch'),
       );
 
+      // Mark everyone except Messy Bitch as "infected".
+      final messyBitch =
+          gameEngine.players.firstWhere((p) => p.role.id == 'messy_bitch');
+      for (final p in gameEngine.players) {
+        if (p.id == messyBitch.id) continue;
+        p.hasRumour = true;
+      }
+
       final result = gameEngine.checkGameEnd();
       expect(result, isNotNull);
       expect(result!.winner, 'MESSY_BITCH');
       expect(result.message, contains('Messy Bitch'));
+    });
+
+    test('Messy Bitch win ignores dead players', () {
+      gameEngine.addPlayer(
+        'Dealer1',
+        role: roleRepository.getRoleById('dealer'),
+      );
+      gameEngine.addPlayer(
+        'PA1',
+        role: roleRepository.getRoleById('party_animal'),
+      );
+      gameEngine.addPlayer(
+        'MB1',
+        role: roleRepository.getRoleById('messy_bitch'),
+      );
+
+      final messyBitch =
+          gameEngine.players.firstWhere((p) => p.role.id == 'messy_bitch');
+      final partyAnimal =
+          gameEngine.players.firstWhere((p) => p.role.id == 'party_animal');
+      final dealer = gameEngine.players.firstWhere((p) => p.role.id == 'dealer');
+
+      // Only the living non-Messy player needs a rumour.
+      partyAnimal.hasRumour = true;
+      expect(dealer.hasRumour, isFalse);
+
+      // Kill the dealer; they should no longer be required for the rumour win.
+      gameEngine.processDeath(dealer, cause: 'unknown');
+      expect(dealer.isAlive, isFalse);
+      expect(messyBitch.isAlive, isTrue);
+      expect(partyAnimal.isAlive, isTrue);
+
+      final result = gameEngine.checkGameEnd();
+      expect(result, isNotNull);
+      expect(result!.winner, 'MESSY_BITCH');
     });
   });
 }
