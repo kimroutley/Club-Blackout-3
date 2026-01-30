@@ -57,19 +57,17 @@ class GameDashboardStats {
 
     final roleCounts = Map<String, int>.from(live.roleCounts);
 
-    final chips = roleCounts.entries
-        .map((e) {
-          final Role? role = engine.roleRepository.getRoleById(e.key);
-          final roleName = role?.name ?? e.key;
-          final color = role?.color ?? Colors.grey;
-          return RoleChipStat(
-            roleId: e.key,
-            roleName: roleName,
-            color: color,
-            aliveCount: e.value,
-          );
-        })
-        .toList();
+    final chips = roleCounts.entries.map((e) {
+      final Role? role = engine.roleRepository.getRoleById(e.key);
+      final roleName = role?.name ?? e.key;
+      final color = role?.color ?? Colors.grey;
+      return RoleChipStat(
+        roleId: e.key,
+        roleName: roleName,
+        color: color,
+        aliveCount: e.value,
+      );
+    }).toList();
 
     chips.sort((a, b) {
       final byCount = b.aliveCount.compareTo(a.aliveCount);

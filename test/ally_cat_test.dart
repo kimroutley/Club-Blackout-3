@@ -14,9 +14,11 @@ class MockRoleRepository extends RoleRepository {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const sharedPrefsChannel = MethodChannel('plugins.flutter.io/shared_preferences');
+  const sharedPrefsChannel =
+      MethodChannel('plugins.flutter.io/shared_preferences');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(sharedPrefsChannel, (MethodCall methodCall) async {
+      .setMockMethodCallHandler(sharedPrefsChannel,
+          (MethodCall methodCall) async {
     if (methodCall.method == 'getAll') {
       return <String, dynamic>{};
     }
@@ -42,7 +44,7 @@ void main() {
 
     setUp(() {
       allyCatRole = createRole('ally_cat', 5);
-      
+
       engine = GameEngine(roleRepository: MockRoleRepository());
     });
 
@@ -55,9 +57,9 @@ void main() {
     test('Ally Cat loses a life but survives Night Kill', () {
       final p1 = Player(id: '1', name: 'Cat', role: allyCatRole);
       p1.initialize();
-      
+
       engine.processDeath(p1, cause: 'night_kill');
-      
+
       expect(p1.lives, equals(8));
       expect(p1.isAlive, isTrue);
     });
@@ -65,9 +67,9 @@ void main() {
     test('Ally Cat loses a life but survives Vote', () {
       final p1 = Player(id: '1', name: 'Cat', role: allyCatRole);
       p1.initialize();
-      
+
       engine.processDeath(p1, cause: 'vote');
-      
+
       expect(p1.lives, equals(8));
       expect(p1.isAlive, isTrue);
     });
@@ -75,12 +77,13 @@ void main() {
     test('Ally Cat dies after 9 hits', () {
       final p1 = Player(id: '1', name: 'Cat', role: allyCatRole);
       p1.initialize(); // lives = 9
-      
+
       for (int i = 0; i < 9; i++) {
-        expect(p1.isAlive, isTrue, reason: 'Should be alive before hit ${i+1}');
+        expect(p1.isAlive, isTrue,
+            reason: 'Should be alive before hit ${i + 1}');
         engine.processDeath(p1, cause: 'vote');
       }
-      
+
       expect(p1.lives, equals(0));
       expect(p1.isAlive, isFalse, reason: 'Should be dead after 9th hit');
     });

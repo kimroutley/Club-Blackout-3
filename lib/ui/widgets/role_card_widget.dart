@@ -84,12 +84,13 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
     );
 
     // Material 3 emphasized curve feels smoother than a symmetric cubic.
-    _curve = CurvedAnimation(parent: _flip, curve: Curves.easeInOutCubicEmphasized);
+    _curve =
+        CurvedAnimation(parent: _flip, curve: Curves.easeInOutCubicEmphasized);
 
     _isFlipping = _flip.isAnimating;
     _flip.addStatusListener((status) {
-      final nowFlipping =
-          status == AnimationStatus.forward || status == AnimationStatus.reverse;
+      final nowFlipping = status == AnimationStatus.forward ||
+          status == AnimationStatus.reverse;
       if (nowFlipping != _isFlipping && mounted) {
         setState(() => _isFlipping = nowFlipping);
       }
@@ -180,7 +181,8 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
       } else if (ctx.dealerKillersAlive == 1) {
         lines.add('Lobby threat: 1 Dealer alive among ${ctx.alivePlayers}.');
       } else {
-        lines.add('Lobby threat: ${ctx.dealerKillersAlive} Dealers alive among ${ctx.alivePlayers}.');
+        lines.add(
+            'Lobby threat: ${ctx.dealerKillersAlive} Dealers alive among ${ctx.alivePlayers}.');
       }
     }
 
@@ -194,9 +196,7 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
 
       final p = ctx.dangerPercentileFor(role);
       if (p != null) {
-        final tier = p >= 0.80
-            ? 'High'
-            : (p >= 0.45 ? 'Medium' : 'Low');
+        final tier = p >= 0.80 ? 'High' : (p >= 0.45 ? 'Medium' : 'Low');
         lines.add('Death odds (roster-based): $tier.');
       }
     }
@@ -395,9 +395,8 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
   Widget _buildFront(BuildContext context, ColorScheme cs, TextTheme tt) {
     final role = widget.role;
 
-    final titleStyle =
-        (widget.compact ? tt.titleMedium : tt.headlineSmall) ??
-            (tt.titleLarge ?? const TextStyle());
+    final titleStyle = (widget.compact ? tt.titleMedium : tt.headlineSmall) ??
+        (tt.titleLarge ?? const TextStyle());
 
     final badgeLabelStyle = (tt.labelSmall ?? const TextStyle()).copyWith(
       color: cs.onSurface.withValues(alpha: 0.70),
@@ -408,7 +407,8 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
     final name = role.name;
     final idCode = _stableIdCode(role.id);
     const typeLabel = 'Attitude';
-    final roleKind = role.type.trim().isEmpty ? 'Guest' : toTitleCase(role.type.trim());
+    final roleKind =
+        role.type.trim().isEmpty ? 'Guest' : toTitleCase(role.type.trim());
 
     return Container(
       decoration: ClubBlackoutTheme.neonFrame(
@@ -456,18 +456,22 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
                   // HEADER ROW
                   Row(
                     children: [
-                      Icon(Icons.nfc_rounded, size: 16, color: role.color.withValues(alpha: 0.7)),
+                      Icon(Icons.nfc_rounded,
+                          size: 16, color: role.color.withValues(alpha: 0.7)),
                       const SizedBox(width: 8),
                       Text(
                         'CLUB BLACKOUT',
-                        style: badgeLabelStyle.merge(ClubBlackoutTheme.neonGlowFont).copyWith(
+                        style: badgeLabelStyle
+                            .merge(ClubBlackoutTheme.neonGlowFont)
+                            .copyWith(
                               letterSpacing: 3.0,
                               fontSize: 10,
                             ),
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: widget.role.color.withValues(alpha: 0.10),
                           border: Border.all(
@@ -504,7 +508,9 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
                               child: PlayerIcon(
                                 assetPath: role.assetPath,
                                 glowColor: role.color,
-                                size: widget.compact ? 80 : 100, // Slightly smaller for better proportions
+                                size: widget.compact
+                                    ? 80
+                                    : 100, // Slightly smaller for better proportions
                                 glowIntensity: 0.65,
                               ),
                             ),
@@ -532,7 +538,9 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
                               ClubBlackoutTheme.gap12,
                               _IdField(label: idCode, value: role.alliance),
                               ClubBlackoutTheme.gap4,
-                              _IdField(label: typeLabel.toUpperCase(), value: roleKind),
+                              _IdField(
+                                  label: typeLabel.toUpperCase(),
+                                  value: roleKind),
                             ],
                           ),
                         ),
@@ -569,7 +577,8 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
                       Transform.rotate(
                         angle: -0.15,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: cs.onSurface.withValues(alpha: 0.3),
@@ -579,7 +588,8 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
                           ),
                           child: Text(
                             'VALID',
-                            style: (tt.labelMedium ?? const TextStyle()).copyWith(
+                            style:
+                                (tt.labelMedium ?? const TextStyle()).copyWith(
                               color: cs.onSurface.withValues(alpha: 0.5),
                               fontWeight: FontWeight.w900,
                               fontSize: 12,
@@ -715,7 +725,8 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
                         decoration: BoxDecoration(
                           color: role.color.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: role.color.withValues(alpha: 0.4)),
+                          border: Border.all(
+                              color: role.color.withValues(alpha: 0.4)),
                         ),
                         child: Text(
                           role.alliance.toUpperCase(),
@@ -730,7 +741,8 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
                     ],
                   ),
                   ClubBlackoutTheme.gap12,
-                  Divider(height: 1, color: cs.onSurface.withValues(alpha: 0.1)),
+                  Divider(
+                      height: 1, color: cs.onSurface.withValues(alpha: 0.1)),
                   ClubBlackoutTheme.gap12,
                   Expanded(
                     child: SingleChildScrollView(
@@ -742,7 +754,9 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
                             title: 'About',
                             icon: Icons.person_outline_rounded,
                             accent: role.color,
-                            children: [Text(role.description, style: bodyStyle)],
+                            children: [
+                              Text(role.description, style: bodyStyle)
+                            ],
                           ),
                           if (ability != null && ability.isNotEmpty) ...[
                             ClubBlackoutTheme.gap12,
@@ -801,7 +815,6 @@ class _RoleCardWidgetState extends State<RoleCardWidget>
       ),
     );
   }
-
 }
 
 class _IdField extends StatelessWidget {

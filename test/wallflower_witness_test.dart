@@ -115,8 +115,8 @@ void main() {
 
     // Ensure it's preserved for story export (via gameLog entries).
     expect(
-      gameEngine.gameLog
-          .any((e) => e.description.toLowerCase().contains('wallflower chose to peek')),
+      gameEngine.gameLog.any((e) =>
+          e.description.toLowerCase().contains('wallflower chose to peek')),
       isTrue,
     );
   });
@@ -135,8 +135,8 @@ void main() {
 
     expect(gameEngine.lastNightSummary.toLowerCase(), contains('stared'));
     expect(
-      gameEngine.gameLog
-          .any((e) => e.description.toLowerCase().contains('wallflower chose to stare')),
+      gameEngine.gameLog.any((e) =>
+          e.description.toLowerCase().contains('wallflower chose to stare')),
       isTrue,
     );
   });

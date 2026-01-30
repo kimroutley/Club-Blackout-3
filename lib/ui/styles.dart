@@ -6,7 +6,8 @@ class ClubBlackoutTheme {
   static const electricBlue = Color(0xFF2E5BFF);
 
   static const String neonGlowFontFamily = 'NeonGlow';
-  static const TextStyle neonGlowFont = TextStyle(fontFamily: neonGlowFontFamily);
+  static const TextStyle neonGlowFont =
+      TextStyle(fontFamily: neonGlowFontFamily);
 
   static const neonRed = Color(0xFFFF2E63);
   static const crimsonRed = neonRed;
@@ -42,52 +43,70 @@ class ClubBlackoutTheme {
   static const double radiusLg = 24;
   static const double radiusSheet = 28;
 
-  static const BorderRadius borderRadiusXs = BorderRadius.all(Radius.circular(8));
-  static const BorderRadius borderRadiusSmAll = BorderRadius.all(Radius.circular(radiusSm));
-  static const BorderRadius borderRadiusMdAll = BorderRadius.all(Radius.circular(radiusMd));
-  static const BorderRadius borderRadiusLgAll = BorderRadius.all(Radius.circular(radiusLg));
-  static const BorderRadius borderRadiusControl = BorderRadius.all(Radius.circular(14));
+  static const BorderRadius borderRadiusXs =
+      BorderRadius.all(Radius.circular(8));
+  static const BorderRadius borderRadiusSmAll =
+      BorderRadius.all(Radius.circular(radiusSm));
+  static const BorderRadius borderRadiusMdAll =
+      BorderRadius.all(Radius.circular(radiusMd));
+  static const BorderRadius borderRadiusLgAll =
+      BorderRadius.all(Radius.circular(radiusLg));
+  static const BorderRadius borderRadiusControl =
+      BorderRadius.all(Radius.circular(14));
 
   static const RoundedRectangleBorder roundedShapeMd =
       RoundedRectangleBorder(borderRadius: borderRadiusMdAll);
 
   static const double controlHeight = 48;
   static const EdgeInsets pagePadding = EdgeInsets.fromLTRB(16, 0, 16, 24);
-  static const EdgeInsets sheetPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 16);
+  static const EdgeInsets sheetPadding =
+      EdgeInsets.symmetric(horizontal: 16, vertical: 16);
   static const EdgeInsets cardPadding = EdgeInsets.all(12);
   static const EdgeInsets cardPaddingDense = EdgeInsets.all(12);
 
-  static const EdgeInsets controlPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 12);
-  static const EdgeInsets fieldPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 12);
-  static const EdgeInsets fieldPaddingLoose = EdgeInsets.symmetric(horizontal: 12, vertical: 12);
-    static const EdgeInsets inset12 = EdgeInsets.all(12);
+  static const EdgeInsets controlPadding =
+      EdgeInsets.symmetric(horizontal: 16, vertical: 12);
+  static const EdgeInsets fieldPadding =
+      EdgeInsets.symmetric(horizontal: 12, vertical: 12);
+  static const EdgeInsets fieldPaddingLoose =
+      EdgeInsets.symmetric(horizontal: 12, vertical: 12);
+  static const EdgeInsets inset12 = EdgeInsets.all(12);
   static const EdgeInsets inset16 = EdgeInsets.all(16);
   static const EdgeInsets inset24 = EdgeInsets.all(24);
   static const EdgeInsets insetH16 = EdgeInsets.symmetric(horizontal: 16);
-  static const EdgeInsets insetH16V24 = EdgeInsets.symmetric(horizontal: 16, vertical: 24);
-  static const EdgeInsets sectionDividerPadding = EdgeInsets.fromLTRB(16, 16, 16, 8);
+  static const EdgeInsets insetH16V24 =
+      EdgeInsets.symmetric(horizontal: 16, vertical: 24);
+  static const EdgeInsets sectionDividerPadding =
+      EdgeInsets.fromLTRB(16, 16, 16, 8);
   static const EdgeInsets bottomInset8 = EdgeInsets.only(bottom: 8);
-  static const EdgeInsets buttonPaddingTall = EdgeInsets.symmetric(vertical: 24);
-  static const EdgeInsets buttonPaddingWide = EdgeInsets.symmetric(horizontal: 32, vertical: 16);
-    static const EdgeInsets topInset16 = EdgeInsets.only(top: 16);
-    static const EdgeInsets topInset24 = EdgeInsets.only(top: 24);
+  static const EdgeInsets buttonPaddingTall =
+      EdgeInsets.symmetric(vertical: 24);
+  static const EdgeInsets buttonPaddingWide =
+      EdgeInsets.symmetric(horizontal: 32, vertical: 16);
+  static const EdgeInsets topInset16 = EdgeInsets.only(top: 16);
+  static const EdgeInsets topInset24 = EdgeInsets.only(top: 24);
 
-    // Common card paddings (use these instead of ad-hoc EdgeInsets)
-    static const EdgeInsets scriptCardPaddingBulletin =
+  // Common card paddings (use these instead of ad-hoc EdgeInsets)
+  static const EdgeInsets scriptCardPaddingBulletin =
       EdgeInsets.symmetric(horizontal: 12, vertical: 10);
-    static const EdgeInsets scriptCardPaddingDense =
+  static const EdgeInsets scriptCardPaddingDense =
       EdgeInsets.symmetric(horizontal: 16, vertical: 14);
-    static const EdgeInsets scriptCardPadding =
+  static const EdgeInsets scriptCardPadding =
       EdgeInsets.symmetric(horizontal: 18, vertical: 16);
 
-    static const EdgeInsets cardMarginVertical8 = EdgeInsets.symmetric(vertical: 8);
+  static const EdgeInsets cardMarginVertical8 =
+      EdgeInsets.symmetric(vertical: 8);
 
   // Common screen/building-block paddings
-  static const EdgeInsets rowPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
+  static const EdgeInsets rowPadding =
+      EdgeInsets.symmetric(horizontal: 16, vertical: 8);
   static const EdgeInsets dialogInsetPadding = inset16;
-  static const EdgeInsets alertTitlePadding = EdgeInsets.fromLTRB(24, 20, 24, 0);
-  static const EdgeInsets alertContentPadding = EdgeInsets.fromLTRB(24, 16, 24, 0);
-  static const EdgeInsets alertActionsPadding = EdgeInsets.fromLTRB(16, 8, 16, 12);
+  static const EdgeInsets alertTitlePadding =
+      EdgeInsets.fromLTRB(24, 20, 24, 0);
+  static const EdgeInsets alertContentPadding =
+      EdgeInsets.fromLTRB(24, 16, 24, 0);
+  static const EdgeInsets alertActionsPadding =
+      EdgeInsets.fromLTRB(16, 8, 16, 12);
 
   static const SizedBox gap4 = SizedBox(height: 4);
   static const SizedBox gap8 = SizedBox(height: 8);
@@ -181,7 +200,8 @@ class ClubBlackoutTheme {
       fontSize: fontSize ?? effectiveBase.fontSize,
       fontWeight: fontWeight ?? effectiveBase.fontWeight,
       letterSpacing: letterSpacing ?? effectiveBase.letterSpacing,
-      shadows: glow ? textGlow(effectiveGlowColor, intensity: glowIntensity) : null,
+      shadows:
+          glow ? textGlow(effectiveGlowColor, intensity: glowIntensity) : null,
     );
   }
 
@@ -199,7 +219,8 @@ class ClubBlackoutTheme {
     bool glow = true,
   }) {
     return glowTextStyle(
-      base: (base ?? const TextStyle()).copyWith(fontFamily: neonGlowFontFamily),
+      base:
+          (base ?? const TextStyle()).copyWith(fontFamily: neonGlowFontFamily),
       color: color,
       fontSize: fontSize,
       fontWeight: fontWeight,
@@ -339,7 +360,8 @@ class ClubBlackoutTheme {
     final cs = Theme.of(context).colorScheme;
     return BoxDecoration(
       color: pureBlack.withValues(alpha: opacity),
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(radiusSheet)),
+      borderRadius:
+          const BorderRadius.vertical(top: Radius.circular(radiusSheet)),
       border: Border.all(color: accent.withValues(alpha: 0.45), width: 1),
       boxShadow: [
         BoxShadow(
@@ -375,16 +397,19 @@ class ClubBlackoutTheme {
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
     final primary = colorScheme.primary;
 
-    final textTheme = base.textTheme.apply(
-      bodyColor: onSurface,
-      displayColor: onSurface,
-    ).copyWith(
-      displayLarge: const TextStyle(letterSpacing: 2.0),
-      displayMedium: const TextStyle(letterSpacing: 1.5),
-      displaySmall: const TextStyle(letterSpacing: 1.2),
-      headlineLarge: const TextStyle(fontWeight: FontWeight.bold),
-      titleLarge: const TextStyle(fontWeight: FontWeight.w600, fontSize: 22),
-    );
+    final textTheme = base.textTheme
+        .apply(
+          bodyColor: onSurface,
+          displayColor: onSurface,
+        )
+        .copyWith(
+          displayLarge: const TextStyle(letterSpacing: 2.0),
+          displayMedium: const TextStyle(letterSpacing: 1.5),
+          displaySmall: const TextStyle(letterSpacing: 1.2),
+          headlineLarge: const TextStyle(fontWeight: FontWeight.bold),
+          titleLarge:
+              const TextStyle(fontWeight: FontWeight.w600, fontSize: 22),
+        );
 
     final defaultRadius = BorderRadius.circular(16);
     final faintDivider = onSurface.withValues(alpha: 0.14);
@@ -428,7 +453,8 @@ class ClubBlackoutTheme {
       listTileTheme: base.listTileTheme.copyWith(
         iconColor: primary,
         textColor: onSurface,
-        titleTextStyle: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+        titleTextStyle:
+            textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
       dialogTheme: base.dialogTheme.copyWith(
         backgroundColor: colorScheme.surfaceContainerHigh,
@@ -446,8 +472,10 @@ class ClubBlackoutTheme {
         ),
       ),
       snackBarTheme: base.snackBarTheme.copyWith(
-        backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
-        contentTextStyle: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+        backgroundColor:
+            colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
+        contentTextStyle:
+            textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -456,7 +484,8 @@ class ClubBlackoutTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
+          backgroundColor:
+              colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
           foregroundColor: onSurface,
           shape: RoundedRectangleBorder(borderRadius: defaultRadius),
           elevation: 0,
@@ -500,7 +529,8 @@ class ClubBlackoutTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           minimumSize: const Size(64, 40),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
           textStyle: textTheme.labelLarge?.copyWith(
@@ -632,10 +662,12 @@ class ClubBlackoutTheme {
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: primary.withValues(alpha: 0.45), width: 1),
+              side:
+                  BorderSide(color: primary.withValues(alpha: 0.45), width: 1),
             ),
           ),
-          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 8)),
+          padding:
+              const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 8)),
         ),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
@@ -648,7 +680,8 @@ class ClubBlackoutTheme {
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: primary.withValues(alpha: 0.45), width: 1),
+              side:
+                  BorderSide(color: primary.withValues(alpha: 0.45), width: 1),
             ),
           ),
         ),
@@ -707,7 +740,8 @@ class ClubBlackoutTheme {
               ? primary.withValues(alpha: 0.35)
               : onSurface.withValues(alpha: 0.22),
         ),
-        trackOutlineColor: WidgetStatePropertyAll(onSurface.withValues(alpha: 0.25)),
+        trackOutlineColor:
+            WidgetStatePropertyAll(onSurface.withValues(alpha: 0.25)),
       ),
       sliderTheme: base.sliderTheme.copyWith(
         activeTrackColor: primary,

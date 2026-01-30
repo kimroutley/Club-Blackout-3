@@ -54,7 +54,8 @@ class _VotingWidgetState extends State<VotingWidget> {
   void _syncClingerBinding({required String triggerVoterId}) {
     Player clinger;
     try {
-      clinger = widget.gameEngine.players.firstWhere((p) => p.role.id == 'clinger');
+      clinger =
+          widget.gameEngine.players.firstWhere((p) => p.role.id == 'clinger');
     } catch (_) {
       return;
     }
@@ -84,13 +85,13 @@ class _VotingWidgetState extends State<VotingWidget> {
   void _onVoterChanged(String candidateId, String voterId, bool select) {
     Player? clinger;
     try {
-      clinger = widget.gameEngine.players.firstWhere((p) => p.role.id == 'clinger');
+      clinger =
+          widget.gameEngine.players.firstWhere((p) => p.role.id == 'clinger');
     } catch (_) {
       clinger = null;
     }
 
-    final isClingerBound =
-        clinger != null &&
+    final isClingerBound = clinger != null &&
         clinger.id.isNotEmpty &&
         clinger.isActive &&
         !clinger.clingerFreedAsAttackDog &&
@@ -114,7 +115,8 @@ class _VotingWidgetState extends State<VotingWidget> {
       _syncClingerBinding(triggerVoterId: voterId);
 
       widget.onMaxVotesChanged?.call(
-        _manualVotes.values.fold<int>(0, (max, v) => v.length > max ? v.length : max),
+        _manualVotes.values
+            .fold<int>(0, (max, v) => v.length > max ? v.length : max),
       );
     });
   }
@@ -256,7 +258,8 @@ class _VotingWidgetState extends State<VotingWidget> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: cs.surfaceContainerHighest.withValues(alpha: 0.75),
+                          color: cs.surfaceContainerHighest
+                              .withValues(alpha: 0.75),
                           borderRadius: ClubBlackoutTheme.borderRadiusSmAll,
                           border: Border.all(
                             color: accentColor.withValues(alpha: 0.55),
@@ -308,7 +311,8 @@ class _VotingWidgetState extends State<VotingWidget> {
                               ? null
                               : () {
                                   if (voter.id == candidate.id) return;
-                                  _onVoterChanged(candidate.id, voter.id, !isSelected);
+                                  _onVoterChanged(
+                                      candidate.id, voter.id, !isSelected);
                                 },
                         );
                       }).toList(),

@@ -78,7 +78,8 @@ class HallOfFameService extends ChangeNotifier {
 
   /// Process a completed game snapshot to update stats.
   /// This should be called when `GamesNightService` finishes a game.
-  Future<void> processGameStats(GameStorySnapshot game, List<ShenaniganAward> singleGameAwards) async {
+  Future<void> processGameStats(
+      GameStorySnapshot game, List<ShenaniganAward> singleGameAwards) async {
     bool changed = false;
 
     // 1. Identify Winner Alliance
@@ -88,17 +89,17 @@ class HallOfFameService extends ChangeNotifier {
     // 2. Loop through players
     for (final p in game.players) {
       final id = _normalizeId(p.name);
-      
+
       // Get or Create profile
       var profile = _profiles[id] ?? HallOfFameProfile(id: id, name: p.name);
       final trimmedName = p.name.trim();
       if (trimmedName.isNotEmpty && profile.name != trimmedName) {
         profile = profile.copyWith(name: trimmedName);
       }
-      
+
       // Update core stats
       final int newGames = profile.totalGames + 1;
-      
+
       // Determine Win/Loss
       // Player wins if their alliance matches the winning alliance
       // Note: alliances in snapshot might be "The Dealers" or "Dealers" etc.
@@ -114,7 +115,7 @@ class HallOfFameService extends ChangeNotifier {
         // Specific case: "The Fool" usually wins alone, so alliance might vary.
         // Assuming snapshot handles "winner" string correctly from engine.
       }
-      
+
       final int newWins = profile.totalWins + (didWin ? 1 : 0);
 
       // Update Roles
@@ -123,7 +124,7 @@ class HallOfFameService extends ChangeNotifier {
 
       // Update Awards (Single Game Awards)
       final updatedAwards = Map<String, int>.from(profile.awardStats);
-      
+
       // Find awards won by this player in this game
       final awardsWon = singleGameAwards.where((a) {
         // ShenaniganAward stores playerId or playerName.
@@ -162,7 +163,8 @@ class HallOfFameService extends ChangeNotifier {
   ///
   /// Use this to fix typos/variants (e.g. "John" vs "Jon") while keeping a
   /// single accumulating stats profile.
-  Future<void> mergeProfiles({required String fromId, required String intoId}) async {
+  Future<void> mergeProfiles(
+      {required String fromId, required String intoId}) async {
     if (fromId == intoId) return;
 
     final from = _profiles[fromId];
@@ -171,12 +173,14 @@ class HallOfFameService extends ChangeNotifier {
 
     final mergedRoleStats = Map<String, int>.from(into.roleStats);
     for (final entry in from.roleStats.entries) {
-      mergedRoleStats[entry.key] = (mergedRoleStats[entry.key] ?? 0) + entry.value;
+      mergedRoleStats[entry.key] =
+          (mergedRoleStats[entry.key] ?? 0) + entry.value;
     }
 
     final mergedAwardStats = Map<String, int>.from(into.awardStats);
     for (final entry in from.awardStats.entries) {
-      mergedAwardStats[entry.key] = (mergedAwardStats[entry.key] ?? 0) + entry.value;
+      mergedAwardStats[entry.key] =
+          (mergedAwardStats[entry.key] ?? 0) + entry.value;
     }
 
     final mergedLastPlayed = from.lastPlayed.isAfter(into.lastPlayed)
