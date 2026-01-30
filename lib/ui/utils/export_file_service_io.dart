@@ -21,8 +21,8 @@ class ExportFileService {
   static Future<Directory> _getExportsDir({String subdirName = 'exports'}) async {
     final dir = await getApplicationDocumentsDirectory();
     final exportsDir = Directory('${dir.path}/$subdirName');
-    if (!exportsDir.existsSync()) {
-      exportsDir.createSync(recursive: true);
+    if (!await exportsDir.exists()) {
+      await exportsDir.create(recursive: true);
     }
     return exportsDir;
   }
