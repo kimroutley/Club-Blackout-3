@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../logic/game_engine.dart';
 import '../../models/player.dart';
 import '../styles.dart';
-import 'glow_button.dart';
 import 'player_icon.dart';
 
 class NightPhasePlayerTile extends StatelessWidget {
@@ -97,10 +96,15 @@ class NightPhasePlayerTile extends StatelessWidget {
                       duration: const Duration(milliseconds: 200),
                       child: SizedBox(
                         height: 40,
-                        child: GlowButton(
+                        child: FilledButton(
                           onPressed: onConfirm,
-                          glowColor: accent,
-                          // padding: const EdgeInsets.symmetric(horizontal: 16), // Tighter padding
+                          style: FilledButton.styleFrom(
+                            backgroundColor: accent,
+                            foregroundColor: ClubBlackoutTheme.contrastOn(accent),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                           children: [
