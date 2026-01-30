@@ -41,7 +41,8 @@ class GamesNightVotingCard extends StatelessWidget {
         children: [
           const Text('Voting', style: TextStyle(fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          const Text('Top voters (activity)', style: TextStyle(fontWeight: FontWeight.w800)),
+          const Text('Top voters (activity)',
+              style: TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           if (topVoters.isEmpty)
             const Text('—')
@@ -53,7 +54,8 @@ class GamesNightVotingCard extends StatelessWidget {
               },
             ),
           const SizedBox(height: 16),
-          const Text('Most targeted', style: TextStyle(fontWeight: FontWeight.w800)),
+          const Text('Most targeted',
+              style: TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           if (mostTargeted.isEmpty)
             const Text('—')
@@ -77,7 +79,8 @@ class GamesNightRolesCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Roles (enabled players)', style: TextStyle(fontWeight: FontWeight.w900)),
+          const Text('Roles (enabled players)',
+              style: TextStyle(fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
           if (roles.isEmpty)
             const Text('—')
@@ -89,7 +92,10 @@ class GamesNightRolesCard extends StatelessWidget {
                   .map(
                     (e) => Chip(
                       label: Text('${e.key} (${e.value})'),
-                      backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.25),
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .surface
+                          .withValues(alpha: 0.25),
                     ),
                   )
                   .toList(growable: false),
@@ -136,13 +142,15 @@ class GamesNightActionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Actions (from log)', style: TextStyle(fontWeight: FontWeight.w900)),
+          const Text('Actions (from log)',
+              style: TextStyle(fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
           Text('Total events: ${insights.actions.totalLogEntries}'),
           const SizedBox(height: 8),
           Text(typeLine()),
           const SizedBox(height: 16),
-          const Text('Most common titles', style: TextStyle(fontWeight: FontWeight.w800)),
+          const Text('Most common titles',
+              style: TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           if (topTitles.isEmpty)
             const Text('—')
@@ -181,13 +189,15 @@ class GamesNightControlCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final duration =
-        startedAt == null ? Duration.zero : DateTime.now().difference(startedAt!);
+    final duration = startedAt == null
+        ? Duration.zero
+        : DateTime.now().difference(startedAt!);
     final hours = duration.inHours;
     final mins = duration.inMinutes.remainder(60);
 
     return NeonGlassCard(
-      glowColor: isActive ? ClubBlackoutTheme.neonGreen : ClubBlackoutTheme.neonRed,
+      glowColor:
+          isActive ? ClubBlackoutTheme.neonGreen : ClubBlackoutTheme.neonRed,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -195,7 +205,9 @@ class GamesNightControlCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.nights_stay_rounded,
-                color: isActive ? ClubBlackoutTheme.neonGreen : ClubBlackoutTheme.neonRed,
+                color: isActive
+                    ? ClubBlackoutTheme.neonGreen
+                    : ClubBlackoutTheme.neonRed,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -215,7 +227,8 @@ class GamesNightControlCard extends StatelessWidget {
                     if (isActive)
                       Text(
                         'Running for ${hours}h ${mins}m',
-                        style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7)),
+                        style: TextStyle(
+                            color: cs.onSurface.withValues(alpha: 0.7)),
                       ),
                   ],
                 ),
@@ -224,47 +237,60 @@ class GamesNightControlCard extends StatelessWidget {
                 value: isActive,
                 onChanged: onToggle,
                 activeThumbColor: ClubBlackoutTheme.neonGreen,
-                inactiveTrackColor: ClubBlackoutTheme.neonRed.withValues(alpha: 0.2),
+                inactiveTrackColor:
+                    ClubBlackoutTheme.neonRed.withValues(alpha: 0.2),
               ),
             ],
           ),
           if (isActive) ...[
             const SizedBox(height: 16),
             Wrap(
-               spacing: 8,
-               runSpacing: 8,
-               children: [
-                 Tooltip(
-                   message: 'Hall of Fame',
-                   child: FilledButton(
-                      onPressed: onShowHallOfFame,
-                      style: ClubBlackoutTheme.neonButtonStyle(ClubBlackoutTheme.neonGold, isPrimary: false).copyWith(
-                        padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                      ),
-                      child: const Icon(Icons.workspace_premium_rounded),
-                   ),
-                 ),
-                 Tooltip(
-                   message: 'Session Recap',
-                   child: FilledButton(
-                      onPressed: onShowRecap,
-                      style: ClubBlackoutTheme.neonButtonStyle(ClubBlackoutTheme.neonBlue, isPrimary: false).copyWith(
-                        padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                      ),
-                      child: const Icon(Icons.emoji_events_rounded),
-                   ),
-                 ),
-                 Tooltip(
-                   message: 'Copy Session JSON',
-                   child: FilledButton(
-                      onPressed: onCopyJson,
-                      style: ClubBlackoutTheme.neonButtonStyle(ClubBlackoutTheme.neonPurple, isPrimary: false).copyWith(
-                        padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                      ),
-                      child: const Icon(Icons.content_copy_rounded),
-                   ),
-                 ),
-               ],
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Tooltip(
+                  message: 'Hall of Fame',
+                  child: FilledButton(
+                    onPressed: onShowHallOfFame,
+                    style: ClubBlackoutTheme.neonButtonStyle(
+                            ClubBlackoutTheme.neonGold,
+                            isPrimary: false)
+                        .copyWith(
+                      padding:
+                          WidgetStateProperty.all(const EdgeInsets.all(12)),
+                    ),
+                    child: const Icon(Icons.workspace_premium_rounded),
+                  ),
+                ),
+                Tooltip(
+                  message: 'Session Recap',
+                  child: FilledButton(
+                    onPressed: onShowRecap,
+                    style: ClubBlackoutTheme.neonButtonStyle(
+                            ClubBlackoutTheme.neonBlue,
+                            isPrimary: false)
+                        .copyWith(
+                      padding:
+                          WidgetStateProperty.all(const EdgeInsets.all(12)),
+                    ),
+                    child: const Icon(Icons.emoji_events_rounded),
+                  ),
+                ),
+                Tooltip(
+                  message: 'Copy Session JSON',
+                  child: FilledButton(
+                    onPressed: onCopyJson,
+                    style: ClubBlackoutTheme.neonButtonStyle(
+                            ClubBlackoutTheme.neonPurple,
+                            isPrimary: false)
+                        .copyWith(
+                      padding:
+                          WidgetStateProperty.all(const EdgeInsets.all(12)),
+                    ),
+                    child: const Icon(Icons.content_copy_rounded),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Divider(color: cs.onSurface.withValues(alpha: 0.1)),
@@ -275,7 +301,8 @@ class GamesNightControlCard extends StatelessWidget {
                 foregroundColor: ClubBlackoutTheme.neonRed,
                 side: const BorderSide(color: ClubBlackoutTheme.neonRed),
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               child: const Icon(Icons.delete_sweep_rounded),
             ),

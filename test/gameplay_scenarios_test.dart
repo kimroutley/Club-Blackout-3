@@ -355,11 +355,15 @@ void main() {
 
   group('Clinger Mechanics', () {
     test('Clinger votes always mirror obsession partner', () {
-      gameEngine.addPlayer('Clinger1', role: roleRepository.getRoleById('clinger'));
-      gameEngine.addPlayer('PA1', role: roleRepository.getRoleById('party_animal'));
-      gameEngine.addPlayer('Dealer1', role: roleRepository.getRoleById('dealer'));
+      gameEngine.addPlayer('Clinger1',
+          role: roleRepository.getRoleById('clinger'));
+      gameEngine.addPlayer('PA1',
+          role: roleRepository.getRoleById('party_animal'));
+      gameEngine.addPlayer('Dealer1',
+          role: roleRepository.getRoleById('dealer'));
 
-      final clinger = gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
+      final clinger =
+          gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
       final partner = gameEngine.players.firstWhere((p) => p.name == 'PA1');
       final dealer = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
 
@@ -380,10 +384,13 @@ void main() {
     });
 
     test('Clinger dies of heartbreak when obsession dies', () {
-      gameEngine.addPlayer('Clinger1', role: roleRepository.getRoleById('clinger'));
-      gameEngine.addPlayer('PA1', role: roleRepository.getRoleById('party_animal'));
+      gameEngine.addPlayer('Clinger1',
+          role: roleRepository.getRoleById('clinger'));
+      gameEngine.addPlayer('PA1',
+          role: roleRepository.getRoleById('party_animal'));
 
-      final clinger = gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
+      final clinger =
+          gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
       final partner = gameEngine.players.firstWhere((p) => p.name == 'PA1');
 
       clinger.clingerPartnerId = partner.id;
@@ -395,11 +402,15 @@ void main() {
     });
 
     test('Freed Clinger does not sync votes or heartbreak', () {
-      gameEngine.addPlayer('Clinger1', role: roleRepository.getRoleById('clinger'));
-      gameEngine.addPlayer('PA1', role: roleRepository.getRoleById('party_animal'));
-      gameEngine.addPlayer('Dealer1', role: roleRepository.getRoleById('dealer'));
+      gameEngine.addPlayer('Clinger1',
+          role: roleRepository.getRoleById('clinger'));
+      gameEngine.addPlayer('PA1',
+          role: roleRepository.getRoleById('party_animal'));
+      gameEngine.addPlayer('Dealer1',
+          role: roleRepository.getRoleById('dealer'));
 
-      final clinger = gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
+      final clinger =
+          gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
       final partner = gameEngine.players.firstWhere((p) => p.name == 'PA1');
       final dealer = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
 
@@ -417,11 +428,15 @@ void main() {
     });
 
     test('Freed Clinger can use Attack Dog exactly once', () {
-      gameEngine.addPlayer('Clinger1', role: roleRepository.getRoleById('clinger'));
-      gameEngine.addPlayer('PA1', role: roleRepository.getRoleById('party_animal'));
-      gameEngine.addPlayer('Dealer1', role: roleRepository.getRoleById('dealer'));
+      gameEngine.addPlayer('Clinger1',
+          role: roleRepository.getRoleById('clinger'));
+      gameEngine.addPlayer('PA1',
+          role: roleRepository.getRoleById('party_animal'));
+      gameEngine.addPlayer('Dealer1',
+          role: roleRepository.getRoleById('dealer'));
 
-      final clinger = gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
+      final clinger =
+          gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
       final partner = gameEngine.players.firstWhere((p) => p.name == 'PA1');
       final target = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
 
@@ -451,11 +466,15 @@ void main() {
     });
 
     test('Non-freed Clinger cannot use Attack Dog', () {
-      gameEngine.addPlayer('Clinger1', role: roleRepository.getRoleById('clinger'));
-      gameEngine.addPlayer('PA1', role: roleRepository.getRoleById('party_animal'));
-      gameEngine.addPlayer('Dealer1', role: roleRepository.getRoleById('dealer'));
+      gameEngine.addPlayer('Clinger1',
+          role: roleRepository.getRoleById('clinger'));
+      gameEngine.addPlayer('PA1',
+          role: roleRepository.getRoleById('party_animal'));
+      gameEngine.addPlayer('Dealer1',
+          role: roleRepository.getRoleById('dealer'));
 
-      final clinger = gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
+      final clinger =
+          gameEngine.players.firstWhere((p) => p.name == 'Clinger1');
       final partner = gameEngine.players.firstWhere((p) => p.name == 'PA1');
       final target = gameEngine.players.firstWhere((p) => p.name == 'Dealer1');
 
@@ -640,7 +659,8 @@ void main() {
         role: roleRepository.getRoleById('bouncer'),
       );
       gameEngine.addPlayer('Roofi1', role: roleRepository.getRoleById('roofi'));
-      gameEngine.addPlayer('MB1', role: roleRepository.getRoleById('messy_bitch'));
+      gameEngine.addPlayer('MB1',
+          role: roleRepository.getRoleById('messy_bitch'));
 
       expect(gameEngine.players.length, 8);
       final dealerCount =
@@ -957,7 +977,8 @@ void main() {
       );
 
       final result = gameEngine.checkGameEnd();
-      expect(result, isNull); // 1 dealer vs many Party-aligned roles => continues
+      expect(
+          result, isNull); // 1 dealer vs many Party-aligned roles => continues
     });
 
     test('1v1 Dealer vs Party Animal is a Dealer win', () {
@@ -1023,7 +1044,8 @@ void main() {
           gameEngine.players.firstWhere((p) => p.role.id == 'messy_bitch');
       final partyAnimal =
           gameEngine.players.firstWhere((p) => p.role.id == 'party_animal');
-      final dealer = gameEngine.players.firstWhere((p) => p.role.id == 'dealer');
+      final dealer =
+          gameEngine.players.firstWhere((p) => p.role.id == 'dealer');
 
       // Only the living non-Messy player needs a rumour.
       partyAnimal.hasRumour = true;

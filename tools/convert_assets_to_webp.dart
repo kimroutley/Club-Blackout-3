@@ -6,7 +6,8 @@ Future<void> main(List<String> args) async {
 
   final cwebp = await _findCwebp();
   if (cwebp == null) {
-    stderr.writeln('ERROR: Could not find cwebp.exe on PATH or in WinGet packages.');
+    stderr.writeln(
+        'ERROR: Could not find cwebp.exe on PATH or in WinGet packages.');
     stderr.writeln('Install it with: winget install -e --id Google.Libwebp');
     exitCode = 1;
     return;
@@ -54,10 +55,12 @@ Future<void> main(List<String> args) async {
       continue;
     }
 
-    final outPath = rel.replaceAll(RegExp(r'\.png$', caseSensitive: false), '.webp');
+    final outPath =
+        rel.replaceAll(RegExp(r'\.png$', caseSensitive: false), '.webp');
     final output = File(outPath);
 
-    if (output.existsSync() && output.lastModifiedSync().isAfter(input.lastModifiedSync())) {
+    if (output.existsSync() &&
+        output.lastModifiedSync().isAfter(input.lastModifiedSync())) {
       stdout.writeln('SKIP (up-to-date): $rel');
       skipped++;
       continue;
@@ -90,7 +93,8 @@ Future<void> main(List<String> args) async {
     final inMb = input.lengthSync() / (1024 * 1024);
     final outMb = output.lengthSync() / (1024 * 1024);
     final pct = inMb <= 0 ? 0 : (100 * (1 - (outMb / inMb)));
-    stdout.writeln('OK  ${_fmtMb(inMb)} -> ${_fmtMb(outMb)}  (${pct.toStringAsFixed(1)}% smaller)  $rel');
+    stdout.writeln(
+        'OK  ${_fmtMb(inMb)} -> ${_fmtMb(outMb)}  (${pct.toStringAsFixed(1)}% smaller)  $rel');
 
     if (deletePng) {
       input.deleteSync();
@@ -111,10 +115,12 @@ Future<String?> _findCwebp() async {
 
   // Try PATH first.
   try {
-    final where = await Process.run('where.exe', ['cwebp.exe'], runInShell: true);
+    final where =
+        await Process.run('where.exe', ['cwebp.exe'], runInShell: true);
     if (where.exitCode == 0) {
       final lines = (where.stdout as String).trim().split(RegExp(r'\r?\n'));
-      final first = lines.firstWhere((l) => l.trim().isNotEmpty, orElse: () => '');
+      final first =
+          lines.firstWhere((l) => l.trim().isNotEmpty, orElse: () => '');
       if (first.isNotEmpty && File(first).existsSync()) return first;
     }
   } catch (_) {

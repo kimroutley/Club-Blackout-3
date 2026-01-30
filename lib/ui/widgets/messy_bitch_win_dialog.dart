@@ -19,7 +19,8 @@ class MessyBitchWinDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final seed = Theme.of(context).colorScheme.primary;
     final theme = ThemeData.from(
-      colorScheme: ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.dark),
+      colorScheme:
+          ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.dark),
       useMaterial3: true,
     );
     final cs = theme.colorScheme;

@@ -43,22 +43,24 @@ class InteractiveScriptCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final accent = isActive ? (stepColor ?? role?.color ?? cs.primary) : cs.outline;
+    final accent =
+        isActive ? (stepColor ?? role?.color ?? cs.primary) : cs.outline;
     final tt = Theme.of(context).textTheme;
 
     final byline = (playerName ?? player?.name)?.trim();
 
     final contentPadding = bulletin
-      ? ClubBlackoutTheme.scriptCardPaddingBulletin
-      : (dense
-        ? ClubBlackoutTheme.scriptCardPaddingDense
-        : ClubBlackoutTheme.scriptCardPadding);
+        ? ClubBlackoutTheme.scriptCardPaddingBulletin
+        : (dense
+            ? ClubBlackoutTheme.scriptCardPaddingDense
+            : ClubBlackoutTheme.scriptCardPadding);
 
     final readAloudText = step.readAloudText.trim();
     final rawInstructionText = step.instructionText.trim();
 
     var instructionText = rawInstructionText;
-    if (hostLabel.trim().isNotEmpty && hostLabel.trim().toLowerCase() != 'host') {
+    if (hostLabel.trim().isNotEmpty &&
+        hostLabel.trim().toLowerCase() != 'host') {
       instructionText = instructionText
           .replaceFirst(
             RegExp(r'^host\s*:', caseSensitive: false),
@@ -131,7 +133,9 @@ class InteractiveScriptCard extends StatelessWidget {
                 ],
                 Expanded(
                   child: Text(
-                    byline == null || byline.isEmpty ? step.title : '${step.title} · $byline',
+                    byline == null || byline.isEmpty
+                        ? step.title
+                        : '${step.title} · $byline',
                     style: headerStyle,
                   ),
                 ),

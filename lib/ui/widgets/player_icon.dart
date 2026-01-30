@@ -22,7 +22,7 @@ class PlayerIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    
+
     return Stack(
       alignment: Alignment.center,
       children: [
