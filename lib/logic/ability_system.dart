@@ -75,6 +75,18 @@ class ActiveAbility {
         'metadata': metadata,
       };
 
+  ActiveAbility copy() {
+    return ActiveAbility(
+      abilityId: abilityId,
+      sourcePlayerId: sourcePlayerId,
+      targetPlayerIds: List<String>.from(targetPlayerIds),
+      trigger: trigger,
+      effect: effect,
+      priority: priority,
+      metadata: Map<String, dynamic>.from(metadata),
+    );
+  }
+
   factory ActiveAbility.fromJson(Map<String, dynamic> json) {
     return ActiveAbility(
       abilityId: json['abilityId'] as String,
@@ -188,6 +200,17 @@ class AbilityResolver {
         }
       }
     }
+  }
+
+  AbilityResolver copy() {
+    final copy = AbilityResolver();
+    copy._queue.addAll(_queue.map((a) => a.copy()));
+    return copy;
+  }
+
+  void copyFrom(AbilityResolver other) {
+    _queue.clear();
+    _queue.addAll(other._queue.map((a) => a.copy()));
   }
 
   /// Process all queued abilities in priority order
