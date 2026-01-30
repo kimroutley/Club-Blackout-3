@@ -294,7 +294,8 @@ class GameDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, Color accent) {
+  Widget _buildHeader(BuildContext context, Color accent,
+      {required bool useM3}) {
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return Container(
@@ -306,7 +307,8 @@ class GameDrawer extends StatelessWidget {
         right: 24,
       ),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
+        color:
+            useM3 ? scheme.surfaceContainerLow : accent.withValues(alpha: 0.02),
         border: Border(
           bottom: BorderSide(
             color: scheme.outlineVariant.withValues(alpha: 0.3),
@@ -426,28 +428,61 @@ class _DrawerTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Card(
-        elevation: 0,
-        color: scheme.surfaceContainer,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: scheme.outlineVariant.withValues(alpha: 0.55),
-          ),
-        ),
-        child: ListTile(
-          onTap: onTap,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          leading: Icon(icon, color: accent.withValues(alpha: 0.9)),
-          title: Text(
-            label,
-            style: TextStyle(
-              color: scheme.onSurface.withValues(alpha: 0.92),
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              letterSpacing: 0.4,
+      child: useM3
+          ? Card(
+              elevation: 0,
+              color: scheme.surfaceContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: scheme.outlineVariant.withValues(alpha: 0.55),
+                ),
+              ),
+              child: ListTile(
+                onTap: onTap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                leading: Icon(icon, color: accent.withValues(alpha: 0.9)),
+                title: Text(
+                  label,
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.92),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            )
+          : Container(
+              decoration: ClubBlackoutTheme.neonFrame(
+                color: accent,
+                opacity: 0.06,
+                borderRadius: ClubBlackoutTheme.radiusSm,
+                borderWidth: 1.0,
+              ),
+              child: ListTile(
+                onTap: onTap,
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(ClubBlackoutTheme.radiusSm),
+                ),
+                leading: Icon(
+                  icon,
+                  color: accent.withValues(alpha: 0.90),
+                  shadows: ClubBlackoutTheme.iconGlow(accent, intensity: 0.35),
+                ),
+                title: Text(
+                  label,
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.80),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    letterSpacing: 1.3,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
