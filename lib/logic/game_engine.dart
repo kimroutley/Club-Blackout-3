@@ -393,15 +393,9 @@ class GameEngine extends ChangeNotifier {
   }
 
   /// Creates a deep-ish clone suitable for Monte Carlo simulations.
-  Future<GameEngine> cloneForSimulation({
-    bool includeLog = false,
-    bool silent = true,
-  }) async {
-    final clone = GameEngine(
-      roleRepository: roleRepository,
-      loadNameHistory: false,
-      silent: silent,
-    );
+  Future<GameEngine> cloneForSimulation({bool includeLog = false}) async {
+    final clone =
+        GameEngine(roleRepository: roleRepository, loadNameHistory: false);
     await clone.importSaveBlobMap(exportSaveBlobMap(includeLog: includeLog),
         notify: false);
     return clone;
