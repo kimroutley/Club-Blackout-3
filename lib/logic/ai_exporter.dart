@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import '../logic/game_dashboard_stats.dart';
 import '../logic/game_engine.dart';
 import '../logic/host_insights.dart';
@@ -218,10 +220,17 @@ Map<String, dynamic> buildAiStoryExport(
   };
 }
 
-String buildAiCommentaryPrompt({
+Future<String> buildAiCommentaryPrompt({
   required AiCommentaryStyle style,
   required Map<String, dynamic> gameStatsExport,
 }) {
+  return compute(_buildAiCommentaryPromptTask, (style, gameStatsExport));
+}
+
+String _buildAiCommentaryPromptTask(
+  (AiCommentaryStyle, Map<String, dynamic>) args,
+) {
+  final (style, gameStatsExport) = args;
   final jsonText = const JsonEncoder.withIndent('  ').convert(gameStatsExport);
 
   final styleRules = _styleRules(style);

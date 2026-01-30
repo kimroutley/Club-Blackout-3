@@ -1725,7 +1725,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     if (style == null) return;
 
     final export = buildAiGameStatsExport(engine);
-    final prompt = buildAiCommentaryPrompt(style: style, gameStatsExport: export);
+    final prompt = await buildAiCommentaryPrompt(style: style, gameStatsExport: export);
     await Clipboard.setData(ClipboardData(text: prompt));
     if (!context.mounted) return;
     engine.showToast('Copied ${style.label} commentary prompt');
@@ -1736,7 +1736,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     if (style == null) return;
 
     final export = buildAiGameStatsExport(engine);
-    final prompt = buildAiCommentaryPrompt(style: style, gameStatsExport: export);
+    final prompt = await buildAiCommentaryPrompt(style: style, gameStatsExport: export);
 
     final stamp = ExportFileService.safeTimestampForFilename(DateTime.now());
     final file = await ExportFileService.saveText(
