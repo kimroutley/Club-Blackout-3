@@ -67,7 +67,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
       _lastCompletedOddsSignature = null;
       _simulatedOdds = null;
       _simulatedOddsUpdatedAt = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scheduleOddsUpdate());
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _scheduleOddsUpdate());
     }
   }
 
@@ -85,7 +86,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
   void _scheduleOddsUpdate() {
     if (!mounted) return;
     _oddsDebounce?.cancel();
-    _oddsDebounce = Timer(const Duration(milliseconds: 650), _maybeRunOddsSimulation);
+    _oddsDebounce =
+        Timer(const Duration(milliseconds: 650), _maybeRunOddsSimulation);
   }
 
   int _engineOddsSignature(GameEngine engine) {
@@ -190,7 +192,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
   void _handleDrawerNavigation(int index) {
     if (index == 3) {
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => GamesNightScreen(gameEngine: gameEngine)),
+        MaterialPageRoute(
+            builder: (_) => GamesNightScreen(gameEngine: gameEngine)),
       );
       return;
     }
@@ -288,29 +291,30 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
 
         return Stack(
           children: [
-             const Positioned.fill(
-                child: NeonBackground(
-                  accentColor: accent,
-                  backgroundAsset: 'Backgrounds/Club Blackout V2 Game Background.png',
-                  blurSigma: 12.0,
-                  showOverlay: true,
-                  child: SizedBox.expand(),
-                ),
-             ),
-             Scaffold(
+            const Positioned.fill(
+              child: NeonBackground(
+                accentColor: accent,
+                backgroundAsset:
+                    'Backgrounds/Club Blackout V2 Game Background.png',
+                blurSigma: 12.0,
+                showOverlay: true,
+                child: SizedBox.expand(),
+              ),
+            ),
+            Scaffold(
               backgroundColor: Colors.transparent,
               extendBodyBehindAppBar: true,
               drawer: GameDrawer(
                 gameEngine: gameEngine,
-                  onContinueGameTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => GameScreen(gameEngine: gameEngine),
-                      ),
-                    );
-                  },
+                onContinueGameTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => GameScreen(gameEngine: gameEngine),
+                    ),
+                  );
+                },
                 onNavigate: _handleDrawerNavigation,
-                selectedIndex: -1, 
+                selectedIndex: -1,
               ),
               appBar: AppBar(
                 title: null,
@@ -336,8 +340,10 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                 children: [
                   Padding(
                     padding: EdgeInsets.only(
-                       top: MediaQuery.of(context).padding.top + kToolbarHeight - 12,
-                       bottom: MediaQuery.paddingOf(context).bottom + 16,
+                      top: MediaQuery.of(context).padding.top +
+                          kToolbarHeight -
+                          12,
+                      bottom: MediaQuery.paddingOf(context).bottom + 16,
                     ),
                     child: DefaultTabController(
                       length: 3,
@@ -348,7 +354,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                           Expanded(
                             child: TabBarView(
                               children: [
-                                _buildOverviewTab(context, gameEngine, stats, dashboard),
+                                _buildOverviewTab(
+                                    context, gameEngine, stats, dashboard),
                                 _buildStatsTab(context, gameEngine, dashboard),
                                 _buildPlayersTab(context, gameEngine),
                               ],
@@ -501,7 +508,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                               const SizedBox(
                                 height: 16,
                                 width: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               ),
                               const SizedBox(width: 10),
                               Text(
@@ -527,7 +535,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                                 flex: 2,
                                 child: Text(
                                   e.key,
-                                  style: const TextStyle(fontWeight: FontWeight.w800),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w800),
                                 ),
                               ),
                               Expanded(
@@ -598,7 +607,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                                 children: [
                                   Text(
                                     e.title,
-                                    style: const TextStyle(fontWeight: FontWeight.w800),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800),
                                   ),
                                   if (e.description.trim().isNotEmpty)
                                     Padding(
@@ -606,7 +616,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                                       child: Text(
                                         e.description,
                                         style: TextStyle(
-                                          color: cs.onSurface.withValues(alpha: 0.78),
+                                          color: cs.onSurface
+                                              .withValues(alpha: 0.78),
                                           height: 1.25,
                                         ),
                                       ),
@@ -705,11 +716,13 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
         ClubBlackoutTheme.gap12,
         _buildSummaryGrid(context, stats),
         ClubBlackoutTheme.gap16,
-        _buildSectionHeader('WIN ODDS & PREDICTABILITY', ClubBlackoutTheme.neonBlue),
+        _buildSectionHeader(
+            'WIN ODDS & PREDICTABILITY', ClubBlackoutTheme.neonBlue),
         ClubBlackoutTheme.gap8,
         _buildPredictabilityCard(context, odds),
         ClubBlackoutTheme.gap8,
-        _buildOddsCard(context, odds, isUpdating: _oddsSimRunning, updatedAt: _simulatedOddsUpdatedAt),
+        _buildOddsCard(context, odds,
+            isUpdating: _oddsSimRunning, updatedAt: _simulatedOddsUpdatedAt),
         ClubBlackoutTheme.gap16,
         _buildSectionHeader('RECENT EVENTS', ClubBlackoutTheme.neonBlue),
         ClubBlackoutTheme.gap8,
@@ -722,9 +735,9 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           padding: const EdgeInsets.all(12),
           child: Text(
             (engine.lastNightHostRecap.isNotEmpty
-                    ? engine.lastNightHostRecap
-                    : engine.lastNightSummary)
-                .isEmpty
+                        ? engine.lastNightHostRecap
+                        : engine.lastNightSummary)
+                    .isEmpty
                 ? 'No data yet.'
                 : (engine.lastNightHostRecap.isNotEmpty
                     ? engine.lastNightHostRecap
@@ -753,7 +766,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     );
   }
 
-  Widget _buildStatsTab(BuildContext context, GameEngine engine, dynamic dashboard) {
+  Widget _buildStatsTab(
+      BuildContext context, GameEngine engine, dynamic dashboard) {
     final voting = dashboard.voting as VotingInsights;
     return _HostStatsTab(
       engine: engine,
@@ -819,18 +833,23 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
         crossAxisSpacing: 8,
         childAspectRatio: 1.25,
         children: [
-          tile('PLAYERS', s.totalPlayers.toString(), ClubBlackoutTheme.neonBlue),
+          tile(
+              'PLAYERS', s.totalPlayers.toString(), ClubBlackoutTheme.neonBlue),
           tile('ALIVE', s.aliveCount.toString(), ClubBlackoutTheme.neonGreen),
           tile('DEAD', s.deadCount.toString(), ClubBlackoutTheme.neonRed),
-          tile('DEALERS', s.dealerAliveCount.toString(), ClubBlackoutTheme.neonRed),
-          tile('PARTY', s.partyAliveCount.toString(), ClubBlackoutTheme.neonBlue),
-          tile('NEUTRAL', s.neutralAliveCount.toString(), ClubBlackoutTheme.neonPurple),
+          tile('DEALERS', s.dealerAliveCount.toString(),
+              ClubBlackoutTheme.neonRed),
+          tile('PARTY', s.partyAliveCount.toString(),
+              ClubBlackoutTheme.neonBlue),
+          tile('NEUTRAL', s.neutralAliveCount.toString(),
+              ClubBlackoutTheme.neonPurple),
         ],
       ),
     );
   }
 
-  Widget _buildRecentEventsCard(BuildContext context, List<GameLogEntry> entries) {
+  Widget _buildRecentEventsCard(
+      BuildContext context, List<GameLogEntry> entries) {
     final cs = Theme.of(context).colorScheme;
     final rows = entries
         .where((e) => e.type != GameLogType.script)
@@ -1048,7 +1067,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                       ClubBlackoutTheme.neonBlue,
                       isPrimary: false,
                     ).copyWith(
-                      padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
+                      padding:
+                          WidgetStateProperty.all(const EdgeInsets.all(12)),
                     ),
                     child: const Icon(Icons.folder_open_rounded),
                   ),
@@ -1151,7 +1171,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     );
   }
 
-  Future<void> _copyAiStoryExportJson(BuildContext context, GameEngine engine) async {
+  Future<void> _copyAiStoryExportJson(
+      BuildContext context, GameEngine engine) async {
     final export = buildAiStoryExport(engine, minWords: 250, maxWords: 450);
     final jsonText = const JsonEncoder.withIndent('  ').convert(export);
     await Clipboard.setData(ClipboardData(text: jsonText));
@@ -1159,7 +1180,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     gameEngine.showToast('Copied AI Recap Export JSON', title: 'Success');
   }
 
-  Future<void> _saveAiStoryExportJson(BuildContext context, GameEngine engine) async {
+  Future<void> _saveAiStoryExportJson(
+      BuildContext context, GameEngine engine) async {
     final export = buildAiStoryExport(engine, minWords: 250, maxWords: 450);
     final jsonText = const JsonEncoder.withIndent('  ').convert(export);
 
@@ -1179,14 +1201,14 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           _openExportsFolder(context, engine);
           return;
         }
-        ExportFileService.shareFile(file, subject: 'Club Blackout: AI Recap Export');
+        ExportFileService.shareFile(file,
+            subject: 'Club Blackout: AI Recap Export');
       },
     );
   }
 
-
-
-  Widget _buildVotingHighlightsCard(BuildContext context, VotingInsights voting) {
+  Widget _buildVotingHighlightsCard(
+      BuildContext context, VotingInsights voting) {
     Color severityColor(double dominance) {
       if (dominance >= 0.60) return ClubBlackoutTheme.neonPink;
       if (dominance >= 0.40) return ClubBlackoutTheme.neonOrange;
@@ -1279,8 +1301,7 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
 
   Widget _buildHostToolsCard(BuildContext context, GameEngine engine) {
     final cs = Theme.of(context).colorScheme;
-    final hasPending =
-        engine.dramaQueenSwapPending ||
+    final hasPending = engine.dramaQueenSwapPending ||
         engine.hasPendingPredatorRetaliation ||
         engine.hasPendingTeaSpillerReveal;
 
@@ -1345,7 +1366,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
         children: [
           Text(
             'Summarizing live win odds, voting activity, role counts, and events.',
-            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.80), fontSize: 13),
+            style: TextStyle(
+                color: cs.onSurface.withValues(alpha: 0.80), fontSize: 13),
           ),
           const SizedBox(height: 8),
           Text(
@@ -1373,7 +1395,9 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
         .map((e) => MapEntry(e.key, e.value.clamp(0.0, 1.0)))
         .toList(growable: false);
     final top = clamped.first;
-    final second = clamped.length > 1 ? clamped[1] : const MapEntry<String, double>('', 0.0);
+    final second = clamped.length > 1
+        ? clamped[1]
+        : const MapEntry<String, double>('', 0.0);
 
     // A simple confidence metric: leader probability + separation from runner-up.
     final leader = top.value;
@@ -1436,12 +1460,20 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           const SizedBox(height: 8),
           Text(
             'Current leader: ${labelFor(top.key)} (${(top.value * 100).round()}%)',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85)),
+            style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.85)),
           ),
           if (second.key.isNotEmpty)
             Text(
               'Runner-up: ${labelFor(second.key)} (${(second.value * 100).round()}%)',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.70)),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.70)),
             ),
           const SizedBox(height: 8),
           ClipRRect(
@@ -1449,7 +1481,10 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
             child: LinearProgressIndicator(
               value: confidence,
               minHeight: 10,
-              backgroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.08),
               color: bandC.withValues(alpha: 0.9),
             ),
           ),
@@ -1459,7 +1494,10 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
               odds.note,
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.72),
               ),
             ),
           ],
@@ -1537,7 +1575,10 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                             : "Updated ${updatedAt.hour.toString().padLeft(2, '0')}:${updatedAt.minute.toString().padLeft(2, '0')}"),
                     style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.70),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.70),
                     ),
                   ),
                 ),
@@ -1615,9 +1656,6 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     gameEngine.showToast('Copied story snapshot JSON', title: 'Success');
   }
 
-
-
-
   Future<AiCommentaryStyle?> _pickAiStyle(
     BuildContext context, {
     AiCommentaryStyle initial = AiCommentaryStyle.pg,
@@ -1677,7 +1715,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
                 ClubBlackoutTheme.hGap8,
                 FilledButton(
                   onPressed: () => Navigator.of(ctx).pop(selected),
-                  style: ClubBlackoutTheme.neonButtonStyle(accent, isPrimary: true),
+                  style: ClubBlackoutTheme.neonButtonStyle(accent,
+                      isPrimary: true),
                   child: const Text('SELECT'),
                 ),
               ],
@@ -1688,7 +1727,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     );
   }
 
-  Future<void> _copyAiGameStatsJson(BuildContext context, GameEngine engine) async {
+  Future<void> _copyAiGameStatsJson(
+      BuildContext context, GameEngine engine) async {
     final export = buildAiGameStatsExport(engine);
     final jsonText = const JsonEncoder.withIndent('  ').convert(export);
     await Clipboard.setData(ClipboardData(text: jsonText));
@@ -1696,7 +1736,8 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     gameEngine.showToast('Copied AI Game Stats JSON', title: 'Success');
   }
 
-  Future<void> _saveAiGameStatsJson(BuildContext context, GameEngine engine) async {
+  Future<void> _saveAiGameStatsJson(
+      BuildContext context, GameEngine engine) async {
     final export = buildAiGameStatsExport(engine);
     final jsonText = const JsonEncoder.withIndent('  ').convert(export);
 
@@ -1709,34 +1750,40 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     if (!context.mounted) return;
     engine.showToast(
       'Saved AI Game Stats JSON to ${file.path}',
-      actionLabel: ExportFileService.supportsOpenFolder ? 'OPEN FOLDER' : 'SHARE',
+      actionLabel:
+          ExportFileService.supportsOpenFolder ? 'OPEN FOLDER' : 'SHARE',
       onAction: () {
         if (ExportFileService.supportsOpenFolder) {
           _openExportsFolder(context, engine);
           return;
         }
-        ExportFileService.shareFile(file, subject: 'Club Blackout: AI Game Stats');
+        ExportFileService.shareFile(file,
+            subject: 'Club Blackout: AI Game Stats');
       },
     );
   }
 
-  Future<void> _copyAiCommentaryPrompt(BuildContext context, GameEngine engine) async {
+  Future<void> _copyAiCommentaryPrompt(
+      BuildContext context, GameEngine engine) async {
     final style = await _pickAiStyle(context);
     if (style == null) return;
 
     final export = buildAiGameStatsExport(engine);
-    final prompt = await buildAiCommentaryPrompt(style: style, gameStatsExport: export);
+    final prompt =
+        await buildAiCommentaryPrompt(style: style, gameStatsExport: export);
     await Clipboard.setData(ClipboardData(text: prompt));
     if (!context.mounted) return;
     engine.showToast('Copied ${style.label} commentary prompt');
   }
 
-  Future<void> _saveAiCommentaryPrompt(BuildContext context, GameEngine engine) async {
+  Future<void> _saveAiCommentaryPrompt(
+      BuildContext context, GameEngine engine) async {
     final style = await _pickAiStyle(context);
     if (style == null) return;
 
     final export = buildAiGameStatsExport(engine);
-    final prompt = await buildAiCommentaryPrompt(style: style, gameStatsExport: export);
+    final prompt =
+        await buildAiCommentaryPrompt(style: style, gameStatsExport: export);
 
     final stamp = ExportFileService.safeTimestampForFilename(DateTime.now());
     final file = await ExportFileService.saveText(
@@ -1747,18 +1794,21 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     if (!context.mounted) return;
     engine.showToast(
       'Saved commentary prompt to ${file.path}',
-      actionLabel: ExportFileService.supportsOpenFolder ? 'OPEN FOLDER' : 'SHARE',
+      actionLabel:
+          ExportFileService.supportsOpenFolder ? 'OPEN FOLDER' : 'SHARE',
       onAction: () {
         if (ExportFileService.supportsOpenFolder) {
           _openExportsFolder(context, engine);
           return;
         }
-        ExportFileService.shareFile(file, subject: 'Club Blackout: ${style.label} Commentary Prompt');
+        ExportFileService.shareFile(file,
+            subject: 'Club Blackout: ${style.label} Commentary Prompt');
       },
     );
   }
 
-  Future<void> _openExportsFolder(BuildContext context, GameEngine engine) async {
+  Future<void> _openExportsFolder(
+      BuildContext context, GameEngine engine) async {
     try {
       await ExportFileService.openExportsFolder();
       if (!context.mounted) return;
@@ -1768,8 +1818,6 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
       engine.showToast('Unable to open exports folder on this platform.');
     }
   }
-
-  
 }
 
 typedef _SimpleContextWidgetBuilder = Widget Function(BuildContext context);
@@ -1779,8 +1827,10 @@ class _HostStatsTab extends StatelessWidget {
   final dynamic dashboard;
   final VotingInsights voting;
 
-  final Widget Function(BuildContext context, VotingInsights voting) buildVotingHighlightsCard;
-  final Widget Function(BuildContext context, VotingInsights voting) buildVotingCard;
+  final Widget Function(BuildContext context, VotingInsights voting)
+      buildVotingHighlightsCard;
+  final Widget Function(BuildContext context, VotingInsights voting)
+      buildVotingCard;
   final _SimpleContextWidgetBuilder buildRoleChipsCard;
   final _SimpleContextWidgetBuilder buildHostToolsCard;
   final _SimpleContextWidgetBuilder buildAiExportCard;
@@ -1814,7 +1864,6 @@ class _HostStatsTab extends StatelessWidget {
     );
   }
 }
-
 
 class _DramaQueenSwapPanel extends StatelessWidget {
   final GameEngine gameEngine;
@@ -1896,8 +1945,8 @@ class _PredatorRetaliationPanelState extends State<_PredatorRetaliationPanel> {
 
     final predatorId = engine.pendingPredatorId;
     final baseCandidates = predatorId == null
-      ? alive
-      : alive.where((p) => p.id != predatorId).toList();
+        ? alive
+        : alive.where((p) => p.id != predatorId).toList();
 
     final eligibleVoters = engine.pendingPredatorEligibleVoterIds.toSet();
     final preferredId = engine.pendingPredatorPreferredTargetId;
@@ -1905,10 +1954,10 @@ class _PredatorRetaliationPanelState extends State<_PredatorRetaliationPanel> {
     // If the engine captured a voter list, constrain to it, but always include
     // the preferred marked target if present.
     final candidates = eligibleVoters.isNotEmpty
-      ? baseCandidates
-        .where((p) => eligibleVoters.contains(p.id) || p.id == preferredId)
-        .toList()
-      : baseCandidates;
+        ? baseCandidates
+            .where((p) => eligibleVoters.contains(p.id) || p.id == preferredId)
+            .toList()
+        : baseCandidates;
 
     final items = candidates
         .map(
@@ -2019,10 +2068,11 @@ class _TeaSpillerRevealPanelState extends State<_TeaSpillerRevealPanel> {
 
     final alive = engine.guests.where((p) => p.isAlive && p.isEnabled).toList();
     final candidates = teaId == null
-      ? const <Player>[]
-      : alive
-        .where((p) => engine.pendingTeaSpillerEligibleVoterIds.contains(p.id))
-        .toList(growable: false);
+        ? const <Player>[]
+        : alive
+            .where(
+                (p) => engine.pendingTeaSpillerEligibleVoterIds.contains(p.id))
+            .toList(growable: false);
 
     final items = candidates
         .map(
@@ -2053,8 +2103,7 @@ class _TeaSpillerRevealPanelState extends State<_TeaSpillerRevealPanel> {
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: ClubBlackoutTheme.borderRadiusControl,
-          borderSide: BorderSide(
-              color: ClubBlackoutTheme.neonOrange, width: 2),
+          borderSide: BorderSide(color: ClubBlackoutTheme.neonOrange, width: 2),
         ),
       );
     }
@@ -2095,7 +2144,8 @@ class _TeaSpillerRevealPanelState extends State<_TeaSpillerRevealPanel> {
                 : () {
                     final ok = engine.completeTeaSpillerReveal(_target!);
                     if (!ok) {
-                      widget.gameEngine.showToast('Reveal failed. Please try again.');
+                      widget.gameEngine
+                          .showToast('Reveal failed. Please try again.');
                       return;
                     }
                     setState(() => _target = null);
@@ -2158,8 +2208,9 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
       }
     }
 
-    final filtered =
-        engine.guests.where((p) => matchesFilter(p) && matchesSearch(p)).toList();
+    final filtered = engine.guests
+        .where((p) => matchesFilter(p) && matchesSearch(p))
+        .toList();
     filtered.sort((a, b) {
       // Alive first, enabled first, then name.
       final aliveCmp = (b.isAlive ? 1 : 0).compareTo(a.isAlive ? 1 : 0);
@@ -2172,14 +2223,16 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
     final alive = filtered.where((p) => p.isAlive).toList();
     final dead = filtered.where((p) => !p.isAlive).toList();
 
-    InputDecoration buildNeonDecoration({required String label, required IconData icon}) {
+    InputDecoration buildNeonDecoration(
+        {required String label, required IconData icon}) {
       return InputDecoration(
         labelText: label,
         labelStyle: ClubBlackoutTheme.neonGlowFont.copyWith(
           letterSpacing: 1.2,
           fontWeight: FontWeight.w600,
         ),
-        prefixIcon: Icon(icon, color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.7)),
+        prefixIcon: Icon(icon,
+            color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.7)),
         filled: true,
         fillColor: cs.surface.withValues(alpha: 0.12),
         contentPadding: ClubBlackoutTheme.fieldPadding,
@@ -2241,18 +2294,18 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
                 tooltip: 'Mark freed (called "controller")',
                 icon: const Icon(Icons.link_off_rounded),
                 onPressed: () {
-                final partnerName = (p.clingerPartnerId == null)
-                  ? null
-                  : engine.players
-                    .where((x) => x.id == p.clingerPartnerId)
-                    .firstOrNull
-                    ?.name;
+                  final partnerName = (p.clingerPartnerId == null)
+                      ? null
+                      : engine.players
+                          .where((x) => x.id == p.clingerPartnerId)
+                          .firstOrNull
+                          ?.name;
                   final ok = engine.freeClingerFromObsession(p.id);
-                final msg = ok
-                  ? (partnerName != null
-                      ? '${p.name} was called "controller" by $partnerName and is now unleashed.'
-                      : '${p.name} is now unleashed.')
-                    : 'Unable to mark ${p.name} as unleashed.';
+                  final msg = ok
+                      ? (partnerName != null
+                          ? '${p.name} was called "controller" by $partnerName and is now unleashed.'
+                          : '${p.name} is now unleashed.')
+                      : 'Unable to mark ${p.name} as unleashed.';
                   engine.showToast(msg);
                 },
               )
@@ -2285,17 +2338,20 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
                   buildFilterChip(
                     label: 'All',
                     selected: _statusFilter == _RosterStatusFilter.all,
-                    onSelected: () => setState(() => _statusFilter = _RosterStatusFilter.all),
+                    onSelected: () =>
+                        setState(() => _statusFilter = _RosterStatusFilter.all),
                   ),
                   buildFilterChip(
                     label: 'Alive',
                     selected: _statusFilter == _RosterStatusFilter.alive,
-                    onSelected: () => setState(() => _statusFilter = _RosterStatusFilter.alive),
+                    onSelected: () => setState(
+                        () => _statusFilter = _RosterStatusFilter.alive),
                   ),
                   buildFilterChip(
                     label: 'Dead',
                     selected: _statusFilter == _RosterStatusFilter.dead,
-                    onSelected: () => setState(() => _statusFilter = _RosterStatusFilter.dead),
+                    onSelected: () => setState(
+                        () => _statusFilter = _RosterStatusFilter.dead),
                   ),
                   FilterChip(
                     label: const Text('Only enabled'),
@@ -2309,7 +2365,8 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
                     ),
                     labelStyle: TextStyle(
                       color: cs.onSurface,
-                      fontWeight: _onlyEnabled ? FontWeight.w800 : FontWeight.w600,
+                      fontWeight:
+                          _onlyEnabled ? FontWeight.w800 : FontWeight.w600,
                       letterSpacing: 0.6,
                     ),
                     shape: RoundedRectangleBorder(
@@ -2337,13 +2394,15 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
           )
         else ...[
           if (_statusFilter != _RosterStatusFilter.dead) ...[
-            Text('Alive (${alive.length})', style: ClubBlackoutTheme.headingStyle),
+            Text('Alive (${alive.length})',
+                style: ClubBlackoutTheme.headingStyle),
             const SizedBox(height: 8),
             ...alive.map(buildPlayerCard),
             const SizedBox(height: 16),
           ],
           if (_statusFilter != _RosterStatusFilter.alive) ...[
-            Text('Dead (${dead.length})', style: ClubBlackoutTheme.headingStyle),
+            Text('Dead (${dead.length})',
+                style: ClubBlackoutTheme.headingStyle),
             const SizedBox(height: 8),
             ...dead.map(buildPlayerCard),
           ],

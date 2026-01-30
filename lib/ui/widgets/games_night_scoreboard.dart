@@ -19,7 +19,7 @@ class GamesNightScoreboard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final snapshots = service.completedGameSnapshots;
     final awards = ShenanigansTracker.generateSessionAwards(snapshots);
-    
+
     // Theme color - Neutral Gold/Blue for session stats
     const themeColor = ClubBlackoutTheme.neonBlue;
 
@@ -81,7 +81,8 @@ class GamesNightScoreboard extends StatelessWidget {
                       snapshots.isEmpty
                           ? 'No games completed yet.'
                           : 'No outliers detected across the session.',
-                      style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+                      style:
+                          TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
                     ),
                   )
                 : ListView.builder(
@@ -134,7 +135,8 @@ class GamesNightScoreboard extends StatelessWidget {
                                       Text(
                                         award.value,
                                         style: TextStyle(
-                                          color: cs.onSurface.withValues(alpha: 0.54),
+                                          color: cs.onSurface
+                                              .withValues(alpha: 0.54),
                                           fontSize: 12,
                                           fontStyle: FontStyle.italic,
                                         ),
@@ -154,7 +156,8 @@ class GamesNightScoreboard extends StatelessWidget {
                                   Text(
                                     award.description,
                                     style: TextStyle(
-                                      color: cs.onSurface.withValues(alpha: 0.6),
+                                      color:
+                                          cs.onSurface.withValues(alpha: 0.6),
                                       fontSize: 12,
                                     ),
                                   ),

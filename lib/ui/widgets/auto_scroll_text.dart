@@ -85,7 +85,8 @@ class _AutoScrollTextState extends State<AutoScrollText> {
     _running = false;
   }
 
-  bool _computeShouldScroll(BoxConstraints constraints, TextStyle effectiveStyle) {
+  bool _computeShouldScroll(
+      BoxConstraints constraints, TextStyle effectiveStyle) {
     final tp = TextPainter(
       text: TextSpan(text: widget.text, style: effectiveStyle),
       maxLines: widget.maxLines,
@@ -97,8 +98,7 @@ class _AutoScrollTextState extends State<AutoScrollText> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveStyle =
-        widget.style ?? DefaultTextStyle.of(context).style;
+    final effectiveStyle = widget.style ?? DefaultTextStyle.of(context).style;
 
     return LayoutBuilder(
       builder: (context, constraints) {

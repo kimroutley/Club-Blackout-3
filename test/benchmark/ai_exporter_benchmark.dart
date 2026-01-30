@@ -9,24 +9,31 @@ void main() {
     final Map<String, dynamic> largeStats = {
       'game': {
         'id': 'test_game',
-        'players': List.generate(20, (i) => {
-          'id': 'player_$i',
-          'name': 'Player $i',
-          'role': 'Villager',
-          'isAlive': i % 2 == 0,
-        }),
-        'log': List.generate(1000, (i) => {
-          'type': 'vote',
-          'day': i ~/ 10,
-          'message': 'Player ${i % 20} voted for Player ${(i + 1) % 20}',
-        }),
+        'players': List.generate(
+            20,
+            (i) => {
+                  'id': 'player_$i',
+                  'name': 'Player $i',
+                  'role': 'Villager',
+                  'isAlive': i % 2 == 0,
+                }),
+        'log': List.generate(
+            1000,
+            (i) => {
+                  'type': 'vote',
+                  'day': i ~/ 10,
+                  'message':
+                      'Player ${i % 20} voted for Player ${(i + 1) % 20}',
+                }),
       },
       'derived': {
-        'complexStats': List.generate(500, (i) => {
-          'stat': 'stat_$i',
-          'value': i * 3.14,
-          'history': List.generate(50, (j) => j),
-        }),
+        'complexStats': List.generate(
+            500,
+            (i) => {
+                  'stat': 'stat_$i',
+                  'value': i * 3.14,
+                  'history': List.generate(50, (j) => j),
+                }),
       }
     };
 

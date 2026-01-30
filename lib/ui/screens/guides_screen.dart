@@ -13,7 +13,7 @@ class GuidesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNight = gameEngine?.currentPhase == GamePhase.night;
-    
+
     // Unified M3 Structure with Theming
     return Stack(
       children: [
@@ -21,7 +21,8 @@ class GuidesScreen extends StatelessWidget {
           const Positioned.fill(
             child: NeonBackground(
               accentColor: ClubBlackoutTheme.neonOrange,
-              backgroundAsset: 'Backgrounds/Club Blackout V2 Game Background.png',
+              backgroundAsset:
+                  'Backgrounds/Club Blackout V2 Game Background.png',
               blurSigma: 12.0,
               showOverlay: true,
               child: SizedBox.expand(),
@@ -34,12 +35,14 @@ class GuidesScreen extends StatelessWidget {
             appBar: AppBar(
               backgroundColor: isNight ? null : Colors.transparent,
               elevation: 0,
-              iconTheme: const IconThemeData(color: Colors.white), // Always readable on bg
+              iconTheme: const IconThemeData(
+                  color: Colors.white), // Always readable on bg
               leading: IconButton(
                 icon: const Icon(Icons.menu),
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
-              title: const Text('Guides', style: TextStyle(color: Colors.white)),
+              title:
+                  const Text('Guides', style: TextStyle(color: Colors.white)),
               centerTitle: true,
               bottom: TabBar(
                 labelColor: isNight ? null : ClubBlackoutTheme.neonOrange,
@@ -57,7 +60,7 @@ class GuidesScreen extends StatelessWidget {
                 const HostGuideBody(),
                 const PlayerGuideBody(),
                 RoleCardsScreen(
-                  roles: gameEngine?.roleRepository.roles ?? const [], 
+                  roles: gameEngine?.roleRepository.roles ?? const [],
                   embedded: true,
                   isNight: isNight, // Pass context so cards render cleanly
                 ),

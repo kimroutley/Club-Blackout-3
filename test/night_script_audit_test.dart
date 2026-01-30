@@ -60,10 +60,8 @@ void main() {
       g = g.replaceAll(RegExp(r'\s+'), ' ');
 
       // Split on commas first, then on " and ".
-      final commaParts = g
-          .split(',')
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty);
+      final commaParts =
+          g.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty);
 
       final names = <String>[];
       for (final part in commaParts) {
@@ -143,21 +141,26 @@ void main() {
       final night1 = ScriptBuilder.buildNightScript(players, 1);
       expect(night1.isNotEmpty, isTrue);
       expect(night1.first.id, 'night_start');
-      expect(night1.first.readAloudText.toUpperCase(), contains('CLOSE YOUR EYES'));
+      expect(night1.first.readAloudText.toUpperCase(),
+          contains('CLOSE YOUR EYES'));
 
       final night2 = ScriptBuilder.buildNightScript(players, 2);
       expect(night2.isNotEmpty, isTrue);
       expect(night2.first.id, 'night_start');
     });
 
-    test('Night script never includes Second Wind conversion choice (engine-injected, host-only)', () {
+    test(
+        'Night script never includes Second Wind conversion choice (engine-injected, host-only)',
+        () {
       final players = makeAllRolesPlayers();
       final steps = ScriptBuilder.buildNightScript(players, 1);
       expect(steps.any((s) => s.id == 'second_wind_conversion_vote'), isFalse);
-      expect(steps.any((s) => s.id == 'second_wind_conversion_choice'), isFalse);
+      expect(
+          steps.any((s) => s.id == 'second_wind_conversion_choice'), isFalse);
     });
 
-    test('Every "open your eyes" is eventually followed by a close instruction', () {
+    test('Every "open your eyes" is eventually followed by a close instruction',
+        () {
       final players = makeAllRolesPlayers();
 
       // Audit both Night 1 and Night 2 flows.
@@ -218,7 +221,8 @@ void main() {
 
       final steps = ScriptBuilder.buildNightScript(players, 1);
       final silverFoxIndex = steps.indexWhere((s) => s.id == 'silver_fox_act');
-      expect(silverFoxIndex, isNot(-1), reason: 'Expected silver_fox_act to be present');
+      expect(silverFoxIndex, isNot(-1),
+          reason: 'Expected silver_fox_act to be present');
 
       final lastNonSilverRoleStepIndex = steps.lastIndexWhere(
         (s) => s.roleId != null && s.id != 'silver_fox_act',

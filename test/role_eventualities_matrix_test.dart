@@ -92,7 +92,8 @@ void main() {
     }
 
     // Ensure the role under test is present (once) if not already.
-    final alreadyPresent = engine.players.any((p) => p.role.id == roleUnderTest.id);
+    final alreadyPresent =
+        engine.players.any((p) => p.role.id == roleUnderTest.id);
     if (!alreadyPresent) {
       engine.addPlayer('TestRole', role: roleUnderTest);
     }
@@ -239,9 +240,11 @@ void main() {
           if (step.roleId == 'medic') {
             // Medic setup choice.
             engine.handleScriptOption(step, policy.medicSetupOption);
-          } else if (step.roleId == 'wallflower' && step.id == 'wallflower_act') {
+          } else if (step.roleId == 'wallflower' &&
+              step.id == 'wallflower_act') {
             // Wallflower witness style (host-entered flavor).
-            engine.handleScriptOption(step, policy.wallflowerWitness ? 'PEEK' : 'SKIP');
+            engine.handleScriptOption(
+                step, policy.wallflowerWitness ? 'PEEK' : 'SKIP');
           } else {
             // Default: choose a safe option.
             engine.handleScriptOption(step, 'SKIP');
@@ -252,8 +255,10 @@ void main() {
         case ScriptActionType.binaryChoice:
           // Second Wind conversion decisions are handled here (host-only, next-night).
           if (step.roleId == 'dealer' &&
-              (step.id == 'second_wind_conversion_choice' || step.id == 'second_wind_conversion_vote')) {
-            engine.handleScriptAction(step, [policy.secondWindConvert ? 'CONVERT' : 'KILL']);
+              (step.id == 'second_wind_conversion_choice' ||
+                  step.id == 'second_wind_conversion_vote')) {
+            engine.handleScriptAction(
+                step, [policy.secondWindConvert ? 'CONVERT' : 'KILL']);
           } else {
             // Default: choose "no" to avoid unintended state changes.
             engine.handleScriptAction(step, ['no']);
@@ -277,13 +282,15 @@ void main() {
           final actorRoleId = step.roleId;
           if (actorRoleId == null) {
             // Some steps are selectPlayer but not tied to a role; do a best-effort pick.
-            final target = _pickTarget(engine: engine, actorRoleId: 'unknown', policy: policy);
+            final target = _pickTarget(
+                engine: engine, actorRoleId: 'unknown', policy: policy);
             engine.handleScriptAction(step, [target.id]);
             engine.advanceScript();
             break;
           }
 
-          final target = _pickTarget(engine: engine, actorRoleId: actorRoleId, policy: policy);
+          final target = _pickTarget(
+              engine: engine, actorRoleId: actorRoleId, policy: policy);
           engine.handleScriptAction(step, [target.id]);
           engine.advanceScript();
           break;
@@ -298,7 +305,8 @@ void main() {
     }
 
     if (safety >= maxSteps) {
-      throw StateError('Script simulation exceeded maxSteps=$maxSteps (dayCount=${engine.dayCount}, phase=${engine.currentPhase}).');
+      throw StateError(
+          'Script simulation exceeded maxSteps=$maxSteps (dayCount=${engine.dayCount}, phase=${engine.currentPhase}).');
     }
   }
 
@@ -314,7 +322,8 @@ void main() {
         expect(
           validation.isValid,
           isTrue,
-          reason: 'Invalid setup when including roleId=${role.id}: ${validation.error}',
+          reason:
+              'Invalid setup when including roleId=${role.id}: ${validation.error}',
         );
 
         await engine.startGame();
@@ -356,7 +365,8 @@ void main() {
   });
 
   group('Role Eventualities: Cross-Role Interactions', () {
-    test('Clinger heartbreak + Creep inheritance does not break flow', () async {
+    test('Clinger heartbreak + Creep inheritance does not break flow',
+        () async {
       final engine = newEngine();
       await engine.createTestGame(fullRoster: true);
       await engine.startGame();
@@ -388,7 +398,9 @@ void main() {
       expect(creepAfter.role.id, victim.role.id);
     });
 
-    test('Second Wind conversion YES produces a new Dealer (next night, forfeits kill)', () async {
+    test(
+        'Second Wind conversion YES produces a new Dealer (next night, forfeits kill)',
+        () async {
       final engine = newEngine();
       await engine.createTestGame(fullRoster: true);
       await engine.startGame();
@@ -417,7 +429,8 @@ void main() {
 
       // Advance until we reach the conversion step (injected before Dealer kill).
       var safety = 0;
-      while (engine.currentScriptStep?.id != 'second_wind_conversion_choice' && safety < 500) {
+      while (engine.currentScriptStep?.id != 'second_wind_conversion_choice' &&
+          safety < 500) {
         engine.advanceScript();
         safety++;
       }
@@ -460,7 +473,8 @@ void main() {
       _advanceToNextNight(engine);
 
       var safety = 0;
-      while (engine.currentScriptStep?.id != 'second_wind_conversion_choice' && safety < 500) {
+      while (engine.currentScriptStep?.id != 'second_wind_conversion_choice' &&
+          safety < 500) {
         engine.advanceScript();
         safety++;
       }
@@ -557,7 +571,11 @@ void main() {
 
       // With stolen powers, the Roofi action should still be usable.
       final target = engine.players.firstWhere(
-        (p) => p.isAlive && p.isEnabled && p.role.id != 'host' && p.id != bouncer.id,
+        (p) =>
+            p.isAlive &&
+            p.isEnabled &&
+            p.role.id != 'host' &&
+            p.id != bouncer.id,
       );
       engine.handleScriptAction(
         ScriptStep(
@@ -597,7 +615,11 @@ void main() {
 
       // Defensive: even if a host/UI calls the ID-check action, it should not apply.
       final target = engine.players.firstWhere(
-        (p) => p.isAlive && p.isEnabled && p.role.id != 'host' && p.id != bouncer.id,
+        (p) =>
+            p.isAlive &&
+            p.isEnabled &&
+            p.role.id != 'host' &&
+            p.id != bouncer.id,
       );
       expect(target.idCheckedByBouncer, isFalse);
       engine.handleScriptAction(
@@ -660,7 +682,8 @@ void main() {
       );
       _playScript(engine, policy: policyNight1);
 
-      final revived = engine.players.firstWhere((p) => p.role.id == 'party_animal');
+      final revived =
+          engine.players.firstWhere((p) => p.role.id == 'party_animal');
       final medic = engine.players.firstWhere((p) => p.role.id == 'medic');
 
       // Since _playScript already resolved the night (it reaches showDayScene),
@@ -896,7 +919,8 @@ void main() {
 
       // Sanity: another player can vote.
       final otherVoter = engine.players.firstWhere(
-        (p) => p.isAlive && p.isEnabled && !p.soberSentHome && p.role.id != 'host',
+        (p) =>
+            p.isAlive && p.isEnabled && !p.soberSentHome && p.role.id != 'host',
       );
       engine.setDayVote(voterId: otherVoter.id, targetId: dealer.id);
       expect(engine.currentDayVotesByVoter[otherVoter.id], dealer.id);
@@ -937,7 +961,8 @@ void main() {
       expect(engine.eligibleDayVotesByTarget[dealer.id], isNull);
     });
 
-    test('Seasoned Drinker burns a life only on Dealer kill attempts', () async {
+    test('Seasoned Drinker burns a life only on Dealer kill attempts',
+        () async {
       final engine = _buildGameWithRoles(roleIds: [
         'dealer',
         'dealer',
@@ -1032,7 +1057,8 @@ void main() {
         isFalse,
       );
       expect(
-        engine.scriptQueue.any((s) => s.id == 'dealer_kill' || s.id == 'dealer_act'),
+        engine.scriptQueue
+            .any((s) => s.id == 'dealer_kill' || s.id == 'dealer_act'),
         isTrue,
       );
 
@@ -1067,13 +1093,17 @@ void main() {
       expect(engine.currentPhase, GamePhase.day);
 
       final silenced = engine.players
-          .where(
-              (p) => p.isAlive && p.isEnabled && p.silencedDay == engine.dayCount)
+          .where((p) =>
+              p.isAlive && p.isEnabled && p.silencedDay == engine.dayCount)
           .firstOrNull;
       expect(silenced, isNotNull);
 
       final target = engine.players.firstWhere(
-        (p) => p.isAlive && p.isEnabled && p.role.id != 'host' && p.id != silenced!.id,
+        (p) =>
+            p.isAlive &&
+            p.isEnabled &&
+            p.role.id != 'host' &&
+            p.id != silenced!.id,
       );
       engine.recordVote(voterId: silenced!.id, targetId: target.id);
 
@@ -1096,7 +1126,8 @@ void main() {
       engine.dayCount = 1;
 
       final roofi = engine.players.firstWhere((p) => p.role.id == 'roofi');
-      final bartender = engine.players.firstWhere((p) => p.role.id == 'bartender');
+      final bartender =
+          engine.players.firstWhere((p) => p.role.id == 'bartender');
       final pa = engine.players.firstWhere((p) => p.role.id == 'party_animal');
 
       const roofiStep = ScriptStep(
@@ -1145,7 +1176,8 @@ void main() {
       );
       _playScript(engine, policy: policy);
 
-      final predator = engine.players.firstWhere((p) => p.role.id == 'predator');
+      final predator =
+          engine.players.firstWhere((p) => p.role.id == 'predator');
       final voter = engine.players.firstWhere(
         (p) => p.isAlive && p.role.id != 'predator' && p.role.id != 'host',
       );
@@ -1186,7 +1218,8 @@ void main() {
       );
       _playScript(engine, policy: policy);
 
-      final predator = engine.players.firstWhere((p) => p.role.id == 'predator');
+      final predator =
+          engine.players.firstWhere((p) => p.role.id == 'predator');
       final voter = engine.players.firstWhere(
         (p) => p.isAlive && p.role.id == 'party_animal',
       );
@@ -1213,7 +1246,8 @@ void main() {
       expect(engine.deadPlayerIds, contains(marked.id));
     });
 
-    test('Drama Queen death sets swap pending and completeDramaQueenSwap swaps roles',
+    test(
+        'Drama Queen death sets swap pending and completeDramaQueenSwap swaps roles',
         () async {
       final engine = _buildGameWithRoles(roleIds: [
         'dealer',
@@ -1269,7 +1303,8 @@ void main() {
 
       // Tea Spiller may only target players who voted for them.
       final voterA = engine.players.firstWhere((p) => p.role.id == 'dealer');
-      final voterB = engine.players.firstWhere((p) => p.role.id == 'party_animal');
+      final voterB =
+          engine.players.firstWhere((p) => p.role.id == 'party_animal');
       engine.recordVote(voterId: voterA.id, targetId: tea.id);
       engine.recordVote(voterId: voterB.id, targetId: tea.id);
 
@@ -1278,7 +1313,8 @@ void main() {
       expect(engine.hasPendingTeaSpillerReveal, isTrue);
 
       // Must pick among voters.
-      expect(engine.pendingTeaSpillerEligibleVoterIds, containsAll([voterA.id, voterB.id]));
+      expect(engine.pendingTeaSpillerEligibleVoterIds,
+          containsAll([voterA.id, voterB.id]));
       expect(engine.completeTeaSpillerReveal(voterA.id), isTrue);
 
       expect(_gameLogContains(engine, 'Tea Spilled'), isTrue);
@@ -1319,7 +1355,8 @@ void main() {
       expect(clinger.clingerAttackDogUsed, isTrue);
     });
 
-    test('Club Manager can privately view a fellow player role (callback fires)',
+    test(
+        'Club Manager can privately view a fellow player role (callback fires)',
         () async {
       final engine = _buildGameWithRoles(roleIds: [
         'dealer',

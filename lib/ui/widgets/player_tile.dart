@@ -66,7 +66,11 @@ class PlayerTile extends StatelessWidget {
     Color? roleColor(String roleId) {
       if (engine == null) return null;
       try {
-        return engine.players.where((p) => p.role.id == roleId).first.role.color;
+        return engine.players
+            .where((p) => p.role.id == roleId)
+            .first
+            .role
+            .color;
       } catch (_) {
         return null;
       }
@@ -101,7 +105,8 @@ class PlayerTile extends StatelessWidget {
       add('Joins Next Night');
     }
     if (player.soberSentHome) {
-      add('Sent Home', color: byRoleOrTheme('sober', ClubBlackoutTheme.neonBlue));
+      add('Sent Home',
+          color: byRoleOrTheme('sober', ClubBlackoutTheme.neonBlue));
     }
 
     // Persistent Bouncer / Minor flags.
@@ -149,11 +154,13 @@ class PlayerTile extends StatelessWidget {
             color: byRoleOrTheme('silver_fox', ClubBlackoutTheme.neonBlue));
       }
       if (player.silencedDay != null && player.silencedDay == currentDay) {
-        add('Silenced', color: byRoleOrTheme('roofi', ClubBlackoutTheme.neonGreen));
+        add('Silenced',
+            color: byRoleOrTheme('roofi', ClubBlackoutTheme.neonGreen));
       }
       if (player.blockedKillNight != null &&
           player.blockedKillNight == currentDay) {
-        add('No Kill', color: byRoleOrTheme('roofi', ClubBlackoutTheme.neonGreen));
+        add('No Kill',
+            color: byRoleOrTheme('roofi', ClubBlackoutTheme.neonGreen));
       }
 
       // Lightweight taboo: if any alive Lightweight has this name as taboo,
@@ -168,10 +175,12 @@ class PlayerTile extends StatelessWidget {
     } else {
       // Without engine context, still surface longer-lived flags.
       if (player.silencedDay != null) {
-        add('Silenced', color: byRoleOrTheme('roofi', ClubBlackoutTheme.neonGreen));
+        add('Silenced',
+            color: byRoleOrTheme('roofi', ClubBlackoutTheme.neonGreen));
       }
       if (player.blockedKillNight != null) {
-        add('No Kill', color: byRoleOrTheme('roofi', ClubBlackoutTheme.neonGreen));
+        add('No Kill',
+            color: byRoleOrTheme('roofi', ClubBlackoutTheme.neonGreen));
       }
     }
 
@@ -263,7 +272,8 @@ class PlayerTile extends StatelessWidget {
           final targetId = value['targetId'];
           if (targetId is String && targetId == playerId) return true;
           final targetIds = value['targetIds'];
-          if (targetIds is Iterable && targetIds.contains(playerId)) return true;
+          if (targetIds is Iterable && targetIds.contains(playerId))
+            return true;
 
           // Generic scan.
           for (final v in value.values) {
@@ -309,14 +319,16 @@ class PlayerTile extends StatelessWidget {
         if (p.creepTargetId == player.id) {
           add('Creep Target', color: p.role.color);
         }
-        if (p.clingerPartnerId == player.id || player.clingerPartnerId == p.id) {
+        if (p.clingerPartnerId == player.id ||
+            player.clingerPartnerId == p.id) {
           // Color by the Clinger if present; otherwise by either participant.
           add('Linked', color: roleColor('clinger') ?? p.role.color);
         }
         if (p.predatorTargetId == player.id) {
           add('Marked (Predator)', color: p.role.color);
         }
-        if (p.dramaQueenTargetAId == player.id || p.dramaQueenTargetBId == player.id) {
+        if (p.dramaQueenTargetAId == player.id ||
+            p.dramaQueenTargetBId == player.id) {
           add('Swap Target', color: p.role.color);
         }
       }
@@ -441,7 +453,10 @@ class PlayerTile extends StatelessWidget {
                       letterSpacing: 1.2,
                       color: isEnabled
                           ? Theme.of(context).colorScheme.onSurface
-                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                          : Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.4),
                       shadows: isEnabled && isSelected
                           ? ClubBlackoutTheme.textGlow(roleColor)
                           : null,
@@ -457,7 +472,10 @@ class PlayerTile extends StatelessWidget {
                       letterSpacing: 0.8,
                       color: isEnabled
                           ? roleColor.withValues(alpha: 0.7)
-                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                          : Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.3),
                     ),
                   ),
                   if (!showBanner && effectChips.isNotEmpty) ...[
@@ -507,8 +525,7 @@ class PlayerTile extends StatelessWidget {
                   children: [
                     for (var i = 0; i < effectChips.length; i++) ...[
                       _chip(context, effectChips[i]),
-                      if (i != effectChips.length - 1)
-                        const SizedBox(width: 8),
+                      if (i != effectChips.length - 1) const SizedBox(width: 8),
                     ],
                   ],
                 ),

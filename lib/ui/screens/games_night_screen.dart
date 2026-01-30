@@ -26,7 +26,7 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
   // Ideally we would use a ValueListenable or StreamBuilder, but for now setState loop or query on build is okay
   // GamesNightService is a singleton but doesn't expose a stream yet. We can rely on build updates
   // or wrap operations.
-  
+
   void _toggleGamesNight(bool enable) {
     setState(() {
       if (enable) {
@@ -41,12 +41,12 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
   }
 
   void _clearSession() {
-     showDialog(
+    showDialog(
       context: context,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
         final isNight = widget.gameEngine?.currentPhase == GamePhase.night;
-        
+
         if (isNight) {
           return ClubAlertDialog(
             title: const Text('End session?'),
@@ -122,17 +122,17 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
       const SnackBar(content: Text('Games Night JSON copied to clipboard')),
     );
   }
-  
-  void _showRecap(BuildContext context) {
-     // Placeholder for a dedicated recap screen or dialog
-     showDialog(
-       context: context,
-       builder: (ctx) {
-         final cs = Theme.of(ctx).colorScheme;
-         final isNight = widget.gameEngine?.currentPhase == GamePhase.night;
 
-         if (isNight) {
-           return ClubAlertDialog(
+  void _showRecap(BuildContext context) {
+    // Placeholder for a dedicated recap screen or dialog
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final cs = Theme.of(ctx).colorScheme;
+        final isNight = widget.gameEngine?.currentPhase == GamePhase.night;
+
+        if (isNight) {
+          return ClubAlertDialog(
             title: const Text('Session Recap'),
             content: const SingleChildScrollView(
               child: Text(
@@ -145,39 +145,39 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
                 child: const Text('OK'),
               ),
             ],
-           );
-         }
+          );
+        }
 
-         return BulletinDialogShell(
-           accent: ClubBlackoutTheme.neonPink,
-           maxWidth: 520,
-           title: Text(
-             'SESSION RECAP',
-             style: ClubBlackoutTheme.bulletinHeaderStyle(
-                 ClubBlackoutTheme.neonPink),
-           ),
-           content: SingleChildScrollView(
-             child: Text(
-               'Recap feature is coming soon!\n\nUse the insights cards below to analyze the current session.',
-               style: TextStyle(
-                 color: cs.onSurface.withValues(alpha: 0.9),
-                 fontSize: 15,
-                 height: 1.4,
-                 fontWeight: FontWeight.w500,
-               ),
-             ),
-           ),
-           actions: [
-             TextButton(
-               onPressed: () => Navigator.pop(ctx),
-               style: TextButton.styleFrom(
-                   foregroundColor: cs.onSurface.withValues(alpha: 0.7)),
-               child: const Text('OK'),
-             ),
-           ],
-         );
-       },
-     );
+        return BulletinDialogShell(
+          accent: ClubBlackoutTheme.neonPink,
+          maxWidth: 520,
+          title: Text(
+            'SESSION RECAP',
+            style: ClubBlackoutTheme.bulletinHeaderStyle(
+                ClubBlackoutTheme.neonPink),
+          ),
+          content: SingleChildScrollView(
+            child: Text(
+              'Recap feature is coming soon!\n\nUse the insights cards below to analyze the current session.',
+              style: TextStyle(
+                color: cs.onSurface.withValues(alpha: 0.9),
+                fontSize: 15,
+                height: 1.4,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: TextButton.styleFrom(
+                  foregroundColor: cs.onSurface.withValues(alpha: 0.7)),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -186,7 +186,7 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
     final isActive = service.isActive;
     final insights = service.getInsights();
     final isNight = widget.gameEngine?.currentPhase == GamePhase.night;
-    
+
     // Determine if we should show an AppBar (if we're a standalone route)
     final canPop = Navigator.of(context).canPop();
 
@@ -198,21 +198,24 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
             child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: _buildContent(context, service, insights, isActive, isNight: true),
+                child: _buildContent(context, service, insights, isActive,
+                    isNight: true),
               ),
             ),
           ),
         );
       } else {
-         // Top level drawer item in Night Mode
-         return Scaffold(
-            body: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-                child: _buildContent(context, service, insights, isActive, isNight: true),
-              ),
+        // Top level drawer item in Night Mode
+        return Scaffold(
+          body: SingleChildScrollView(
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+              child: _buildContent(context, service, insights, isActive,
+                  isNight: true),
             ),
-         );
+          ),
+        );
       }
     }
 
@@ -240,17 +243,18 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
               : null, // Handled by MainScreen
           body: Builder(
             builder: (context) {
-              final topPadding = canPop 
-                  ? (MediaQuery.of(context).padding.top + kToolbarHeight - 12) 
+              final topPadding = canPop
+                  ? (MediaQuery.of(context).padding.top + kToolbarHeight - 12)
                   : (MediaQuery.of(context).padding.top + kToolbarHeight - 12);
               return SingleChildScrollView(
                 padding: EdgeInsets.only(
-                  top: topPadding, 
-                  left: 16, 
-                  right: 16, 
+                  top: topPadding,
+                  left: 16,
+                  right: 16,
                   bottom: MediaQuery.paddingOf(context).bottom + 24,
                 ),
-                child: _buildContent(context, service, insights, isActive, isNight: false),
+                child: _buildContent(context, service, insights, isActive,
+                    isNight: false),
               );
             },
           ),
@@ -259,30 +263,28 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
     );
   }
 
-  Widget _buildContent(
-    BuildContext context, 
-    GamesNightService service, 
-    GamesNightInsights insights, 
-    bool isActive,
-    {required bool isNight}
-  ) {
+  Widget _buildContent(BuildContext context, GamesNightService service,
+      GamesNightInsights insights, bool isActive,
+      {required bool isNight}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (!isNight) const SizedBox(height: 8),
-        if (!isNight) const Text(
-          'Track stats across multiple games in a single session.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        if (isNight) Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
-          child: Text(
+        if (!isNight)
+          const Text(
             'Track stats across multiple games in a single session.',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(color: Colors.white70),
           ),
-        ),
+        if (isNight)
+          Padding(
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+            child: Text(
+              'Track stats across multiple games in a single session.',
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ),
         SizedBox(height: isNight ? 8 : 16),
-        
         GamesNightControlCard(
           isActive: isActive,
           startedAt: service.sessionStartTime,
@@ -293,12 +295,12 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
           onCopyJson: () => _copyToClipboard(context),
           onShowHallOfFame: () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => HallOfFameScreen(isNight: isNight)),
+              MaterialPageRoute(
+                  builder: (_) => HallOfFameScreen(isNight: isNight)),
             );
           },
           onShowRecap: () => _showRecap(context),
         ),
-        
         if (service.gamesRecordedCount > 0) ...[
           const SizedBox(height: 16),
           GamesNightSummaryCard(insights: insights),
@@ -309,7 +311,6 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
           const SizedBox(height: 16),
           GamesNightActionsCard(insights: insights),
         ],
-        
         if (isActive && service.gamesRecordedCount == 0)
           Padding(
             padding: const EdgeInsets.all(32.0),
@@ -319,12 +320,14 @@ class _GamesNightScreenState extends State<GamesNightScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontStyle: FontStyle.italic,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.5),
                 ),
               ),
             ),
           ),
-          
         const SizedBox(height: 40),
       ],
     );
