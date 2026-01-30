@@ -60,6 +60,10 @@ class GameEndResult {
 class GameEngine extends ChangeNotifier {
   final RoleRepository roleRepository;
 
+  /// If true, logging to the game log and external services is disabled.
+  /// This is critical for performance during Monte Carlo simulations.
+  final bool silent;
+
   static const String hostRoleId = 'host';
   static const String hostPlayerId = 'host';
 
@@ -296,7 +300,11 @@ class GameEngine extends ChangeNotifier {
   String? get winner => _winner;
   String? get winMessage => _winMessage;
 
-  GameEngine({required this.roleRepository, bool loadNameHistory = true}) {
+  GameEngine({
+    required this.roleRepository,
+    bool loadNameHistory = true,
+    this.silent = false,
+  }) {
     if (loadNameHistory) {
       _loadNameHistory();
     }
@@ -377,9 +385,17 @@ class GameEngine extends ChangeNotifier {
   }
 
   /// Creates a deep-ish clone suitable for Monte Carlo simulations.
-  Future<GameEngine> cloneForSimulation({bool includeLog = false}) async {
-    final clone = GameEngine(roleRepository: roleRepository, loadNameHistory: false);
-    await clone.importSaveBlobMap(exportSaveBlobMap(includeLog: includeLog), notify: false);
+  Future<GameEngine> cloneForSimulation({
+    bool includeLog = false,
+    bool silent = true,
+  }) async {
+    final clone = GameEngine(
+      roleRepository: roleRepository,
+      loadNameHistory: false,
+      silent: silent,
+    );
+    await clone.importSaveBlobMap(exportSaveBlobMap(includeLog: includeLog),
+        notify: false);
     return clone;
   }
 
@@ -2294,6 +2310,8 @@ class GameEngine extends ChangeNotifier {
 
   void logAction(String title, String description,
       {GameLogType type = GameLogType.action, bool toast = false}) {
+    if (silent) return;
+
     final entry = GameLogEntry(
       turn: dayCount,
       phase: _currentPhase.name.toUpperCase(),
