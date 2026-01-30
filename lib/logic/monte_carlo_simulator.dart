@@ -73,7 +73,10 @@ class MonteCarloSimulator {
 
     for (var i = 0; i < runs; i++) {
       final sim = GameEngine(
-          roleRepository: base.roleRepository, loadNameHistory: false);
+        roleRepository: base.roleRepository,
+        loadNameHistory: false,
+        silent: true,
+      );
       await sim.importSaveBlobMap(baseMap, notify: false);
 
       final winner = _playToEnd(sim, rng, maxStepsPerRun: maxStepsPerRun);
