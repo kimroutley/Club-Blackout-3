@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../logic/game_engine.dart';
 import '../styles.dart';
 
@@ -9,47 +9,14 @@ class PlayerGuideScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (gameEngine?.currentPhase == GamePhase.night) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Player Guide'),
-        ),
-        body: const SafeArea(
-          child: PlayerGuideBody(),
-        ),
-      );
-    }
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Image.asset(
-            'Backgrounds/Club Blackout V2 Game Background.png',
-            fit: BoxFit.cover,
-            height: double.infinity,
-            width: double.infinity,
-          ),
-        ),
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          extendBodyBehindAppBar: true,
-          appBar: AppBar(
-            title: null,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          body: Padding(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + kToolbarHeight,
-            ),
-            child: const PlayerGuideBody(),
-          ),
-        ),
-      ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Player Guide'),
+        elevation: 0,
+      ),
+      body: const SafeArea(
+        child: PlayerGuideBody(),
+      ),
     );
   }
 }
@@ -60,7 +27,7 @@ class PlayerGuideBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      padding: const EdgeInsets.all(16),
       children: [
         _buildSection(
           context,
@@ -70,21 +37,21 @@ class PlayerGuideBody extends StatelessWidget {
           'Try not to get thrown out (or worse).',
           ClubBlackoutTheme.neonPink,
         ),
-        ClubBlackoutTheme.gap12,
+        ClubBlackoutTheme.gap16,
         _buildSection(
           context,
-          'The vibe (flow)',
+          'The Vibe (Flow)',
           null,
           ClubBlackoutTheme.neonBlue,
           content: Column(
             children: [
               _buildFlowStep(context, 'Pre-game', 'Lobby screen. Pick a name, grab a selfie, pray for a good role.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'NIGHT 0', 'Setup phase. No dying yet. Just awkward introductions.'),
+              _buildFlowStep(context, 'Night 0', 'Setup phase. No dying yet. Just awkward introductions.'),
               ClubBlackoutTheme.gap8,
               _buildFlowStep(context, 'Blackout', 'Night phase. Eyes shut. Killers creep. Chaos ensues.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'Morning after', 'Host spills the tea on who died or got lucky.'),
+              _buildFlowStep(context, 'Morning After', 'Host spills the tea on who died or got lucky.'),
               ClubBlackoutTheme.gap8,
               _buildFlowStep(context, 'Vote', 'Accuse your friends. Lie to your family. Throw someone out.'),
               ClubBlackoutTheme.gap8,
@@ -92,26 +59,26 @@ class PlayerGuideBody extends StatelessWidget {
             ],
           ),
         ),
-        ClubBlackoutTheme.gap12,
+        ClubBlackoutTheme.gap16,
         _buildSection(
           context,
-          'Eyes & ears',
+          'Eyes & Ears',
           'When the Host says "Sleep", you sleep. No peeking, no twitching. '
           'If you cheat, you ruin the vibe, and nobody likes a buzzkill.',
           ClubBlackoutTheme.neonPurple,
         ),
-        ClubBlackoutTheme.gap12,
+        ClubBlackoutTheme.gap16,
         _buildSection(
           context,
-          'The throw out',
+          'The Throw Out',
           'During the day, figure out who the Dealers are. If you vote correctly, they get booted. '
           'If you vote wrong... well, sorry Dave, but you looked suspicious.',
           ClubBlackoutTheme.neonOrange,
         ),
-        ClubBlackoutTheme.gap12,
+        ClubBlackoutTheme.gap16,
         _buildSection(
           context,
-          'House rules',
+          'House Rules',
           null,
           ClubBlackoutTheme.neonPurple,
           content: Column(
@@ -135,7 +102,7 @@ class HostGuideBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      padding: const EdgeInsets.all(16),
       children: [
         _buildSection(
           context,
@@ -145,10 +112,10 @@ class HostGuideBody extends StatelessWidget {
           'Think "Master of Ceremonies" meets "Grim Reaper".',
           ClubBlackoutTheme.neonBlue,
         ),
-        ClubBlackoutTheme.gap12,
+        ClubBlackoutTheme.gap16,
         _buildSection(
           context,
-          'Your gig',
+          'Your Gig',
           null,
           ClubBlackoutTheme.neonPink,
           content: Column(
@@ -163,26 +130,26 @@ class HostGuideBody extends StatelessWidget {
             ],
           ),
         ),
-        ClubBlackoutTheme.gap12,
+        ClubBlackoutTheme.gap16,
         _buildSection(
           context,
-          'Setup night (Night 0)',
+          'Setup Night (Night 0)',
           'The soft opening. Special roles (Medic, Clinger) do their thing. '
           'Nobody dies tonight. It\'s just a vibe check.',
           ClubBlackoutTheme.neonGold,
         ),
-        ClubBlackoutTheme.gap12,
+        ClubBlackoutTheme.gap16,
         _buildSection(
           context,
-          'Blackout phase',
+          'Blackout Phase',
           'Follow the app prompts. Call roles by name. If they snore, wake them up. '
           'If they peek, shame them publicly.',
           ClubBlackoutTheme.neonPurple,
         ),
-        ClubBlackoutTheme.gap12,
+        ClubBlackoutTheme.gap16,
         _buildSection(
           context,
-          'Daylight drama',
+          'Daylight Drama',
           null,
           ClubBlackoutTheme.neonOrange,
           content: Column(
@@ -208,60 +175,35 @@ Widget _buildSection(
   Widget? content,
 }) {
   final cs = Theme.of(context).colorScheme;
-  return Container(
-    decoration: ClubBlackoutTheme.neonFrame(
-      color: accentColor,
-      opacity: 0.1,
-      borderRadius: ClubBlackoutTheme.radiusLg,
-      borderWidth: 1.5,
-      showGlow: false,
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(ClubBlackoutTheme.radiusLg),
+  return Card(
+    elevation: 0,
+    color: cs.surfaceContainer,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.12),
-              border: Border(
-                bottom: BorderSide(
-                  color: accentColor.withValues(alpha: 0.3),
-                  width: 1.0,
-                ),
-              ),
-            ),
-            child: Text(
-              title,
-              style: ClubBlackoutTheme.headingStyle.copyWith(
-                fontSize: 14,
-                color: accentColor.withValues(alpha: 0.9),
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
-                shadows: null,
-              ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              color: accentColor,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (description != null)
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: cs.onSurface.withValues(alpha: 0.9),
-                      fontSize: 14,
-                      height: 1.5,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                if (content != null) content,
-              ],
+          const SizedBox(height: 8),
+          if (description != null)
+            Text(
+              description,
+              style: TextStyle(
+                color: cs.onSurface.withValues(alpha: 0.9),
+                height: 1.4,
+              ),
             ),
-          ),
+          if (content != null) ...[
+            if (description != null) const SizedBox(height: 12),
+            content,
+          ],
         ],
       ),
     ),
@@ -274,36 +216,30 @@ Widget _buildFlowStep(BuildContext context, String label, String desc) {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Container(
-        width: 120,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        width: 100,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: cs.onSurface.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(ClubBlackoutTheme.radiusSm),
-          border: Border.all(color: cs.onSurface.withValues(alpha: 0.15)),
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            color: cs.onSurface.withValues(alpha: 0.8),
-            letterSpacing: 0.5,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
       const SizedBox(width: 12),
       Expanded(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(
-            desc,
-            style: TextStyle(
-              color: cs.onSurface.withValues(alpha: 0.75),
-              fontSize: 14,
-              height: 1.3,
-            ),
+        child: Text(
+          desc,
+          style: TextStyle(
+            color: cs.onSurface.withValues(alpha: 0.8),
+            fontSize: 13,
+            height: 1.3,
           ),
         ),
       ),

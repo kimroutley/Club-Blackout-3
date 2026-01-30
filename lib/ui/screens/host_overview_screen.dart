@@ -20,15 +20,12 @@ import '../screens/game_screen.dart';
 import '../screens/games_night_screen.dart';
 import '../styles.dart';
 import '../utils/export_file_service.dart';
-import '../widgets/bulletin_dialog_shell.dart';
 import '../widgets/club_alert_dialog.dart';
 import '../widgets/drama_queen_swap_dialog.dart';
 import '../widgets/game_drawer.dart';
 import '../widgets/game_toast_listener.dart';
 import '../widgets/host_alert_listener.dart';
 import '../widgets/host_player_status_card.dart';
-import '../widgets/neon_background.dart';
-import '../widgets/neon_page_scaffold.dart';
 
 class HostOverviewScreen extends StatefulWidget {
   final GameEngine gameEngine;
@@ -200,64 +197,32 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
       context: context,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
-        final isNightM3 = gameEngine.currentPhase == GamePhase.night;
         const accent = ClubBlackoutTheme.neonRed;
 
-        if (isNightM3) {
-          return ClubAlertDialog(
-            title: const Text('Quit game?'),
-            content: Text(
-              'Navigating away will end the current game session. Progress will be lost unless saved.',
-              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.85)),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Stay'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-                child: const Text('Quit'),
-              ),
-            ],
-          );
-        }
-
-        return BulletinDialogShell(
-          accent: accent,
-          maxWidth: 560,
-          title: Text(
-            'QUIT GAME?',
-            style: ClubBlackoutTheme.bulletinHeaderStyle(accent),
-          ),
+        return ClubAlertDialog(
+          title: const Text('Quit game?'),
           content: Text(
             'Navigating away will end the current game session. Progress will be lost unless saved.',
             style: TextStyle(
               color: cs.onSurface.withValues(alpha: 0.8),
-              fontSize: 15,
               height: 1.4,
-              fontWeight: FontWeight.w500,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              style: TextButton.styleFrom(
-                foregroundColor: cs.onSurface.withValues(alpha: 0.7),
-              ),
-              child: const Text('STAY'),
+              child: const Text('Stay'),
             ),
-            ClubBlackoutTheme.hGap8,
             FilledButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },
-              style: ClubBlackoutTheme.neonButtonStyle(accent, isPrimary: true),
-              child: const Text('QUIT'),
+              style: FilledButton.styleFrom(
+                backgroundColor: accent.withValues(alpha: 0.18),
+                foregroundColor: cs.onSurface,
+              ),
+              child: const Text('Quit'),
             ),
           ],
         );
@@ -270,100 +235,15 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     return ListenableBuilder(
       listenable: Listenable.merge([gameEngine, GamesNightService.instance]),
       builder: (context, _) {
-        const accent = ClubBlackoutTheme.neonBlue;
         final insights = HostInsightsSnapshot.fromEngine(gameEngine);
         final stats = insights.stats;
         final dashboard = insights.dashboard;
 
-        final isNightM3 = gameEngine.currentPhase == GamePhase.night;
-
-        if (isNightM3) {
-          return _buildNightM3Scaffold(
-            context: context,
-            engine: gameEngine,
-            stats: stats,
-            dashboard: dashboard,
-          );
-        }
-
-        return Stack(
-          children: [
-             const Positioned.fill(
-                child: NeonBackground(
-                  accentColor: accent,
-                  backgroundAsset: 'Backgrounds/Club Blackout V2 Game Background.png',
-                  blurSigma: 12.0,
-                  showOverlay: true,
-                  child: SizedBox.expand(),
-                ),
-             ),
-             Scaffold(
-              backgroundColor: Colors.transparent,
-              extendBodyBehindAppBar: true,
-              drawer: GameDrawer(
-                gameEngine: gameEngine,
-                  onContinueGameTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => GameScreen(gameEngine: gameEngine),
-                      ),
-                    );
-                  },
-                onNavigate: _handleDrawerNavigation,
-                selectedIndex: -1, 
-              ),
-              appBar: AppBar(
-                title: null,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                iconTheme: const IconThemeData(
-                  color: accent,
-                  shadows: [Shadow(color: accent, blurRadius: 8)],
-                ),
-                actionsIconTheme: const IconThemeData(
-                  color: accent,
-                  shadows: [Shadow(color: accent, blurRadius: 8)],
-                ),
-                actions: [
-                  IconButton(
-                    tooltip: 'Copy Story Snapshot JSON',
-                    onPressed: () => _copyStorySnapshotJson(context),
-                    icon: const Icon(Icons.content_copy_rounded),
-                  ),
-                ],
-              ),
-              body: Stack(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(
-                       top: MediaQuery.of(context).padding.top + kToolbarHeight - 12,
-                       bottom: MediaQuery.paddingOf(context).bottom + 16,
-                    ),
-                    child: DefaultTabController(
-                      length: 3,
-                      child: Column(
-                        children: [
-                          _buildHostTabs(context),
-                          ClubBlackoutTheme.gap12,
-                          Expanded(
-                            child: TabBarView(
-                              children: [
-                                _buildOverviewTab(context, gameEngine, stats, dashboard),
-                                _buildStatsTab(context, gameEngine, dashboard),
-                                _buildPlayersTab(context, gameEngine),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  HostAlertListener(engine: gameEngine),
-                  GameToastListener(engine: gameEngine),
-                ],
-              ),
-            ),
-          ],
+        return _buildNightM3Scaffold(
+          context: context,
+          engine: gameEngine,
+          stats: stats,
+          dashboard: dashboard,
         );
       },
     );
@@ -376,57 +256,9 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     required dynamic dashboard,
   }) {
     final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    final baseOdds = dashboard.odds as GameOddsSnapshot;
-    final odds = _simulatedOdds ?? baseOdds;
-
-    final recent = engine.gameLog
-        .where((e) => e.type != GameLogType.script)
-        .take(12)
-        .toList(growable: false);
-
-    final morningText = (engine.lastNightHostRecap.isNotEmpty
-            ? engine.lastNightHostRecap
-            : engine.lastNightSummary)
-        .trim();
-
-    final oddsRows = odds.odds.entries.toList(growable: false)
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    Widget statTile(String label, String value) {
-      return Card(
-        elevation: 0,
-        color: cs.surfaceContainer,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: cs.onSurface.withValues(alpha: 0.75),
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.4,
-                  fontSize: 11,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: (tt.titleLarge ?? const TextStyle()).copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
+      backgroundColor: cs.surface,
       drawer: GameDrawer(
         gameEngine: engine,
         onContinueGameTap: () {
@@ -449,243 +281,42 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1000),
-            child: ListView(
-              padding: ClubBlackoutTheme.inset16,
+      body: Stack(
+        children: [
+          DefaultTabController(
+            length: 3,
+            child: Column(
               children: [
-                Text(
-                  'Night mode (Material 3)',
-                  style: (tt.titleSmall ?? const TextStyle()).copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.75),
-                    fontWeight: FontWeight.w700,
+                _buildHostTabs(context),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _buildOverviewTab(context, engine, stats, dashboard),
+                      _buildStatsTab(context, engine, dashboard),
+                      _buildPlayersTab(context, engine),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 1.35,
-                  children: [
-                    statTile('Players', stats.totalPlayers.toString()),
-                    statTile('Alive', stats.aliveCount.toString()),
-                    statTile('Dead', stats.deadCount.toString()),
-                    statTile('Dealers', stats.dealerAliveCount.toString()),
-                    statTile('Party', stats.partyAliveCount.toString()),
-                    statTile('Neutral', stats.neutralAliveCount.toString()),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  elevation: 0,
-                  color: cs.surfaceContainerHigh,
-                  child: Padding(
-                    padding: ClubBlackoutTheme.inset16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Win odds',
-                          style: (tt.titleMedium ?? const TextStyle())
-                              .copyWith(fontWeight: FontWeight.w900),
-                        ),
-                        const SizedBox(height: 8),
-                        if (_oddsSimRunning)
-                          Row(
-                            children: [
-                              const SizedBox(
-                                height: 16,
-                                width: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Updating odds…',
-                                style: TextStyle(
-                                  color: cs.onSurface.withValues(alpha: 0.75),
-                                ),
-                              ),
-                            ],
-                          )
-                        else if (_simulatedOddsUpdatedAt != null)
-                          Text(
-                            "Updated ${_simulatedOddsUpdatedAt!.hour.toString().padLeft(2, '0')}:${_simulatedOddsUpdatedAt!.minute.toString().padLeft(2, '0')}",
-                            style: TextStyle(
-                              color: cs.onSurface.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        const SizedBox(height: 10),
-                        for (final e in oddsRows) ...[
-                          Row(
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  e.key,
-                                  style: const TextStyle(fontWeight: FontWeight.w800),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(999),
-                                  child: LinearProgressIndicator(
-                                    value: e.value.clamp(0.0, 1.0),
-                                    minHeight: 10,
-                                    backgroundColor:
-                                        cs.onSurface.withValues(alpha: 0.10),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                '${(e.value * 100).round()}%',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  color: cs.onSurface.withValues(alpha: 0.85),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                        if (odds.note.isNotEmpty)
-                          Text(
-                            odds.note,
-                            style: TextStyle(
-                              color: cs.onSurface.withValues(alpha: 0.7),
-                              fontSize: 12,
-                              height: 1.3,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  elevation: 0,
-                  color: cs.surfaceContainerHigh,
-                  child: Padding(
-                    padding: ClubBlackoutTheme.inset16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Recent events',
-                          style: (tt.titleMedium ?? const TextStyle())
-                              .copyWith(fontWeight: FontWeight.w900),
-                        ),
-                        const SizedBox(height: 8),
-                        if (recent.isEmpty)
-                          Text(
-                            'No events yet.',
-                            style: TextStyle(
-                              color: cs.onSurface.withValues(alpha: 0.75),
-                            ),
-                          )
-                        else
-                          ...recent.map(
-                            (e) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    e.title,
-                                    style: const TextStyle(fontWeight: FontWeight.w800),
-                                  ),
-                                  if (e.description.trim().isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 2),
-                                      child: Text(
-                                        e.description,
-                                        style: TextStyle(
-                                          color: cs.onSurface.withValues(alpha: 0.78),
-                                          height: 1.25,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  elevation: 0,
-                  color: cs.surfaceContainerHigh,
-                  child: Padding(
-                    padding: ClubBlackoutTheme.inset16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Morning summary',
-                          style: (tt.titleMedium ?? const TextStyle())
-                              .copyWith(fontWeight: FontWeight.w900),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          morningText.isEmpty ? 'No data yet.' : morningText,
-                          style: TextStyle(
-                            color: cs.onSurface.withValues(alpha: 0.88),
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
               ],
             ),
           ),
-        ),
+          HostAlertListener(engine: engine),
+          GameToastListener(engine: engine),
+        ],
       ),
     );
   }
 
   Widget _buildHostTabs(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: ClubBlackoutTheme.insetH16,
-      child: NeonGlassCard(
-        glowColor: ClubBlackoutTheme.neonBlue,
-        padding: const EdgeInsets.all(2),
-        showBorder: false,
-        child: TabBar(
-          labelColor: cs.onSurface,
-          unselectedLabelColor: cs.onSurface.withValues(alpha: 0.5),
-          indicatorSize: TabBarIndicatorSize.tab,
-          dividerColor: Colors.transparent,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.1,
-            fontSize: 12,
-          ),
-          indicator: BoxDecoration(
-            color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.4),
-              width: 1.5,
-            ),
-          ),
-          tabs: const [
-            Tab(text: 'OVERVIEW'),
-            Tab(text: 'STATS'),
-            Tab(text: 'PLAYERS'),
-          ],
-        ),
+    return Container(
+      color: cs.surfaceContainer,
+      child: const TabBar(
+        tabs: [
+          Tab(text: 'Overview'),
+          Tab(text: 'Stats'),
+          Tab(text: 'Players'),
+        ],
       ),
     );
   }
@@ -699,57 +330,38 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     final baseOdds = dashboard.odds as GameOddsSnapshot;
     final odds = _simulatedOdds ?? baseOdds;
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
       children: [
         _buildDashboardIntroCard(context),
-        ClubBlackoutTheme.gap12,
+        const SizedBox(height: 16),
         _buildSummaryGrid(context, stats),
-        ClubBlackoutTheme.gap16,
-        _buildSectionHeader('WIN ODDS & PREDICTABILITY', ClubBlackoutTheme.neonBlue),
-        ClubBlackoutTheme.gap8,
+        const SizedBox(height: 16),
+        Text('Win odds & predictability',
+            style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
         _buildPredictabilityCard(context, odds),
-        ClubBlackoutTheme.gap8,
+        const SizedBox(height: 8),
         _buildOddsCard(context, odds, isUpdating: _oddsSimRunning, updatedAt: _simulatedOddsUpdatedAt),
-        ClubBlackoutTheme.gap16,
-        _buildSectionHeader('RECENT EVENTS', ClubBlackoutTheme.neonBlue),
-        ClubBlackoutTheme.gap8,
+        const SizedBox(height: 16),
+        Text('Recent events', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
         _buildRecentEventsCard(context, engine.gameLog),
-        ClubBlackoutTheme.gap16,
-        _buildSectionHeader('MORNING SUMMARY', ClubBlackoutTheme.neonBlue),
-        ClubBlackoutTheme.gap8,
-        NeonGlassCard(
-          glowColor: ClubBlackoutTheme.neonBlue,
-          padding: const EdgeInsets.all(12),
-          child: Text(
-            (engine.lastNightHostRecap.isNotEmpty
-                    ? engine.lastNightHostRecap
-                    : engine.lastNightSummary)
-                .isEmpty
-                ? 'No data yet.'
-                : (engine.lastNightHostRecap.isNotEmpty
-                    ? engine.lastNightHostRecap
-                    : engine.lastNightSummary),
-            style: const TextStyle(fontSize: 13, height: 1.4),
+        const SizedBox(height: 16),
+        Text('Morning summary', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              (engine.lastNightHostRecap.isNotEmpty
+                      ? engine.lastNightHostRecap
+                      : engine.lastNightSummary)
+                  .trim(),
+              style: const TextStyle(fontSize: 14, height: 1.4),
+            ),
           ),
         ),
-        ClubBlackoutTheme.gap24,
       ],
-    );
-  }
-
-  Widget _buildSectionHeader(String title, Color color) {
-    return NeonGlassCard(
-      glowColor: color,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      showBorder: false,
-      child: Text(
-        title,
-        style: ClubBlackoutTheme.headingStyle.copyWith(
-          color: color,
-          fontSize: 13,
-          letterSpacing: 1.2,
-        ),
-      ),
     );
   }
 
@@ -773,105 +385,76 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
 
   Widget _buildSummaryGrid(BuildContext context, dynamic stats) {
     final s = stats as LiveGameStats;
+    final cs = Theme.of(context).colorScheme;
 
     Widget tile(String label, String value, Color color) {
-      return Container(
-        decoration: ClubBlackoutTheme.neonFrame(
-          color: color,
-          opacity: 0.12,
-          borderRadius: 10,
-        ),
-        padding: ClubBlackoutTheme.fieldPadding,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: ClubBlackoutTheme.glowTextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.1,
+      return Card(
+        elevation: 0,
+        color: cs.surfaceContainerHighest,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
 
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonBlue,
-      padding: ClubBlackoutTheme.cardPadding,
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 3,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 1.25,
-        children: [
-          tile('PLAYERS', s.totalPlayers.toString(), ClubBlackoutTheme.neonBlue),
-          tile('ALIVE', s.aliveCount.toString(), ClubBlackoutTheme.neonGreen),
-          tile('DEAD', s.deadCount.toString(), ClubBlackoutTheme.neonRed),
-          tile('DEALERS', s.dealerAliveCount.toString(), ClubBlackoutTheme.neonRed),
-          tile('PARTY', s.partyAliveCount.toString(), ClubBlackoutTheme.neonBlue),
-          tile('NEUTRAL', s.neutralAliveCount.toString(), ClubBlackoutTheme.neonPurple),
-        ],
-      ),
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 3,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      childAspectRatio: 1.25,
+      children: [
+        tile('PLAYERS', s.totalPlayers.toString(), cs.primary),
+        tile('ALIVE', s.aliveCount.toString(), ClubBlackoutTheme.neonGreen),
+        tile('DEAD', s.deadCount.toString(), ClubBlackoutTheme.neonRed),
+        tile('DEALERS', s.dealerAliveCount.toString(), ClubBlackoutTheme.neonRed),
+        tile('PARTY', s.partyAliveCount.toString(), ClubBlackoutTheme.neonBlue),
+        tile('NEUTRAL', s.neutralAliveCount.toString(), ClubBlackoutTheme.neonPurple),
+      ],
     );
   }
 
   Widget _buildRecentEventsCard(BuildContext context, List<GameLogEntry> entries) {
-    final cs = Theme.of(context).colorScheme;
     final rows = entries
         .where((e) => e.type != GameLogType.script)
-        .take(10)
+        .take(5)
         .toList(growable: false);
 
     if (rows.isEmpty) {
-      return NeonGlassCard(
-        glowColor: ClubBlackoutTheme.neonBlue,
-        child: Text(
-          'No events yet.',
-          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.75)),
-        ),
-      );
+      return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No events yet.')));
     }
 
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonBlue,
-      padding: ClubBlackoutTheme.cardPadding,
+    return Card(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final e in rows) ...[
-            Text(
-              e.title,
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            if (e.description.trim().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  e.description,
-                  style: TextStyle(
-                    color: cs.onSurface.withValues(alpha: 0.78),
-                    height: 1.25,
-                  ),
-                ),
-              ),
-            ClubBlackoutTheme.gap8,
-          ],
-        ],
+        children: rows.map((e) => ListTile(
+          title: Text(e.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          subtitle: Text(e.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+          dense: true,
+        )).toList(),
       ),
     );
   }
@@ -881,108 +464,60 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     final breakdown = voting.currentBreakdown;
 
     if (breakdown.isEmpty) {
-      return NeonGlassCard(
-        glowColor: ClubBlackoutTheme.neonBlue,
-        child: Text(
-          'No votes recorded yet.',
-          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.75)),
-        ),
-      );
+      return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No votes recorded.')));
     }
 
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonBlue,
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Current votes',
-            style: ClubBlackoutTheme.glowTextStyle(
-              color: ClubBlackoutTheme.neonBlue,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.1,
-            ),
-          ),
-          ClubBlackoutTheme.gap8,
-          for (final row in breakdown) ...[
-            Row(
-              children: [
-                Expanded(
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Current votes', style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary)),
+            const SizedBox(height: 8),
+            for (final row in breakdown) ...[
+              Row(
+                children: [
+                  Expanded(child: Text(row.targetName, style: const TextStyle(fontWeight: FontWeight.bold))),
+                  Text(row.voteCount.toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              if (row.voterNames.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, bottom: 8),
                   child: Text(
-                    row.targetName,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    row.voterNames.join(' · '),
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                   ),
                 ),
-                Text(
-                  row.voteCount.toString(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: cs.onSurface.withValues(alpha: 0.85),
-                  ),
-                ),
-              ],
-            ),
-            if (row.voterNames.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 2, bottom: 8),
-                child: Text(
-                  row.voterNames.join(' · '),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: cs.onSurface.withValues(alpha: 0.70),
-                  ),
-                ),
-              )
-            else
-              ClubBlackoutTheme.gap8,
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildRoleChipsCard(BuildContext context, dynamic dashboard) {
-    final cs = Theme.of(context).colorScheme;
     final chips = (dashboard as GameDashboardStats).roleChips;
 
-    if (chips.isEmpty) {
-      return NeonGlassCard(
-        glowColor: ClubBlackoutTheme.neonPurple,
-        child: Text(
-          'No roles available.',
-          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.75)),
-        ),
-      );
-    }
+    if (chips.isEmpty) return const SizedBox.shrink();
 
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonPurple,
-      padding: const EdgeInsets.all(12),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final c in chips)
-            DecoratedBox(
-              decoration: ClubBlackoutTheme.neonFrame(
-                color: c.color,
-                opacity: 0.10,
-                borderRadius: 999,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final c in chips)
+              Chip(
+                label: Text('${c.roleName} (${c.aliveCount})'),
+                backgroundColor: c.color.withValues(alpha: 0.1),
+                side: BorderSide(color: c.color.withValues(alpha: 0.3)),
+                labelStyle: TextStyle(color: c.color, fontSize: 11, fontWeight: FontWeight.bold),
               ),
-              child: Padding(
-                padding: ClubBlackoutTheme.rowPadding,
-                child: Text(
-                  '${c.roleName} (${c.aliveCount})',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                    color: cs.onSurface,
-                  ),
-                ),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -990,163 +525,34 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
   Widget _buildAiExportCard(BuildContext context, GameEngine engine) {
     final cs = Theme.of(context).colorScheme;
 
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonBlue,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'AI EXPORT',
-            style: ClubBlackoutTheme.glowTextStyle(
-              color: ClubBlackoutTheme.neonBlue,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
-            ),
-          ),
-          ClubBlackoutTheme.gap8,
-          Text(
-            'Export a structured JSON payload or generate commentary prompts for Gemini/GPT.',
-            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.80)),
-          ),
-          ClubBlackoutTheme.gap12,
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              Tooltip(
-                message: 'Copy Game Stats JSON',
-                child: FilledButton(
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('AI Export', style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary)),
+            const SizedBox(height: 8),
+            const Text('Export game state for analysis or commentary generation.'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.tonalIcon(
                   onPressed: () => _copyAiGameStatsJson(context, engine),
-                  style: ClubBlackoutTheme.neonButtonStyle(
-                    ClubBlackoutTheme.neonBlue,
-                    isPrimary: true,
-                  ).copyWith(
-                    padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                  ),
-                  child: const Icon(Icons.copy_all_rounded),
+                  icon: const Icon(Icons.copy),
+                  label: const Text('Copy Stats JSON'),
                 ),
-              ),
-              Tooltip(
-                message: 'Save Game Stats JSON',
-                child: FilledButton(
-                  onPressed: () => _saveAiGameStatsJson(context, engine),
-                  style: ClubBlackoutTheme.neonButtonStyle(
-                    ClubBlackoutTheme.neonBlue,
-                    isPrimary: false,
-                  ).copyWith(
-                    padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                  ),
-                  child: const Icon(Icons.save_alt_rounded),
-                ),
-              ),
-              if (ExportFileService.supportsOpenFolder)
-                Tooltip(
-                  message: 'Open Exports Folder',
-                  child: FilledButton(
-                    onPressed: () => _openExportsFolder(context, engine),
-                    style: ClubBlackoutTheme.neonButtonStyle(
-                      ClubBlackoutTheme.neonBlue,
-                      isPrimary: false,
-                    ).copyWith(
-                      padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                    ),
-                    child: const Icon(Icons.folder_open_rounded),
-                  ),
-                ),
-            ],
-          ),
-          ClubBlackoutTheme.gap16,
-          Divider(color: cs.onSurface.withValues(alpha: 0.12)),
-          ClubBlackoutTheme.gap8,
-          Text(
-            'AI Recap Export (250–450 words)',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: cs.onSurface,
-            ),
-          ),
-          ClubBlackoutTheme.gap8,
-          Text(
-            'Copies JSON with a Gemini-ready prompt for a third-person recap/commentary (not a novel).',
-            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.80)),
-          ),
-          ClubBlackoutTheme.gap8,
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              Tooltip(
-                message: 'Copy AI Recap Export JSON',
-                child: FilledButton(
+                FilledButton.tonalIcon(
                   onPressed: () => _copyAiStoryExportJson(context, engine),
-                  style: ClubBlackoutTheme.neonButtonStyle(
-                    ClubBlackoutTheme.neonBlue,
-                    isPrimary: true,
-                  ).copyWith(
-                    padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                  ),
-                  child: const Icon(Icons.auto_stories_rounded),
+                  icon: const Icon(Icons.auto_stories),
+                  label: const Text('Copy Story JSON'),
                 ),
-              ),
-              Tooltip(
-                message: 'Save AI Recap Export JSON',
-                child: FilledButton(
-                  onPressed: () => _saveAiStoryExportJson(context, engine),
-                  style: ClubBlackoutTheme.neonButtonStyle(
-                    ClubBlackoutTheme.neonBlue,
-                    isPrimary: false,
-                  ).copyWith(
-                    padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                  ),
-                  child: const Icon(Icons.save_alt_rounded),
-                ),
-              ),
-            ],
-          ),
-          ClubBlackoutTheme.gap16,
-          Divider(color: cs.onSurface.withValues(alpha: 0.12)),
-          const SizedBox(height: 8),
-          Text(
-            'AI Commentary Prompt (PG / RUDE / HARD-R)',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: cs.onSurface,
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              Tooltip(
-                message: 'Copy Prompt',
-                child: FilledButton(
-                  onPressed: () => _copyAiCommentaryPrompt(context, engine),
-                  style: ClubBlackoutTheme.neonButtonStyle(
-                    ClubBlackoutTheme.neonPurple,
-                    isPrimary: true,
-                  ).copyWith(
-                    padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                  ),
-                  child: const Icon(Icons.content_copy_rounded),
-                ),
-              ),
-              Tooltip(
-                message: 'Save Prompt',
-                child: FilledButton(
-                  onPressed: () => _saveAiCommentaryPrompt(context, engine),
-                  style: ClubBlackoutTheme.neonButtonStyle(
-                    ClubBlackoutTheme.neonPurple,
-                    isPrimary: false,
-                  ).copyWith(
-                    padding: WidgetStateProperty.all(const EdgeInsets.all(12)),
-                  ),
-                  child: const Icon(Icons.save_alt_rounded),
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1159,464 +565,13 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     gameEngine.showToast('Copied AI Recap Export JSON', title: 'Success');
   }
 
-  Future<void> _saveAiStoryExportJson(BuildContext context, GameEngine engine) async {
-    final export = buildAiStoryExport(engine, minWords: 250, maxWords: 450);
-    final jsonText = const JsonEncoder.withIndent('  ').convert(export);
-
-    final stamp = ExportFileService.safeTimestampForFilename(DateTime.now());
-    final file = await ExportFileService.saveText(
-      fileName: 'ai_recap_export_$stamp.json',
-      content: jsonText,
-    );
-
-    if (!context.mounted) return;
-    gameEngine.showToast(
-      'Saved to ${file.path}',
-      title: 'Export Saved',
-      actionLabel: ExportFileService.supportsOpenFolder ? 'OPEN' : 'SHARE',
-      onAction: () {
-        if (ExportFileService.supportsOpenFolder) {
-          _openExportsFolder(context, engine);
-          return;
-        }
-        ExportFileService.shareFile(file, subject: 'Club Blackout: AI Recap Export');
-      },
-    );
-  }
-
-
-
-  Widget _buildVotingHighlightsCard(BuildContext context, VotingInsights voting) {
-    Color severityColor(double dominance) {
-      if (dominance >= 0.60) return ClubBlackoutTheme.neonPink;
-      if (dominance >= 0.40) return ClubBlackoutTheme.neonOrange;
-      return ClubBlackoutTheme.neonBlue;
-    }
-
-    final breakdown = voting.currentBreakdown;
-    final total = voting.votesCastToday;
-
-    String mostTargeted = '—';
-    int mostTargetedVotes = 0;
-    double dominance = 0.0;
-
-    if (breakdown.isNotEmpty) {
-      final top = breakdown.first;
-      mostTargeted = top.targetName;
-      mostTargetedVotes = top.voteCount;
-      if (total > 0) dominance = top.voteCount / total;
-    }
-
-    final cs = Theme.of(context).colorScheme;
-    final glow = severityColor(dominance);
-    return NeonGlassCard(
-      glowColor: glow,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Votes cast today: $total',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-              if (breakdown.isNotEmpty)
-                Text(
-                  'Most targeted: $mostTargetedVotes',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: glow,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (breakdown.isEmpty)
-            Text(
-              'No votes recorded yet.',
-              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.75)),
-            )
-          else ...[
-            Text(
-              'Most targeted: $mostTargeted ($mostTargetedVotes votes)',
-              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.85)),
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: dominance.clamp(0.0, 1.0),
-                minHeight: 10,
-                backgroundColor: cs.onSurface.withValues(alpha: 0.08),
-                color: glow.withValues(alpha: 0.9),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Vote concentration: ${(dominance * 100).round()}%',
-              style: TextStyle(
-                fontSize: 12,
-                color: cs.onSurface.withValues(alpha: 0.72),
-              ),
-            ),
-          ],
-          if (voting.topVoters.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Top voters: ${voting.topVoters.map((v) => '${v.voterName} (${v.voteActions})').join(' · ')}',
-              style: TextStyle(
-                fontSize: 12,
-                color: cs.onSurface.withValues(alpha: 0.75),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHostToolsCard(BuildContext context, GameEngine engine) {
-    final cs = Theme.of(context).colorScheme;
-    final hasPending =
-        engine.dramaQueenSwapPending ||
-        engine.hasPendingPredatorRetaliation ||
-        engine.hasPendingTeaSpillerReveal;
-
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonOrange,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  style: ClubBlackoutTheme.neonButtonStyle(
-                    ClubBlackoutTheme.neonOrange,
-                    isPrimary: true,
-                  ),
-                  onPressed: () => _copyStorySnapshotJson(context),
-                  icon: const Icon(Icons.auto_stories_rounded),
-                  label: const Text('Story JSON'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Pending actions',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: cs.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (!hasPending)
-            Text(
-              'No pending host actions.',
-              style: TextStyle(color: cs.onSurfaceVariant),
-            ),
-          if (engine.dramaQueenSwapPending) ...[
-            const SizedBox(height: 8),
-            _DramaQueenSwapPanel(gameEngine: engine),
-          ],
-          if (engine.hasPendingPredatorRetaliation) ...[
-            const SizedBox(height: 12),
-            _PredatorRetaliationPanel(gameEngine: engine),
-          ],
-          if (engine.hasPendingTeaSpillerReveal) ...[
-            const SizedBox(height: 12),
-            _TeaSpillerRevealPanel(gameEngine: engine),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDashboardIntroCard(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonBlue,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Summarizing live win odds, voting activity, role counts, and events.',
-            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.80), fontSize: 13),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Predictability tool: High confidence favors one side; Low confidence means volatile/close.',
-            style: TextStyle(
-              fontSize: 11,
-              color: cs.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPredictabilityCard(BuildContext context, GameOddsSnapshot odds) {
-    final rows = odds.sortedDesc;
-    if (rows.isEmpty) {
-      return const NeonGlassCard(
-        glowColor: ClubBlackoutTheme.neonPurple,
-        child: Text('No odds available yet.'),
-      );
-    }
-
-    final clamped = rows
-        .map((e) => MapEntry(e.key, e.value.clamp(0.0, 1.0)))
-        .toList(growable: false);
-    final top = clamped.first;
-    final second = clamped.length > 1 ? clamped[1] : const MapEntry<String, double>('', 0.0);
-
-    // A simple confidence metric: leader probability + separation from runner-up.
-    final leader = top.value;
-    final spread = (leader - second.value).clamp(0.0, 1.0);
-    final confidence = (leader * 0.65 + spread * 0.35).clamp(0.0, 1.0);
-
-    String bandLabel(double c) {
-      if (c >= 0.72) return 'HIGH';
-      if (c >= 0.52) return 'MEDIUM';
-      return 'LOW';
-    }
-
-    Color bandColor(double c) {
-      if (c >= 0.72) return ClubBlackoutTheme.neonGreen;
-      if (c >= 0.52) return ClubBlackoutTheme.neonOrange;
-      return ClubBlackoutTheme.neonPink;
-    }
-
-    String labelFor(String token) {
-      switch (token) {
-        case 'DEALER':
-          return 'Dealers';
-        case 'PARTY_ANIMAL':
-          return 'Party Animals';
-        case 'CLUB_MANAGER':
-          return 'Club Manager';
-        case 'MESSY_BITCH':
-          return 'Messy Bitch';
-        default:
-          return token;
-      }
-    }
-
-    final band = bandLabel(confidence);
-    final bandC = bandColor(confidence);
-
-    return NeonGlassCard(
-      glowColor: bandC,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Predictability: $band',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
-                    color: bandC,
-                  ),
-                ),
-              ),
-              Text(
-                '${(confidence * 100).round()}%',
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Current leader: ${labelFor(top.key)} (${(top.value * 100).round()}%)',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85)),
-          ),
-          if (second.key.isNotEmpty)
-            Text(
-              'Runner-up: ${labelFor(second.key)} (${(second.value * 100).round()}%)',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.70)),
-            ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: confidence,
-              minHeight: 10,
-              backgroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
-              color: bandC.withValues(alpha: 0.9),
-            ),
-          ),
-          if (odds.note.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              odds.note,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOddsCard(
-    BuildContext context,
-    GameOddsSnapshot odds, {
-    required bool isUpdating,
-    required DateTime? updatedAt,
-  }) {
-    final rows = odds.sortedDesc;
-    if (rows.isEmpty) {
-      return const NeonGlassCard(
-        glowColor: ClubBlackoutTheme.neonPurple,
-        child: Text('No odds available.'),
-      );
-    }
-
-    Color colorFor(String token) {
-      switch (token) {
-        case 'DEALER':
-          return ClubBlackoutTheme.neonRed;
-        case 'PARTY_ANIMAL':
-          return ClubBlackoutTheme.neonBlue;
-        case 'CLUB_MANAGER':
-          return ClubBlackoutTheme.neonGreen;
-        case 'MESSY_BITCH':
-          return ClubBlackoutTheme.neonOrange;
-        default:
-          return ClubBlackoutTheme.neonPurple;
-      }
-    }
-
-    String labelFor(String token) {
-      switch (token) {
-        case 'DEALER':
-          return 'Dealers';
-        case 'PARTY_ANIMAL':
-          return 'Party Animals';
-        case 'CLUB_MANAGER':
-          return 'Club Manager';
-        case 'MESSY_BITCH':
-          return 'Messy Bitch';
-        default:
-          return token;
-      }
-    }
-
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonPurple,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (isUpdating || updatedAt != null) ...[
-            Row(
-              children: [
-                if (isUpdating) ...[
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  ClubBlackoutTheme.hGap8,
-                ],
-                Expanded(
-                  child: Text(
-                    isUpdating
-                        ? 'Updating odds…'
-                        : (updatedAt == null
-                            ? ''
-                            : "Updated ${updatedAt.hour.toString().padLeft(2, '0')}:${updatedAt.minute.toString().padLeft(2, '0')}"),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.70),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            ClubBlackoutTheme.gap8,
-          ],
-          for (final e in rows) ...[
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    labelFor(e.key),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: colorFor(e.key),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: e.value.clamp(0.0, 1.0),
-                      minHeight: 10,
-                      backgroundColor: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.08),
-                      color: colorFor(e.key).withValues(alpha: 0.9),
-                    ),
-                  ),
-                ),
-                ClubBlackoutTheme.hGap12,
-                Text(
-                  '${(e.value * 100).round()}%',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.85),
-                  ),
-                ),
-              ],
-            ),
-            ClubBlackoutTheme.gap8,
-          ],
-          if (odds.note.isNotEmpty) ...[
-            ClubBlackoutTheme.gap4,
-            Text(
-              odds.note,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.72),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Future<void> _copyStorySnapshotJson(BuildContext context) async {
     final snapshot = gameEngine.exportStorySnapshot();
-    final jsonText =
-        const JsonEncoder.withIndent('  ').convert(snapshot.toJson());
+    final jsonText = const JsonEncoder.withIndent('  ').convert(snapshot.toJson());
     await Clipboard.setData(ClipboardData(text: jsonText));
     if (!context.mounted) return;
     gameEngine.showToast('Copied story snapshot JSON', title: 'Success');
   }
-
-
-
 
   Future<AiCommentaryStyle?> _pickAiStyle(
     BuildContext context, {
@@ -1629,56 +584,27 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
         AiCommentaryStyle selected = initial;
         return StatefulBuilder(
           builder: (ctx, setState) {
-            final cs = Theme.of(ctx).colorScheme;
-            const accent = ClubBlackoutTheme.neonBlue;
-            return BulletinDialogShell(
-              accent: accent,
-              maxWidth: 640,
-              title: Text(
-                title.toUpperCase(),
-                style: ClubBlackoutTheme.bulletinHeaderStyle(accent),
-              ),
+            return ClubAlertDialog(
+              title: Text(title),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: AiCommentaryStyle.values
-                        .map(
-                          (s) => ChoiceChip(
-                            label: Text(s.label),
-                            selected: selected == s,
-                            onSelected: (_) => setState(() => selected = s),
-                          ),
-                        )
-                        .toList(growable: false),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    selected.shortGuidance,
-                    style: TextStyle(
-                      color: cs.onSurface.withValues(alpha: 0.8),
-                      height: 1.35,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+                children: AiCommentaryStyle.values.map((s) {
+                  return RadioListTile<AiCommentaryStyle>(
+                    title: Text(s.label),
+                    value: s,
+                    groupValue: selected,
+                    onChanged: (v) => setState(() => selected = v!),
+                  );
+                }).toList(),
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  style: TextButton.styleFrom(
-                    foregroundColor: cs.onSurface.withValues(alpha: 0.7),
-                  ),
-                  child: const Text('CANCEL'),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
                 ),
-                ClubBlackoutTheme.hGap8,
                 FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(selected),
-                  style: ClubBlackoutTheme.neonButtonStyle(accent, isPrimary: true),
-                  child: const Text('SELECT'),
+                  onPressed: () => Navigator.pop(ctx, selected),
+                  child: const Text('Select'),
                 ),
               ],
             );
@@ -1694,68 +620,6 @@ class _HostOverviewScreenState extends State<HostOverviewScreen> {
     await Clipboard.setData(ClipboardData(text: jsonText));
     if (!context.mounted) return;
     gameEngine.showToast('Copied AI Game Stats JSON', title: 'Success');
-  }
-
-  Future<void> _saveAiGameStatsJson(BuildContext context, GameEngine engine) async {
-    final export = buildAiGameStatsExport(engine);
-    final jsonText = const JsonEncoder.withIndent('  ').convert(export);
-
-    final stamp = ExportFileService.safeTimestampForFilename(DateTime.now());
-    final file = await ExportFileService.saveText(
-      fileName: 'ai_game_stats_$stamp.json',
-      content: jsonText,
-    );
-
-    if (!context.mounted) return;
-    engine.showToast(
-      'Saved AI Game Stats JSON to ${file.path}',
-      actionLabel: ExportFileService.supportsOpenFolder ? 'OPEN FOLDER' : 'SHARE',
-      onAction: () {
-        if (ExportFileService.supportsOpenFolder) {
-          _openExportsFolder(context, engine);
-          return;
-        }
-        ExportFileService.shareFile(file, subject: 'Club Blackout: AI Game Stats');
-      },
-    );
-  }
-
-  Future<void> _copyAiCommentaryPrompt(BuildContext context, GameEngine engine) async {
-    final style = await _pickAiStyle(context);
-    if (style == null) return;
-
-    final export = buildAiGameStatsExport(engine);
-    final prompt = buildAiCommentaryPrompt(style: style, gameStatsExport: export);
-    await Clipboard.setData(ClipboardData(text: prompt));
-    if (!context.mounted) return;
-    engine.showToast('Copied ${style.label} commentary prompt');
-  }
-
-  Future<void> _saveAiCommentaryPrompt(BuildContext context, GameEngine engine) async {
-    final style = await _pickAiStyle(context);
-    if (style == null) return;
-
-    final export = buildAiGameStatsExport(engine);
-    final prompt = buildAiCommentaryPrompt(style: style, gameStatsExport: export);
-
-    final stamp = ExportFileService.safeTimestampForFilename(DateTime.now());
-    final file = await ExportFileService.saveText(
-      fileName: 'ai_commentary_prompt_${style.label}_$stamp.txt',
-      content: prompt,
-    );
-
-    if (!context.mounted) return;
-    engine.showToast(
-      'Saved commentary prompt to ${file.path}',
-      actionLabel: ExportFileService.supportsOpenFolder ? 'OPEN FOLDER' : 'SHARE',
-      onAction: () {
-        if (ExportFileService.supportsOpenFolder) {
-          _openExportsFolder(context, engine);
-          return;
-        }
-        ExportFileService.shareFile(file, subject: 'Club Blackout: ${style.label} Commentary Prompt');
-      },
-    );
   }
 
   Future<void> _openExportsFolder(BuildContext context, GameEngine engine) async {
@@ -1799,16 +663,16 @@ class _HostStatsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.all(16),
       children: [
         buildVotingHighlightsCard(context, voting),
-        ClubBlackoutTheme.gap8,
+        const SizedBox(height: 16),
         buildVotingCard(context, voting),
-        ClubBlackoutTheme.gap16,
+        const SizedBox(height: 16),
         buildRoleChipsCard(context),
-        ClubBlackoutTheme.gap16,
+        const SizedBox(height: 16),
         buildHostToolsCard(context),
-        ClubBlackoutTheme.gap16,
+        const SizedBox(height: 16),
         buildAiExportCard(context),
       ],
     );
@@ -1837,39 +701,22 @@ class _DramaQueenSwapPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonPurple,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'Drama Queen swap pending',
-            style: ClubBlackoutTheme.glowTextStyle(
-              color: ClubBlackoutTheme.neonPurple,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          ClubBlackoutTheme.gap12,
-          Text(
-            'The Drama Queen has died and must swap two players\' roles.',
-            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7)),
-            textAlign: TextAlign.center,
-          ),
-          ClubBlackoutTheme.gap16,
-          Center(
-            child: FilledButton.icon(
-              style: ClubBlackoutTheme.neonButtonStyle(
-                ClubBlackoutTheme.neonPurple,
-                isPrimary: true,
-              ),
-              icon: const Icon(Icons.swap_calls_rounded),
-              label: const Text('Select players to swap'),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text('Drama Queen Swap Pending', style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary)),
+            const SizedBox(height: 8),
+            const Text('The Drama Queen has died and must swap two players\' roles.'),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              icon: const Icon(Icons.swap_calls),
+              label: const Text('Select Players'),
               onPressed: () => _showSwapDialog(context),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1902,8 +749,6 @@ class _PredatorRetaliationPanelState extends State<_PredatorRetaliationPanel> {
     final eligibleVoters = engine.pendingPredatorEligibleVoterIds.toSet();
     final preferredId = engine.pendingPredatorPreferredTargetId;
 
-    // If the engine captured a voter list, constrain to it, but always include
-    // the preferred marked target if present.
     final candidates = eligibleVoters.isNotEmpty
       ? baseCandidates
         .where((p) => eligibleVoters.contains(p.id) || p.id == preferredId)
@@ -1919,77 +764,47 @@ class _PredatorRetaliationPanelState extends State<_PredatorRetaliationPanel> {
         )
         .toList();
 
-    InputDecoration buildNeonDecoration({required String label}) {
-      return InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: cs.surface.withValues(alpha: 0.12),
-        contentPadding: ClubBlackoutTheme.fieldPadding,
-        border: OutlineInputBorder(
-          borderRadius: ClubBlackoutTheme.borderRadiusControl,
-          borderSide: BorderSide(
-            color: ClubBlackoutTheme.neonRed.withValues(alpha: 0.30),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: ClubBlackoutTheme.borderRadiusControl,
-          borderSide: BorderSide(
-            color: ClubBlackoutTheme.neonRed.withValues(alpha: 0.30),
-          ),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderRadius: ClubBlackoutTheme.borderRadiusControl,
-          borderSide: BorderSide(color: ClubBlackoutTheme.neonRed, width: 2),
-        ),
-      );
-    }
-
     _target ??= (engine.pendingPredatorPreferredTargetId != null &&
             candidates
                 .any((p) => p.id == engine.pendingPredatorPreferredTargetId))
         ? engine.pendingPredatorPreferredTargetId
         : null;
 
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonRed,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Predator Retaliation',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(
-            'Choose who dies with the Predator:',
-            style: TextStyle(color: cs.onSurfaceVariant),
-          ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            key: ValueKey<String?>(_target),
-            initialValue: _target,
-            decoration: buildNeonDecoration(label: 'Select target'),
-            items: items,
-            onChanged: (v) => setState(() => _target = v),
-          ),
-          const SizedBox(height: 12),
-          FilledButton(
-            style: ClubBlackoutTheme.neonButtonStyle(
-              ClubBlackoutTheme.neonRed,
-              isPrimary: true,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Predator Retaliation', style: TextStyle(fontWeight: FontWeight.bold, color: cs.error)),
+            const SizedBox(height: 8),
+            const Text('Choose who dies with the Predator:'),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              key: ValueKey<String?>(_target),
+              initialValue: _target,
+              decoration: const InputDecoration(labelText: 'Select Target', filled: true),
+              items: items,
+              onChanged: (v) => setState(() => _target = v),
             ),
-            onPressed: _target == null
-                ? null
-                : () {
-                    final ok = engine.completePredatorRetaliation(_target!);
-                    if (!ok) {
-                      widget.gameEngine.showToast('Retaliation failed.');
-                      return;
-                    }
-                    setState(() => _target = null);
-                    widget.gameEngine.showToast('Retaliation applied.');
-                  },
-            child: const Text('Retaliate'),
-          ),
-        ],
+            const SizedBox(height: 12),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: cs.error),
+              onPressed: _target == null
+                  ? null
+                  : () {
+                      final ok = engine.completePredatorRetaliation(_target!);
+                      if (!ok) {
+                        widget.gameEngine.showToast('Retaliation failed.');
+                        return;
+                      }
+                      setState(() => _target = null);
+                      widget.gameEngine.showToast('Retaliation applied.');
+                    },
+              child: const Text('Retaliate'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2033,77 +848,45 @@ class _TeaSpillerRevealPanelState extends State<_TeaSpillerRevealPanel> {
         )
         .toList(growable: false);
 
-    InputDecoration buildNeonDecoration({required String label}) {
-      return InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: cs.surface.withValues(alpha: 0.12),
-        contentPadding: ClubBlackoutTheme.fieldPadding,
-        border: OutlineInputBorder(
-          borderRadius: ClubBlackoutTheme.borderRadiusControl,
-          borderSide: BorderSide(
-            color: ClubBlackoutTheme.neonOrange.withValues(alpha: 0.30),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: ClubBlackoutTheme.borderRadiusControl,
-          borderSide: BorderSide(
-            color: ClubBlackoutTheme.neonOrange.withValues(alpha: 0.30),
-          ),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderRadius: ClubBlackoutTheme.borderRadiusControl,
-          borderSide: BorderSide(
-              color: ClubBlackoutTheme.neonOrange, width: 2),
-        ),
-      );
-    }
-
-    // Reset selection if it becomes invalid.
     if (_target != null && !candidates.any((p) => p.id == _target)) {
       _target = null;
     }
 
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonOrange,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Tea Spiller Reveal',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(
-            '$teaName was eliminated by vote. Choose 1 of their voters to expose:',
-            style: TextStyle(color: cs.onSurfaceVariant),
-          ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            key: ValueKey<String?>(_target),
-            initialValue: _target,
-            decoration: buildNeonDecoration(label: 'Select target'),
-            items: items,
-            onChanged: (v) => setState(() => _target = v),
-          ),
-          const SizedBox(height: 12),
-          FilledButton(
-            style: ClubBlackoutTheme.neonButtonStyle(
-              ClubBlackoutTheme.neonOrange,
-              isPrimary: true,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Tea Spiller Reveal', style: TextStyle(fontWeight: FontWeight.bold, color: cs.tertiary)),
+            const SizedBox(height: 8),
+            Text('$teaName was eliminated. Choose a voter to expose:'),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              key: ValueKey<String?>(_target),
+              initialValue: _target,
+              decoration: const InputDecoration(labelText: 'Select Target', filled: true),
+              items: items,
+              onChanged: (v) => setState(() => _target = v),
             ),
-            onPressed: _target == null
-                ? null
-                : () {
-                    final ok = engine.completeTeaSpillerReveal(_target!);
-                    if (!ok) {
-                      widget.gameEngine.showToast('Reveal failed. Please try again.');
-                      return;
-                    }
-                    setState(() => _target = null);
-                    widget.gameEngine.showToast('Tea spilled.');
-                  },
-            child: const Text('Reveal'),
-          ),
-        ],
+            const SizedBox(height: 12),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: cs.tertiary),
+              onPressed: _target == null
+                  ? null
+                  : () {
+                      final ok = engine.completeTeaSpillerReveal(_target!);
+                      if (!ok) {
+                        widget.gameEngine.showToast('Reveal failed.');
+                        return;
+                      }
+                      setState(() => _target = null);
+                      widget.gameEngine.showToast('Tea spilled.');
+                    },
+              child: const Text('Reveal'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2161,7 +944,6 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
     final filtered =
         engine.guests.where((p) => matchesFilter(p) && matchesSearch(p)).toList();
     filtered.sort((a, b) {
-      // Alive first, enabled first, then name.
       final aliveCmp = (b.isAlive ? 1 : 0).compareTo(a.isAlive ? 1 : 0);
       if (aliveCmp != 0) return aliveCmp;
       final enabledCmp = (b.isEnabled ? 1 : 0).compareTo(a.isEnabled ? 1 : 0);
@@ -2171,60 +953,6 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
 
     final alive = filtered.where((p) => p.isAlive).toList();
     final dead = filtered.where((p) => !p.isAlive).toList();
-
-    InputDecoration buildNeonDecoration({required String label, required IconData icon}) {
-      return InputDecoration(
-        labelText: label,
-        labelStyle: ClubBlackoutTheme.neonGlowFont.copyWith(
-          letterSpacing: 1.2,
-          fontWeight: FontWeight.w600,
-        ),
-        prefixIcon: Icon(icon, color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.7)),
-        filled: true,
-        fillColor: cs.surface.withValues(alpha: 0.12),
-        contentPadding: ClubBlackoutTheme.fieldPadding,
-        border: OutlineInputBorder(
-          borderRadius: ClubBlackoutTheme.borderRadiusControl,
-          borderSide: BorderSide(
-            color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.30),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: ClubBlackoutTheme.borderRadiusControl,
-          borderSide: BorderSide(
-            color: ClubBlackoutTheme.neonBlue.withValues(alpha: 0.30),
-          ),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderRadius: ClubBlackoutTheme.borderRadiusControl,
-          borderSide: BorderSide(color: ClubBlackoutTheme.neonBlue, width: 2),
-        ),
-      );
-    }
-
-    Widget buildFilterChip({
-      required String label,
-      required bool selected,
-      required VoidCallback onSelected,
-    }) {
-      return ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => onSelected(),
-        selectedColor: cs.surface.withValues(alpha: 0.35),
-        backgroundColor: cs.surface.withValues(alpha: 0.18),
-        side: BorderSide(
-          color: (selected ? ClubBlackoutTheme.neonBlue : cs.onSurface)
-              .withValues(alpha: selected ? 0.55 : 0.18),
-        ),
-        labelStyle: ClubBlackoutTheme.neonGlowFont.copyWith(
-          color: cs.onSurface,
-          fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-          letterSpacing: 0.8,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      );
-    }
 
     Widget buildPlayerCard(Player p) {
       return HostPlayerStatusCard(
@@ -2238,22 +966,11 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
                 !p.clingerFreedAsAttackDog &&
                 p.clingerPartnerId != null)
             ? IconButton(
-                tooltip: 'Mark freed (called "controller")',
-                icon: const Icon(Icons.link_off_rounded),
+                tooltip: 'Mark freed',
+                icon: const Icon(Icons.link_off),
                 onPressed: () {
-                final partnerName = (p.clingerPartnerId == null)
-                  ? null
-                  : engine.players
-                    .where((x) => x.id == p.clingerPartnerId)
-                    .firstOrNull
-                    ?.name;
                   final ok = engine.freeClingerFromObsession(p.id);
-                final msg = ok
-                  ? (partnerName != null
-                      ? '${p.name} was called "controller" by $partnerName and is now unleashed.'
-                      : '${p.name} is now unleashed.')
-                    : 'Unable to mark ${p.name} as unleashed.';
-                  engine.showToast(msg);
+                  engine.showToast(ok ? 'Clinger unleashed.' : 'Action failed.');
                 },
               )
             : null,
@@ -2261,89 +978,55 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
     }
 
     return ListView(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.all(16),
       children: [
-        NeonGlassCard(
-          glowColor: ClubBlackoutTheme.neonBlue,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _searchController,
-                onChanged: (_) => setState(() {}),
-                textInputAction: TextInputAction.search,
-                decoration: buildNeonDecoration(
-                  label: 'Search name or role',
-                  icon: Icons.search_rounded,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  buildFilterChip(
-                    label: 'All',
-                    selected: _statusFilter == _RosterStatusFilter.all,
-                    onSelected: () => setState(() => _statusFilter = _RosterStatusFilter.all),
-                  ),
-                  buildFilterChip(
-                    label: 'Alive',
-                    selected: _statusFilter == _RosterStatusFilter.alive,
-                    onSelected: () => setState(() => _statusFilter = _RosterStatusFilter.alive),
-                  ),
-                  buildFilterChip(
-                    label: 'Dead',
-                    selected: _statusFilter == _RosterStatusFilter.dead,
-                    onSelected: () => setState(() => _statusFilter = _RosterStatusFilter.dead),
-                  ),
-                  FilterChip(
-                    label: const Text('Only enabled'),
-                    selected: _onlyEnabled,
-                    onSelected: (v) => setState(() => _onlyEnabled = v),
-                    selectedColor: cs.surface.withValues(alpha: 0.35),
-                    backgroundColor: cs.surface.withValues(alpha: 0.18),
-                    side: BorderSide(
-                      color: ClubBlackoutTheme.neonBlue
-                          .withValues(alpha: _onlyEnabled ? 0.55 : 0.18),
-                    ),
-                    labelStyle: TextStyle(
-                      color: cs.onSurface,
-                      fontWeight: _onlyEnabled ? FontWeight.w800 : FontWeight.w600,
-                      letterSpacing: 0.6,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Showing ${filtered.length} of ${engine.guests.length}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: cs.onSurface.withValues(alpha: 0.75),
-                ),
-              ),
-            ],
+        TextField(
+          controller: _searchController,
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(
+            labelText: 'Search players',
+            prefixIcon: Icon(Icons.search),
+            filled: true,
           ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('All'),
+              selected: _statusFilter == _RosterStatusFilter.all,
+              onSelected: (_) => setState(() => _statusFilter = _RosterStatusFilter.all),
+            ),
+            ChoiceChip(
+              label: const Text('Alive'),
+              selected: _statusFilter == _RosterStatusFilter.alive,
+              onSelected: (_) => setState(() => _statusFilter = _RosterStatusFilter.alive),
+            ),
+            ChoiceChip(
+              label: const Text('Dead'),
+              selected: _statusFilter == _RosterStatusFilter.dead,
+              onSelected: (_) => setState(() => _statusFilter = _RosterStatusFilter.dead),
+            ),
+            FilterChip(
+              label: const Text('Only enabled'),
+              selected: _onlyEnabled,
+              onSelected: (v) => setState(() => _onlyEnabled = v),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         if (filtered.isEmpty)
-          Text(
-            'No matching players.',
-            style: TextStyle(color: cs.onSurfaceVariant),
-          )
+          const Center(child: Text('No players found.'))
         else ...[
-          if (_statusFilter != _RosterStatusFilter.dead) ...[
-            Text('Alive (${alive.length})', style: ClubBlackoutTheme.headingStyle),
+          if (_statusFilter != _RosterStatusFilter.dead && alive.isNotEmpty) ...[
+            Text('Alive (${alive.length})', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             ...alive.map(buildPlayerCard),
             const SizedBox(height: 16),
           ],
-          if (_statusFilter != _RosterStatusFilter.alive) ...[
-            Text('Dead (${dead.length})', style: ClubBlackoutTheme.headingStyle),
+          if (_statusFilter != _RosterStatusFilter.alive && dead.isNotEmpty) ...[
+            Text('Dead (${dead.length})', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             ...dead.map(buildPlayerCard),
           ],
@@ -2351,4 +1034,135 @@ class _HostPlayersTabState extends State<_HostPlayersTab> {
       ],
     );
   }
+}
+
+Widget _buildDashboardIntroCard(BuildContext context) {
+  final cs = Theme.of(context).colorScheme;
+  return Card(
+    elevation: 0,
+    color: cs.surfaceContainerHighest,
+    child: const Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Live game summary',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Monitor win odds, voting patterns, and recent events in real-time.',
+            style: TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildPredictabilityCard(BuildContext context, GameOddsSnapshot odds) {
+  final rows = odds.sortedDesc;
+  if (rows.isEmpty) {
+    return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No odds available.')));
+  }
+
+  final top = rows.first;
+  final confidence = top.value.clamp(0.0, 1.0);
+
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Predictability: ${(confidence * 100).round()}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(value: confidence, borderRadius: BorderRadius.circular(4)),
+          const SizedBox(height: 8),
+          Text('Leader: ${top.key}'),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildOddsCard(BuildContext context, GameOddsSnapshot odds, {required bool isUpdating, DateTime? updatedAt}) {
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('Win Odds', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Spacer(),
+              if (isUpdating) const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final e in odds.sortedDesc)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(flex: 3, child: Text(e.key)),
+                  Expanded(
+                    flex: 5,
+                    child: LinearProgressIndicator(value: e.value.clamp(0.0, 1.0)),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('${(e.value * 100).round()}%'),
+                ],
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildVotingHighlightsCard(BuildContext context, VotingInsights voting) {
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text('Total Votes Today: ${voting.votesCastToday}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          if (voting.currentBreakdown.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('Most Targeted: ${voting.currentBreakdown.first.targetName} (${voting.currentBreakdown.first.voteCount})'),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildHostToolsCard(BuildContext context, GameEngine engine) {
+  final cs = Theme.of(context).colorScheme;
+  final hasPending = engine.dramaQueenSwapPending ||
+      engine.hasPendingPredatorRetaliation ||
+      engine.hasPendingTeaSpillerReveal;
+
+  return Card(
+    color: hasPending ? cs.tertiaryContainer : null,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Pending Actions', style: TextStyle(fontWeight: FontWeight.bold)),
+          if (!hasPending)
+            const Text('None.')
+          else ...[
+            if (engine.dramaQueenSwapPending) const Text('• Drama Queen Swap'),
+            if (engine.hasPendingPredatorRetaliation) const Text('• Predator Retaliation'),
+            if (engine.hasPendingTeaSpillerReveal) const Text('• Tea Spiller Reveal'),
+          ],
+        ],
+      ),
+    ),
+  );
 }

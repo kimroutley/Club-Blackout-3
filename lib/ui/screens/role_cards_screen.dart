@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../models/role.dart';
 import '../styles.dart';
-import '../widgets/neon_page_scaffold.dart';
-import '../widgets/player_icon.dart';
 import '../widgets/role_card_widget.dart';
 import '../widgets/role_tile_widget.dart';
 
@@ -63,15 +61,11 @@ class RoleCardsScreen extends StatelessWidget {
       ],
     );
 
-    final content = (isNight && !embedded) 
-       ? SafeArea(child: list)
-       : ClubBlackoutTheme.centeredConstrained(
-          maxWidth: 920,
-          child: list,
+    if (embedded) return list;
+    return Scaffold(
+      backgroundColor: isNight ? null : Colors.transparent,
+      body: SafeArea(child: list),
     );
-
-    if (embedded) return content;
-    return SafeArea(child: content);
   }
 
   Widget _buildRoleGrid(
@@ -85,32 +79,17 @@ class RoleCardsScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        isNight
-            ? Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
                 ),
-              )
-            : NeonGlassCard(
-                glowColor: color,
-                padding: ClubBlackoutTheme.rowPadding,
-                showBorder: false,
-                child: Text(
-                  title,
-                  style: ClubBlackoutTheme.glowTextStyle(
-                    base: ClubBlackoutTheme.headingStyle,
-                    color: color,
-                    fontSize: 18,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ),
+          ),
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -133,40 +112,18 @@ class RoleCardsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: ClubBlackoutTheme.dialogInsetPadding,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // The Card itself
               RoleCardWidget(role: role, compact: false),
-              
               const SizedBox(height: 24),
-              
-              // Close Button
               Center(
-                child: SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: IconButton.filled(
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.1),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, size: 24),
-                  ),
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
                 ),
               ),
             ],
@@ -179,215 +136,111 @@ class RoleCardsScreen extends StatelessWidget {
   Widget _buildAllianceGraph(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    if (isNight) {
-      return Card(
-        elevation: 0,
-        color: cs.surfaceContainerHigh,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'ALLIANCE STRUCTURE',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: cs.primary,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.0,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              _buildAllianceRow(
-                context,
-                Icons.dangerous_rounded,
-                'DEALERS',
-                'Eliminate all Party Animals',
-                ClubBlackoutTheme.neonRed,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Divider(
-                    color: cs.onSurface.withValues(alpha: 0.1), height: 1),
-              ),
-              _buildAllianceRow(
-                context,
-                Icons.celebration_rounded,
-                'PARTY ANIMALS',
-                'Vote out all Dealers',
-                ClubBlackoutTheme.neonBlue,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Divider(
-                    color: cs.onSurface.withValues(alpha: 0.1), height: 1),
-              ),
-              _buildAllianceRow(
-                context,
-                Icons.auto_awesome_rounded,
-                'WILD CARDS',
-                'Unique/Secret win conditions',
-                ClubBlackoutTheme.neonPurple,
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: ClubBlackoutTheme.neonOrange.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color:
-                          ClubBlackoutTheme.neonOrange.withValues(alpha: 0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.swap_horiz_rounded,
-                          color: ClubBlackoutTheme.neonOrange,
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'CONVERSION POSSIBILITIES',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: ClubBlackoutTheme.neonOrange,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    _buildConversionRow(
-                      context,
-                      'Second Wind',
-                      'PARTY ANIMAL → DEALER',
-                      'If killed by Dealers, can join them',
-                      cs,
-                    ),
-                    _buildConversionRow(
-                      context,
-                      'Clinger',
-                      'ANY → ATTACK DOG',
-                      'If obsession calls them "controller"',
-                      cs,
-                    ),
-                    _buildConversionRow(
-                      context,
-                      'Creep',
-                      'NEUTRAL → MIMIC',
-                      'Becomes their chosen target\'s role',
-                      cs,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return NeonGlassCard(
-      glowColor: ClubBlackoutTheme.neonPink,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'ALLIANCE STRUCTURE',
-            style: ClubBlackoutTheme.glowTextStyle(
-              base: ClubBlackoutTheme.headingStyle,
-              color: ClubBlackoutTheme.neonPink,
-              fontSize: 20,
+    return Card(
+      elevation: 0,
+      color: cs.surfaceContainerHigh,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'ALLIANCE STRUCTURE',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildAllianceRow(
-            context,
-            Icons.dangerous_rounded,
-            'DEALERS',
-            'Eliminate all Party Animals',
-            ClubBlackoutTheme.neonRed,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Divider(color: cs.onSurface.withValues(alpha: 0.1), height: 1),
-          ),
-          _buildAllianceRow(
-            context,
-            Icons.celebration_rounded,
-            'PARTY ANIMALS',
-            'Vote out all Dealers',
-            ClubBlackoutTheme.neonBlue,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Divider(color: cs.onSurface.withValues(alpha: 0.1), height: 1),
-          ),
-          _buildAllianceRow(
-            context,
-            Icons.auto_awesome_rounded,
-            'WILD CARDS',
-            'Unique/Secret win conditions',
-            ClubBlackoutTheme.neonPurple,
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: ClubBlackoutTheme.neonFrame(
-              color: ClubBlackoutTheme.neonOrange,
-              opacity: 0.08,
-              borderRadius: 12,
+            const SizedBox(height: 16),
+            _buildAllianceRow(
+              context,
+              Icons.dangerous_rounded,
+              'DEALERS',
+              'Eliminate all Party Animals',
+              ClubBlackoutTheme.neonRed,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.swap_horiz_rounded,
-                      color: ClubBlackoutTheme.neonOrange,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'CONVERSION POSSIBILITIES',
-                      style: ClubBlackoutTheme.headingStyle.copyWith(
-                        fontSize: 13,
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Divider(
+                  color: cs.onSurface.withValues(alpha: 0.1), height: 1),
+            ),
+            _buildAllianceRow(
+              context,
+              Icons.celebration_rounded,
+              'PARTY ANIMALS',
+              'Vote out all Dealers',
+              ClubBlackoutTheme.neonBlue,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Divider(
+                  color: cs.onSurface.withValues(alpha: 0.1), height: 1),
+            ),
+            _buildAllianceRow(
+              context,
+              Icons.auto_awesome_rounded,
+              'WILD CARDS',
+              'Unique/Secret win conditions',
+              ClubBlackoutTheme.neonPurple,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: ClubBlackoutTheme.neonOrange.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: ClubBlackoutTheme.neonOrange.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.swap_horiz_rounded,
                         color: ClubBlackoutTheme.neonOrange,
+                        size: 20,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _buildConversionRow(
-                  context,
-                  'Second Wind',
-                  'PARTY ANIMAL → DEALER',
-                  'If killed by Dealers, can join them',
-                  Theme.of(context).colorScheme,
-                ),
-                _buildConversionRow(
-                  context,
-                  'Clinger',
-                  'ANY → ATTACK DOG',
-                  'If obsession calls them "controller"',
-                  Theme.of(context).colorScheme,
-                ),
-                _buildConversionRow(
-                  context,
-                  'Creep',
-                  'NEUTRAL → MIMIC',
-                  'Becomes their chosen target\'s role',
-                  Theme.of(context).colorScheme,
-                ),
-              ],
+                      SizedBox(width: 8),
+                      Text(
+                        'CONVERSION POSSIBILITIES',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: ClubBlackoutTheme.neonOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildConversionRow(
+                    context,
+                    'Second Wind',
+                    'PARTY ANIMAL → DEALER',
+                    'If killed by Dealers, can join them',
+                    cs,
+                  ),
+                  _buildConversionRow(
+                    context,
+                    'Clinger',
+                    'ANY → ATTACK DOG',
+                    'If obsession calls them "controller"',
+                    cs,
+                  ),
+                  _buildConversionRow(
+                    context,
+                    'Creep',
+                    'NEUTRAL → MIMIC',
+                    'Becomes their chosen target\'s role',
+                    cs,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -450,45 +303,26 @@ class RoleCardsScreen extends StatelessWidget {
     String condition,
     ColorScheme cs,
   ) {
-    // Find role for icon/color
-    Role? role;
-    try {
-      // Flexible lookup
-      role = roles.firstWhere((r) {
-        final rName = r.name.toLowerCase();
-        final qName = roleName.toLowerCase();
-        return rName == qName ||
-            rName.contains(qName) ||
-            qName.contains(rName.replaceAll('the ', ''));
-      });
-    } catch (_) {}
-
-    final color = role?.color ?? ClubBlackoutTheme.neonOrange;
+    final color = ClubBlackoutTheme.neonOrange;
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: cs.surface.withValues(alpha: 0.3),
-        borderRadius: ClubBlackoutTheme.borderRadiusSmAll,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          // Icon
-          PlayerIcon(
-            assetPath: role?.assetPath ?? '',
-            glowColor: color,
-            size: 48,
-          ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  role?.name ?? roleName,
-                  style: ClubBlackoutTheme.glowTextStyle(
+                  roleName,
+                  style: TextStyle(
                     color: color,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -531,5 +365,4 @@ class RoleCardsScreen extends StatelessWidget {
       ),
     );
   }
-
 }

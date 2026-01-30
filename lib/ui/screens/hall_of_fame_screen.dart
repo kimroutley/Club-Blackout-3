@@ -47,7 +47,8 @@ class _HallOfFameScreenState extends State<HallOfFameScreen> {
               onPressed: () => Navigator.pop(ctx, true),
               style: FilledButton.styleFrom(
                 backgroundColor: ClubBlackoutTheme.neonGold,
-                foregroundColor: ClubBlackoutTheme.contrastOn(ClubBlackoutTheme.neonGold),
+                foregroundColor:
+                    ClubBlackoutTheme.contrastOn(ClubBlackoutTheme.neonGold),
               ),
               child: const Text('MERGE'),
             ),
@@ -58,70 +59,35 @@ class _HallOfFameScreenState extends State<HallOfFameScreen> {
 
     if (ok != true) return;
 
-    await HallOfFameService.instance.mergeProfiles(fromId: fromId, intoId: intoId);
+    await HallOfFameService.instance
+        .mergeProfiles(fromId: fromId, intoId: intoId);
     _exitMergeMode();
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final canPop = Navigator.of(context).canPop();
 
-    if (widget.isNight) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Hall of Fame'),
-          actions: [
-            if (_mergeMode)
-              TextButton(
-                onPressed: _exitMergeMode,
-                child: const Text('Done'),
-              ),
-          ],
-        ),
-        body: _buildBody(context, isNight: true),
-      );
-    }
-
-    // Day Phase M3 conversion
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Image.asset(
-            'Backgrounds/Club Blackout V2 Game Background.png',
-            fit: BoxFit.cover,
-            height: double.infinity,
-            width: double.infinity,
-          ),
-        ),
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          extendBodyBehindAppBar: true,
-          appBar: canPop
-              ? AppBar(
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  iconTheme: const IconThemeData(color: Colors.white),
-                  actions: [
-                    if (_mergeMode)
-                      TextButton(
-                        onPressed: _exitMergeMode,
-                        child: const Text('DONE'),
-                      ),
-                  ],
-                )
-              : null,
-          body: Padding(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + kToolbarHeight,
+    return Scaffold(
+      backgroundColor: cs.surface,
+      appBar: AppBar(
+        title: const Text('Hall of Fame'),
+        backgroundColor: Colors.transparent,
+        automaticallyImplyLeading: canPop,
+        actions: [
+          if (_mergeMode)
+            TextButton(
+              onPressed: _exitMergeMode,
+              child: const Text('Done'),
             ),
-            child: _buildBody(context, isNight: false),
-          ),
-        ),
-      ],
+        ],
+      ),
+      body: _buildBody(context),
     );
   }
 
-  Widget _buildBody(BuildContext context, {required bool isNight}) {
+  Widget _buildBody(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     return Center(
@@ -157,24 +123,23 @@ class _HallOfFameScreenState extends State<HallOfFameScreen> {
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                     child: Card(
                       elevation: 0,
-                      color: cs.surfaceContainerHighest.withValues(alpha: isNight ? 0.70 : 0.55),
-                      surfaceTintColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(ClubBlackoutTheme.radiusMd),
-                        side: BorderSide(color: ClubBlackoutTheme.neonGold.withValues(alpha: 0.35)),
-                      ),
+                      color: cs.surfaceContainerHighest,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
                         child: Row(
                           children: [
-                            const Icon(Icons.merge_rounded, color: ClubBlackoutTheme.neonGold),
+                            const Icon(Icons.merge_type,
+                                color: ClubBlackoutTheme.neonGold),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 _mergeFromId == null
                                     ? 'Merge mode: tap a profile to pick the source.'
                                     : 'Merge mode: tap a profile to merge into (source selected).',
-                                style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                    color: cs.onSurface,
+                                    fontWeight: FontWeight.w700),
                               ),
                             ),
                             TextButton(
@@ -195,10 +160,11 @@ class _HallOfFameScreenState extends State<HallOfFameScreen> {
                       final rank = index + 1;
 
                       final isMergeFrom = _mergeMode && _mergeFromId == p.id;
-                      final isMergePickable = _mergeMode && (_mergeFromId == null || _mergeFromId != p.id);
+                      final isMergePickable = _mergeMode &&
+                          (_mergeFromId == null || _mergeFromId != p.id);
 
                       return InkWell(
-                        borderRadius: BorderRadius.circular(ClubBlackoutTheme.radiusMd),
+                        borderRadius: BorderRadius.circular(12),
                         onLongPress: () {
                           if (!_mergeMode) {
                             setState(() {
@@ -217,7 +183,8 @@ class _HallOfFameScreenState extends State<HallOfFameScreen> {
                                 if (_mergeFromId == p.id) return;
 
                                 final fromId = _mergeFromId!;
-                                final fromIndex = profiles.indexWhere((x) => x.id == fromId);
+                                final fromIndex =
+                                    profiles.indexWhere((x) => x.id == fromId);
                                 if (fromIndex == -1) {
                                   _exitMergeMode();
                                   return;
@@ -234,61 +201,68 @@ class _HallOfFameScreenState extends State<HallOfFameScreen> {
                               },
                         child: Card(
                           elevation: 0,
-                          color: cs.surfaceContainerHighest.withValues(alpha: isNight ? 0.70 : 0.50),
-                          surfaceTintColor: Colors.transparent,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(ClubBlackoutTheme.radiusMd),
-                            side: BorderSide(
-                              color: isMergeFrom
-                                  ? ClubBlackoutTheme.neonGold
-                                  : (index == 0 ? ClubBlackoutTheme.neonGold : cs.outlineVariant.withValues(alpha: 0.45)),
-                              width: isMergeFrom ? 2.5 : (index == 0 ? 2.0 : 1.0),
-                            ),
-                          ),
+                          color: isMergeFrom
+                              ? cs.primaryContainer
+                              : cs.surfaceContainer,
+                          margin: const EdgeInsets.only(bottom: 8),
                           child: Padding(
-                            padding: ClubBlackoutTheme.cardPadding,
+                            padding: const EdgeInsets.all(12),
                             child: Row(
                               children: [
                                 _RankBadge(rank: rank, highlight: index < 3),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         p.name,
                                         style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w900,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
                                           color: cs.onSurface,
                                         ),
                                       ),
                                       if (_mergeMode)
                                         Padding(
-                                          padding: const EdgeInsets.only(top: 2),
+                                          padding:
+                                              const EdgeInsets.only(top: 2),
                                           child: Text(
                                             isMergeFrom
                                                 ? 'Merge FROM'
                                                 : (_mergeFromId == null
                                                     ? 'Tap to pick as source'
-                                                    : (isMergePickable ? 'Tap to merge INTO' : '')),
+                                                    : (isMergePickable
+                                                        ? 'Tap to merge INTO'
+                                                        : '')),
                                             style: TextStyle(
-                                              color: ClubBlackoutTheme.neonGold.withValues(alpha: 0.95),
-                                              fontWeight: FontWeight.w800,
+                                              color: ClubBlackoutTheme.neonGold,
+                                              fontWeight: FontWeight.bold,
                                               fontSize: 12,
                                             ),
                                           ),
                                         ),
-                                      const SizedBox(height: 10),
+                                      const SizedBox(height: 8),
                                       Wrap(
                                         spacing: 12,
                                         runSpacing: 8,
                                         children: [
-                                          _StatBadge(icon: Icons.casino_rounded, label: '${p.totalGames} Games', color: Colors.blueAccent),
-                                          _StatBadge(icon: Icons.emoji_events_rounded, label: '${p.totalWins} Wins', color: ClubBlackoutTheme.neonGold),
+                                          _StatBadge(
+                                              icon: Icons.casino,
+                                              label: '${p.totalGames} Games',
+                                              color: cs.primary),
+                                          _StatBadge(
+                                              icon: Icons.emoji_events,
+                                              label: '${p.totalWins} Wins',
+                                              color:
+                                                  ClubBlackoutTheme.neonGold),
                                           if (p.totalGames > 0)
-                                            _StatBadge(icon: Icons.pie_chart_rounded, label: '${(p.winRate * 100).toInt()}% Rate', color: Colors.greenAccent),
+                                            _StatBadge(
+                                                icon: Icons.pie_chart,
+                                                label:
+                                                    '${(p.winRate * 100).toInt()}% Rate',
+                                                color: Colors.green),
                                         ],
                                       ),
                                     ],
@@ -300,30 +274,39 @@ class _HallOfFameScreenState extends State<HallOfFameScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: cs.onSurface.withValues(alpha: 0.06),
+                                        color: cs.onSurface
+                                            .withValues(alpha: 0.06),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
-                                      child: const Icon(Icons.star_rounded, color: ClubBlackoutTheme.neonGold, size: 20),
+                                      child: const Icon(Icons.star,
+                                          color: ClubBlackoutTheme.neonGold,
+                                          size: 20),
                                     ),
                                   ),
                                 if (!_mergeMode)
                                   IconButton(
                                     tooltip: 'Delete profile',
-                                    icon: Icon(Icons.delete_outline_rounded, color: cs.onSurface.withValues(alpha: 0.65)),
+                                    icon: const Icon(Icons.delete_outline),
                                     onPressed: () async {
                                       final ok = await showDialog<bool>(
                                         context: context,
                                         builder: (ctx) {
                                           return ClubAlertDialog(
-                                            title: const Text('Delete profile?'),
-                                            content: Text('Delete "${p.name}" from the Hall of Fame?'),
+                                            title:
+                                                const Text('Delete profile?'),
+                                            content: Text(
+                                                'Delete "${p.name}" from the Hall of Fame?'),
                                             actions: [
-                                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+                                              TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(ctx, false),
+                                                  child: const Text('CANCEL')),
                                               FilledButton(
-                                                onPressed: () => Navigator.pop(ctx, true),
+                                                onPressed: () =>
+                                                    Navigator.pop(ctx, true),
                                                 style: FilledButton.styleFrom(
-                                                  backgroundColor: ClubBlackoutTheme.neonRed,
-                                                  foregroundColor: ClubBlackoutTheme.contrastOn(ClubBlackoutTheme.neonRed),
+                                                  backgroundColor: cs.error,
+                                                  foregroundColor: cs.onError,
                                                 ),
                                                 child: const Text('DELETE'),
                                               ),
@@ -332,7 +315,8 @@ class _HallOfFameScreenState extends State<HallOfFameScreen> {
                                         },
                                       );
                                       if (ok == true) {
-                                        await HallOfFameService.instance.deleteProfile(p.id);
+                                        await HallOfFameService.instance
+                                            .deleteProfile(p.id);
                                       }
                                     },
                                   ),
@@ -367,13 +351,15 @@ class _RankBadge extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: highlight ? ClubBlackoutTheme.neonGold.withValues(alpha: 0.18) : cs.onSurface.withValues(alpha: 0.10),
+        color: highlight
+            ? ClubBlackoutTheme.neonGold.withValues(alpha: 0.2)
+            : cs.surfaceContainerHighest,
       ),
       child: Text(
         '#$rank',
         style: TextStyle(
-          fontWeight: FontWeight.w900,
-          color: highlight ? ClubBlackoutTheme.neonGold : cs.onSurface.withValues(alpha: 0.70),
+          fontWeight: FontWeight.bold,
+          color: highlight ? ClubBlackoutTheme.neonGold : cs.onSurfaceVariant,
         ),
       ),
     );
@@ -385,7 +371,8 @@ class _StatBadge extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _StatBadge({required this.icon, required this.label, required this.color});
+  const _StatBadge(
+      {required this.icon, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {

@@ -1,8 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../logic/game_engine.dart';
 import '../../models/player.dart';
-import '../styles.dart';
 import '../widgets/game_drawer.dart';
 import 'game_screen.dart';
 
@@ -17,7 +16,6 @@ class RumourMillScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final players = gameEngine.players;
 
     return Scaffold(
@@ -27,7 +25,7 @@ class RumourMillScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-               // Initial refresh logic if needed
+              // Initial refresh logic if needed
             },
           ),
         ],
@@ -43,48 +41,30 @@ class RumourMillScreen extends StatelessWidget {
           );
         },
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: const AssetImage('assets/Backgrounds/background.jpg'),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              Colors.black.withValues(alpha: 0.7),
-              BlendMode.darken,
-            ),
-          ),
-        ),
-        child: players.isEmpty
-            ? const Center(
-                child: Text(
-                  'No rumours yet...',
-                  style: TextStyle(fontSize: 18, color: Colors.white70),
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: players.length,
-                itemBuilder: (context, index) {
-                  final player = players[index];
-                  return _buildRumourCard(context, player, isDark);
-                },
+      body: players.isEmpty
+          ? const Center(
+              child: Text(
+                'No rumours yet...',
+                style: TextStyle(fontSize: 18),
               ),
-      ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: players.length,
+              itemBuilder: (context, index) {
+                final player = players[index];
+                return _buildRumourCard(context, player);
+              },
+            ),
     );
   }
 
-  Widget _buildRumourCard(BuildContext context, Player player, bool isDark) {
+  Widget _buildRumourCard(BuildContext context, Player player) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
-      elevation: 4,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
-      color: isDark ? ClubBlackoutTheme.rumourLavender.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.9),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: player.isAlive ? Colors.transparent : Colors.red.withValues(alpha: 0.5),
-          width: 1,
-        ),
-      ),
+      color: cs.surfaceContainer,
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: player.isAlive ? Colors.green : Colors.grey,
@@ -97,15 +77,11 @@ class RumourMillScreen extends StatelessWidget {
           player.name,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black87,
             decoration: player.isAlive ? null : TextDecoration.lineThrough,
           ),
         ),
         subtitle: Text(
           player.isAlive ? 'Active in the community' : 'Deceased',
-          style: TextStyle(
-            color: isDark ? Colors.white70 : Colors.black54,
-          ),
         ),
         trailing: player.isAlive
             ? const Icon(Icons.mark_chat_unread_outlined, color: Colors.amber)

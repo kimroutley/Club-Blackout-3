@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/player.dart';
 import '../styles.dart';
-import 'bulletin_dialog_shell.dart';
+import 'club_alert_dialog.dart';
 import 'role_card_widget.dart';
 import 'role_facts_context.dart';
 
@@ -20,16 +20,11 @@ class RoleCardRevealDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    const accent = ClubBlackoutTheme.neonPurple;
-    return BulletinDialogShell(
-      accent: accent,
-      maxWidth: 560,
-      insetPadding: ClubBlackoutTheme.dialogInsetPadding,
-      title: Text(
-        'CONFIRM TARGET',
-        style: ClubBlackoutTheme.bulletinHeaderStyle(accent),
+    return ClubAlertDialog(
+      title: const Text(
+        'Confirm target',
         textAlign: TextAlign.center,
+        style: TextStyle(fontWeight: FontWeight.bold),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -46,19 +41,14 @@ class RoleCardRevealDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          style: TextButton.styleFrom(
-            foregroundColor: cs.onSurface.withValues(alpha: 0.7),
-          ),
-          child: const Text('CANCEL'),
+          child: const Text('Cancel'),
         ),
-        const SizedBox(width: 8),
         FilledButton(
-          style: ClubBlackoutTheme.neonButtonStyle(accent, isPrimary: true),
           onPressed: () {
             Navigator.of(context).pop();
             onConfirm();
           },
-          child: const Text('CONFIRM'),
+          child: const Text('Confirm'),
         ),
       ],
     );

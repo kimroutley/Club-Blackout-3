@@ -1,8 +1,13 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 
+import '../../logic/game_engine.dart';
+import '../../models/player.dart';
 import '../../models/role.dart';
 import '../styles.dart';
 import 'club_alert_dialog.dart';
+import 'player_icon.dart';
 import 'role_card_widget.dart';
 import 'role_facts_context.dart';
 
@@ -14,74 +19,140 @@ Future<void> showRoleReveal(
   Widget? body,
   VoidCallback? onComplete,
   RoleFactsContext? factsContext,
-}) async {
-  return showDialog<void>(
+}) {
+  return showDialog(
     context: context,
-    barrierDismissible: false,
-    barrierColor: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.95),
-    builder: (BuildContext context) {
-      final cs = Theme.of(context).colorScheme;
-      final tt = Theme.of(context).textTheme;
-      return ClubAlertDialog(
-        insetPadding: ClubBlackoutTheme.insetH16V24,
-        title: Text(
-          'Revealing for $playerName',
-          style: (tt.titleLarge ?? const TextStyle()).copyWith(
-            fontWeight: FontWeight.w800,
+    builder: (context) => ClubAlertDialog(
+      title: Column(
+        children: [
+          PlayerIcon(
+            assetPath: role.assetPath,
+            glowColor: role.color,
+            size: 60,
           ),
-        ),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520, maxHeight: 820),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                RoleCardWidget(role: role, compact: false, factsContext: factsContext),
-                if (subtitle != null || body != null) ...[
-                  const SizedBox(height: 16),
-                  Card(
-                    elevation: 0,
-                    color: cs.surfaceContainer,
-                    child: Padding(
-                      padding: ClubBlackoutTheme.inset16,
-                      child: Column(
-                        children: [
-                          if (subtitle != null)
-                            Text(
-                              subtitle,
-                              textAlign: TextAlign.center,
-                              style: (tt.bodyLarge ?? const TextStyle()).copyWith(
-                                color: cs.onSurface,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          if (body != null) ...[
-                            const SizedBox(height: 8),
-                            body,
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+          const SizedBox(height: 12),
+          Text(
+            playerName,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              onComplete?.call();
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: role.color.withValues(alpha: 0.16),
-              foregroundColor: cs.onSurface,
+          if (subtitle != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-            child: const Text('I understand'),
-          ),
+          ],
         ],
-      );
-    },
+      ),
+      content: SizedBox(
+        width: 520,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RoleCardWidget(
+              role: role,
+              compact: false,
+              allowFlip: false,
+              tapToFlip: false,
+              factsContext: factsContext,
+            ),
+            if (body != null) ...[
+              const SizedBox(height: 24),
+              body,
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () {
+            Navigator.pop(context);
+            onComplete?.call();
+          },
+          child: const Text('Continue'),
+        ),
+      ],
+    ),
   );
+}
+
+class RoleRevealWidget extends StatelessWidget {
+  final Role role;
+  final String playerName;
+  final String? subtitle;
+  final Widget? body;
+  final VoidCallback? onComplete;
+  final RoleFactsContext? factsContext;
+
+  const RoleRevealWidget({
+    super.key,
+    required this.role,
+    required this.playerName,
+    this.subtitle,
+    this.body,
+    this.onComplete,
+    this.factsContext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // This widget is primarily used as a builder for showDialog in legacy calls,
+    // but the modern pattern prefers the top-level function.
+    // We implement it here just in case it's embedded directly.
+    return ClubAlertDialog(
+      title: Column(
+        children: [
+          PlayerIcon(
+            assetPath: role.assetPath,
+            glowColor: role.color,
+            size: 60,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            playerName,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              subtitle!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          RoleCardWidget(
+            role: role,
+            compact: false,
+            allowFlip: false,
+            tapToFlip: false,
+            factsContext: factsContext,
+          ),
+          if (body != null) ...[
+            const SizedBox(height: 24),
+            body!,
+          ],
+        ],
+      ),
+      actions: [
+        FilledButton(
+          onPressed: onComplete,
+          child: const Text('Continue'),
+        ),
+      ],
+    );
+  }
 }

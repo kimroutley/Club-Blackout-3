@@ -8,12 +8,8 @@ import '../../logic/game_engine.dart';
 import '../../logic/hall_of_fame_service.dart';
 import '../../models/player.dart';
 import '../styles.dart';
-import '../widgets/bulletin_dialog_shell.dart';
+import '../widgets/club_alert_dialog.dart';
 import '../widgets/game_toast_listener.dart';
-// M3: Removed neon widgets
-// import '../widgets/neon_background.dart';
-// import '../widgets/neon_page_scaffold.dart';
-// import '../widgets/neon_section_header.dart';
 import '../widgets/player_tile.dart';
 import '../widgets/role_assignment_dialog.dart';
 import 'game_screen.dart';
@@ -164,7 +160,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
         ),
         action: SnackBarAction(
           label: 'UNDO',
-          textColor: accent ?? ClubBlackoutTheme.neonBlue,
+          textColor: accent ?? cs.primary,
           onPressed: onUndo,
         ),
       ),
@@ -395,14 +391,13 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
 
                         if (isHostRow) {
                           final player = host;
-                          return Container(
+                          return Card(
+                            elevation: 0,
+                            color: cs.surfaceContainerLow,
                             margin: const EdgeInsets.only(bottom: 8),
-                            decoration: ClubBlackoutTheme.neonFrame(
-                              color: cs.primary,
-                              opacity: 0.5,
-                              borderRadius: 12,
-                              borderWidth: 1.0,
-                              showGlow: false,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: cs.primary.withValues(alpha: 0.5)),
                             ),
                             child: PlayerTile(
                               player: player,
@@ -752,39 +747,29 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
     await showDialog<void>(
       context: context,
       builder: (ctx) {
-        const accent = ClubBlackoutTheme.neonPink;
-        return BulletinDialogShell(
-          accent: accent,
-          maxWidth: 520,
+        return ClubAlertDialog(
           title: Text(
-            'RENAME GUEST',
-            style: ClubBlackoutTheme.bulletinHeaderStyle(accent),
+            'Rename guest',
+            style: (Theme.of(ctx).textTheme.titleLarge ?? const TextStyle()).copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
           content: TextField(
             controller: controller,
             autofocus: true,
-            style: TextStyle(color: cs.onSurface),
-            decoration: ClubBlackoutTheme.neonInputDecoration(
-              context,
-              hint: 'Enter new name',
-              color: accent,
+            decoration: const InputDecoration(
+              labelText: 'New name',
+              hintText: 'Enter name',
+              filled: true,
             ),
             textCapitalization: TextCapitalization.words,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              style: TextButton.styleFrom(
-                foregroundColor: cs.onSurface.withValues(alpha: 0.7),
-              ),
-              child: const Text('CANCEL'),
+              child: const Text('Cancel'),
             ),
-            ClubBlackoutTheme.hGap8,
             FilledButton(
-              style: ClubBlackoutTheme.neonButtonStyle(
-                accent,
-                isPrimary: true,
-              ),
               onPressed: () {
                 try {
                   widget.gameEngine.renamePlayer(player.id, controller.text);
@@ -794,7 +779,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                   if (nextName.isNotEmpty && nextName != prevName) {
                     _showUndoSnackBar(
                       message: 'Renamed "$prevName" to "$nextName".',
-                      accent: accent,
+                      accent: cs.primary,
                       onUndo: () {
                         try {
                           widget.gameEngine.renamePlayer(player.id, prevName);
@@ -822,7 +807,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                   );
                 }
               },
-              child: const Text('SAVE'),
+              child: const Text('Save'),
             ),
           ],
         );
@@ -838,38 +823,32 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
       context: context,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
-        const accent = ClubBlackoutTheme.neonOrange;
-        return BulletinDialogShell(
-          accent: accent,
-          maxWidth: 560,
+        final tt = Theme.of(ctx).textTheme;
+        return ClubAlertDialog(
           title: Text(
-            recreate ? 'RECREATE TEST' : 'LOAD TEST',
-            style: ClubBlackoutTheme.bulletinHeaderStyle(accent),
+            recreate ? 'Recreate test?' : 'Load test?',
+            style: (tt.titleLarge ?? const TextStyle()).copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
           content: Text(
             recreate
                 ? 'This will overwrite the "$_quickTestSaveName" save with a fresh deterministic game and jump into gameplay.'
                 : 'This will load the "$_quickTestSaveName" save (or create it if missing) and jump into gameplay.',
-            style: TextStyle(
+            style: (tt.bodyMedium ?? const TextStyle()).copyWith(
               color: cs.onSurface.withValues(alpha: 0.8),
-              fontSize: 15,
-              height: 1.4,
+              height: 1.35,
               fontWeight: FontWeight.w500,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              style: TextButton.styleFrom(
-                foregroundColor: cs.onSurface.withValues(alpha: 0.7),
-              ),
-              child: const Text('CANCEL'),
+              child: const Text('Cancel'),
             ),
-            const SizedBox(width: 8),
             FilledButton(
-              style: ClubBlackoutTheme.neonButtonStyle(accent, isPrimary: true),
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('CONTINUE'),
+              child: const Text('Continue'),
             ),
           ],
         );
@@ -928,54 +907,27 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
 
     final navigator = Navigator.of(context);
 
-    // Show themed progress dialog
+    // Show M3 progress dialog
     showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         final cs = Theme.of(context).colorScheme;
-        return PopScope(
-          canPop: false,
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-              decoration: ClubBlackoutTheme.neonFrame(
-                color: ClubBlackoutTheme.neonPink,
-                opacity: 0.9,
-                showGlow: true,
+        return ClubAlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: cs.primary),
+              const SizedBox(height: 24),
+              Text(
+                'Processing...',
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(
-                    width: 50,
-                    height: 50,
-                    child: CircularProgressIndicator(
-                      color: ClubBlackoutTheme.neonPink,
-                      strokeWidth: 3,
-                    ),
-                  ),
-                  ClubBlackoutTheme.gap24,
-                  Text(
-                    'Processing',
-                    style: ClubBlackoutTheme.glowTextStyle(
-                      base: ClubBlackoutTheme.headingStyle,
-                      color: ClubBlackoutTheme.neonPink,
-                      fontSize: 22,
-                    ),
-                  ),
-                  ClubBlackoutTheme.gap8,
-                  Text(
-                    'Please wait',
-                    style: TextStyle(
-                      color: cs.onSurface.withValues(alpha: 0.6),
-                      letterSpacing: 2,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
         );
       },
@@ -1242,12 +1194,12 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                     .take(50)
                     .toList(growable: false);
 
-                return BulletinDialogShell(
-                  accent: ClubBlackoutTheme.neonBlue,
-                  maxWidth: 560,
+                return ClubAlertDialog(
                   title: Text(
-                    'INVITE LIST',
-                    style: ClubBlackoutTheme.bulletinHeaderStyle(ClubBlackoutTheme.neonBlue),
+                    'Invite list',
+                    style: (Theme.of(ctx).textTheme.titleLarge ?? const TextStyle()).copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   content: SizedBox(
                     width: double.maxFinite,
@@ -1296,7 +1248,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                                 style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
                               ),
                               value: isSelected || alreadyIn,
-                              activeColor: ClubBlackoutTheme.neonBlue,
+                              activeColor: cs.primary,
                               checkColor: cs.surface,
                               onChanged: alreadyIn
                                   ? null
@@ -1357,7 +1309,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                                 style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
                               ),
                               value: isSelected || alreadyIn,
-                              activeColor: ClubBlackoutTheme.neonBlue,
+                              activeColor: cs.primary,
                               checkColor: cs.surface,
                               onChanged: alreadyIn
                                   ? null
@@ -1378,24 +1330,16 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      style: TextButton.styleFrom(
-                        foregroundColor: cs.onSurface.withValues(alpha: 0.7),
-                      ),
-                      child: const Text('CANCEL'),
+                      child: const Text('Cancel'),
                     ),
-                    const SizedBox(width: 8),
                     FilledButton(
-                      style: ClubBlackoutTheme.neonButtonStyle(
-                        ClubBlackoutTheme.neonBlue,
-                        isPrimary: true,
-                      ),
                       onPressed: () {
                         for (final name in selected) {
                           widget.gameEngine.addPlayer(name);
                         }
                         Navigator.pop(ctx);
                       },
-                      child: Text('ADD CHECKED (${selected.length})'),
+                      child: Text('Add checked (${selected.length})'),
                     ),
                   ],
                 );
@@ -1412,13 +1356,12 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
       context: context,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
-        const accent = ClubBlackoutTheme.neonRed;
-        return BulletinDialogShell(
-          accent: accent,
-          maxWidth: 520,
+        return ClubAlertDialog(
           title: Text(
-            'CLEAR GUESTS?',
-            style: ClubBlackoutTheme.bulletinHeaderStyle(accent),
+            'Clear guests?',
+            style: (Theme.of(ctx).textTheme.titleLarge ?? const TextStyle()).copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
           content: Text(
             'This will remove everyone from the guest list. Are you sure?',
@@ -1432,16 +1375,12 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              style: TextButton.styleFrom(
-                foregroundColor: cs.onSurface.withValues(alpha: 0.7),
-              ),
-              child: const Text('CANCEL'),
+              child: const Text('Cancel'),
             ),
-            const SizedBox(width: 8),
             FilledButton(
-              style: ClubBlackoutTheme.neonButtonStyle(
-                accent,
-                isPrimary: true,
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.errorContainer,
+                foregroundColor: cs.onErrorContainer,
               ),
               onPressed: () {
                 final snapshot = engine.players
@@ -1453,7 +1392,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                 if (snapshot.isNotEmpty) {
                   _showUndoSnackBar(
                     message: 'Guest list cleared.',
-                    accent: accent,
+                    accent: cs.error,
                     onUndo: () {
                       final ok = engine.restoreAllPlayers(snapshot);
                       if (!ok) {
@@ -1468,7 +1407,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                   );
                 }
               },
-              child: const Text('CLEAR ALL'),
+              child: const Text('Clear all'),
             ),
           ],
         );
