@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../logic/game_engine.dart';
 import '../../models/saved_game.dart';
 import '../styles.dart';
-import 'bulletin_dialog_shell.dart';
 import 'club_alert_dialog.dart';
 
+/// Material 3 save/load dialog.
 class SaveLoadDialog extends StatefulWidget {
   final GameEngine engine;
 
@@ -15,19 +15,7 @@ class SaveLoadDialog extends StatefulWidget {
   State<SaveLoadDialog> createState() => _SaveLoadDialogState();
 }
 
-/// Material 3 variant of the save/load dialog.
-///
-/// Intended for use during night phase so the in-game drawer stays M3-compliant.
-class SaveLoadDialogM3 extends StatefulWidget {
-  final GameEngine engine;
-
-  const SaveLoadDialogM3({super.key, required this.engine});
-
-  @override
-  State<SaveLoadDialogM3> createState() => _SaveLoadDialogM3State();
-}
-
-class _SaveLoadDialogM3State extends State<SaveLoadDialogM3> {
+class _SaveLoadDialogState extends State<SaveLoadDialog> {
   final TextEditingController _nameController = TextEditingController();
   bool _loading = true;
   List<SavedGame> _saves = const [];
