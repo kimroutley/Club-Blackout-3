@@ -21,7 +21,10 @@ class MorningReportWidget extends StatelessWidget {
     final reportLines = summary
         .split('\n')
         .map((s) => s.trim())
-        .where((s) => s.isNotEmpty && s != 'Good Morning, Clubbers!' && !s.startsWith('Here is what'))
+        .where((s) =>
+            s.isNotEmpty &&
+            s != 'Good Morning, Clubbers!' &&
+            !s.startsWith('Here is what'))
         .toList();
 
     return Column(
@@ -67,8 +70,7 @@ class MorningReportWidget extends StatelessWidget {
                 Container(
                   decoration: ClubBlackoutTheme.bulletinItemDecoration(
                       color: lineColor),
-                  padding:
-                      ClubBlackoutTheme.rowPadding,
+                  padding: ClubBlackoutTheme.rowPadding,
                   child: Row(
                     children: [
                       _getLineWidget(line, context),
@@ -76,8 +78,8 @@ class MorningReportWidget extends StatelessWidget {
                       Expanded(
                         child: Text(
                           line,
-                          style: ClubBlackoutTheme.bulletinBodyStyle(
-                              cs.onSurface),
+                          style:
+                              ClubBlackoutTheme.bulletinBodyStyle(cs.onSurface),
                         ),
                       ),
                     ],
@@ -117,10 +119,16 @@ class MorningReportWidget extends StatelessWidget {
 
   Color _getLineColor(String line) {
     final l = line.toLowerCase();
-    if (l.contains('died') || l.contains('found dead') || l.contains('murder') || l.contains('heartbreak')) {
+    if (l.contains('died') ||
+        l.contains('found dead') ||
+        l.contains('murder') ||
+        l.contains('heartbreak')) {
       return ClubBlackoutTheme.neonRed;
     }
-    if (l.contains('survived') || l.contains('saved') || l.contains('miracle') || l.contains('returned')) {
+    if (l.contains('survived') ||
+        l.contains('saved') ||
+        l.contains('miracle') ||
+        l.contains('returned')) {
       return ClubBlackoutTheme.neonGreen;
     }
     if (l.contains('rumour')) {
@@ -129,7 +137,9 @@ class MorningReportWidget extends StatelessWidget {
     if (l.contains('alibi') || l.contains('sent home')) {
       return ClubBlackoutTheme.neonBlue;
     }
-    if (l.contains('swapped') || l.contains('switched') || l.contains('personas')) {
+    if (l.contains('swapped') ||
+        l.contains('switched') ||
+        l.contains('personas')) {
       return ClubBlackoutTheme.neonPink;
     }
     return ClubBlackoutTheme.neonOrange;
@@ -140,9 +150,15 @@ class MorningReportWidget extends StatelessWidget {
     IconData iconData = Icons.info_outline_rounded;
     final Color color = _getLineColor(line);
 
-    if (l.contains('died') || l.contains('found dead') || l.contains('murder') || l.contains('heartbreak')) {
+    if (l.contains('died') ||
+        l.contains('found dead') ||
+        l.contains('murder') ||
+        l.contains('heartbreak')) {
       iconData = Icons.person_off_rounded;
-    } else if (l.contains('survived') || l.contains('saved') || l.contains('miracle') || l.contains('returned')) {
+    } else if (l.contains('survived') ||
+        l.contains('saved') ||
+        l.contains('miracle') ||
+        l.contains('returned')) {
       iconData = Icons.favorite_rounded;
     } else if (l.contains('rumour')) {
       iconData = Icons.record_voice_over_rounded;
@@ -150,7 +166,9 @@ class MorningReportWidget extends StatelessWidget {
       iconData = Icons.verified_user_rounded;
     } else if (l.contains('sent home')) {
       iconData = Icons.exit_to_app_rounded;
-    } else if (l.contains('swapped') || l.contains('switched') || l.contains('personas')) {
+    } else if (l.contains('swapped') ||
+        l.contains('switched') ||
+        l.contains('personas')) {
       iconData = Icons.swap_horiz_rounded;
     }
 

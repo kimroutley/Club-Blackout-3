@@ -90,8 +90,7 @@ class _GamesNightGameRecord {
     final startSnapJson =
         (json['startSnapshot'] as Map?)?.cast<String, dynamic>() ??
             const <String, dynamic>{};
-    final endSnapJson =
-        (json['endSnapshot'] as Map?)?.cast<String, dynamic>();
+    final endSnapJson = (json['endSnapshot'] as Map?)?.cast<String, dynamic>();
 
     return _GamesNightGameRecord(
       startedAt: DateTime.tryParse(json['startedAt'] as String? ?? '') ??
@@ -161,10 +160,8 @@ class GamesNightService extends ChangeNotifier {
   final List<_GamesNightEventRecord> _events = <_GamesNightEventRecord>[];
 
   /// Public accessor for completed game snapshots (useful for Shenanigans stats)
-  List<GameStorySnapshot> get completedGameSnapshots => _games
-      .map((g) => g.endSnapshot)
-      .whereType<GameStorySnapshot>()
-      .toList();
+  List<GameStorySnapshot> get completedGameSnapshots =>
+      _games.map((g) => g.endSnapshot).whereType<GameStorySnapshot>().toList();
 
   bool get isActive => _isActive;
   DateTime? get startedAt => _startedAt;
@@ -398,16 +395,19 @@ class GamesNightService extends ChangeNotifier {
         totalVoteActions++;
 
         final voterName = idToName[v.voterId] ?? v.voterId;
-        voterActionsByName[voterName] = (voterActionsByName[voterName] ?? 0) + 1;
+        voterActionsByName[voterName] =
+            (voterActionsByName[voterName] ?? 0) + 1;
 
         final lastTarget = lastTargetByVoterName[voterName];
         if (lastTarget != null && lastTarget != targetId) {
-          voterChangesByName[voterName] = (voterChangesByName[voterName] ?? 0) + 1;
+          voterChangesByName[voterName] =
+              (voterChangesByName[voterName] ?? 0) + 1;
         }
         lastTargetByVoterName[voterName] = targetId;
 
         final targetName = idToName[targetId] ?? idToRole[targetId] ?? targetId;
-        targetActionsByName[targetName] = (targetActionsByName[targetName] ?? 0) + 1;
+        targetActionsByName[targetName] =
+            (targetActionsByName[targetName] ?? 0) + 1;
       }
     }
 
@@ -442,8 +442,7 @@ class GamesNightService extends ChangeNotifier {
       voting: GamesNightVotingInsights(
         totalVoteActions: totalVoteActions,
         topVoters: topVoters.take(topVoterLimit).toList(growable: false),
-        mostTargeted:
-            mostTargeted.take(topTargetLimit).toList(growable: false),
+        mostTargeted: mostTargeted.take(topTargetLimit).toList(growable: false),
       ),
       actions: GamesNightActionInsights(
         totalLogEntries: _events.length,
@@ -489,8 +488,7 @@ class GamesNightService extends ChangeNotifier {
         'actions': {
           'totalLogEntries': i.actions.totalLogEntries,
           'byType': {
-            for (final e in i.actions.byType.entries)
-              e.key.name: e.value,
+            for (final e in i.actions.byType.entries) e.key.name: e.value,
           },
           'topTitles': i.actions.topTitles
               .map((t) => {'title': t.name, 'count': t.count})

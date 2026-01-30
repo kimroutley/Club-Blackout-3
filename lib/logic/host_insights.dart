@@ -25,7 +25,7 @@ class HostInsightsSnapshot {
   final int dayCount;
 
   final VotingInsights voting;
-  final List<ShenaniganAward> shenanigans;  // Added
+  final List<ShenaniganAward> shenanigans; // Added
 
   /// Current script step (what the host should be reading/doing now).
   final ScriptStep? activeScriptStep;

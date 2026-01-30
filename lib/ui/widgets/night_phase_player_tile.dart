@@ -35,14 +35,14 @@ class NightPhasePlayerTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Card(
         elevation: isSelected ? 4 : 1,
-        color: isSelected 
-             ? accent.withValues(alpha: 0.25) 
-             : cs.surfaceContainerHigh.withValues(alpha: 0.8),
+        color: isSelected
+            ? accent.withValues(alpha: 0.25)
+            : cs.surfaceContainerHigh.withValues(alpha: 0.8),
         shape: RoundedRectangleBorder(
-           borderRadius: BorderRadius.circular(20),
-           side: isSelected 
-               ? BorderSide(color: accent, width: 2) 
-               : BorderSide.none,
+          borderRadius: BorderRadius.circular(20),
+          side: isSelected
+              ? BorderSide(color: accent, width: 2)
+              : BorderSide.none,
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -107,26 +107,26 @@ class NightPhasePlayerTile extends StatelessWidget {
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'CONFIRM',
-                              style: TextStyle(
-                                color: ClubBlackoutTheme.contrastOn(accent),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                            children: [
+                              Text(
+                                'CONFIRM',
+                                style: TextStyle(
+                                  color: ClubBlackoutTheme.contrastOn(accent),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 16,
-                              color: ClubBlackoutTheme.contrastOn(accent),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 16,
+                                color: ClubBlackoutTheme.contrastOn(accent),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
                   ),
                 ],
               ],

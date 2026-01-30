@@ -72,7 +72,8 @@ class MonteCarloSimulator {
     var completed = 0;
 
     for (var i = 0; i < runs; i++) {
-      final sim = GameEngine(roleRepository: base.roleRepository, loadNameHistory: false);
+      final sim = GameEngine(
+          roleRepository: base.roleRepository, loadNameHistory: false);
       await sim.importSaveBlobMap(baseMap, notify: false);
 
       final winner = _playToEnd(sim, rng, maxStepsPerRun: maxStepsPerRun);
@@ -104,7 +105,8 @@ class MonteCarloSimulator {
       seed: effectiveSeed,
       wins: wins,
       odds: odds,
-      note: 'Monte Carlo simulation from the current engine state. Random actions + votes; includes special vote rules (Whore/Predator) and pending reactions (Drama Queen/Predator).',
+      note:
+          'Monte Carlo simulation from the current engine state. Random actions + votes; includes special vote rules (Whore/Predator) and pending reactions (Drama Queen/Predator).',
     );
   }
 
@@ -166,7 +168,8 @@ class MonteCarloSimulator {
           break;
 
         case ScriptActionType.binaryChoice:
-          engine.handleScriptAction(step, <String>[rng.nextBool() ? 'yes' : 'no']);
+          engine.handleScriptAction(
+              step, <String>[rng.nextBool() ? 'yes' : 'no']);
           engine.advanceScript();
           _autoResolvePendingReactions(engine, rng);
           break;
@@ -238,7 +241,8 @@ class MonteCarloSimulator {
           leaders.add(e.key);
         }
       }
-      votedOutId = leaders.isNotEmpty ? leaders[rng.nextInt(leaders.length)] : null;
+      votedOutId =
+          leaders.isNotEmpty ? leaders[rng.nextInt(leaders.length)] : null;
     }
 
     // Fallback to a random alive target if tally was empty.
@@ -261,12 +265,10 @@ class MonteCarloSimulator {
           .toList(growable: false);
 
       if (alive.length >= 2) {
-        final a = aId != null
-            ? alive.where((p) => p.id == aId).firstOrNull
-            : null;
-        final b = bId != null
-            ? alive.where((p) => p.id == bId).firstOrNull
-            : null;
+        final a =
+            aId != null ? alive.where((p) => p.id == aId).firstOrNull : null;
+        final b =
+            bId != null ? alive.where((p) => p.id == bId).firstOrNull : null;
 
         if (a != null && b != null && a.id != b.id) {
           engine.completeDramaQueenSwap(a, b);
@@ -293,7 +295,9 @@ class MonteCarloSimulator {
 
       final eligibleIds = engine.pendingPredatorEligibleVoterIds;
       final eligible = eligibleIds.isNotEmpty
-          ? alive.where((p) => eligibleIds.contains(p.id)).toList(growable: false)
+          ? alive
+              .where((p) => eligibleIds.contains(p.id))
+              .toList(growable: false)
           : alive.where((p) => p.id != predatorId).toList(growable: false);
 
       if (eligible.isNotEmpty) {
@@ -306,7 +310,8 @@ class MonteCarloSimulator {
         // Fall back to any alive non-predator.
         final fallback = alive.where((p) => p.id != predatorId).toList();
         if (fallback.isNotEmpty) {
-          engine.completePredatorRetaliation(fallback[rng.nextInt(fallback.length)].id);
+          engine.completePredatorRetaliation(
+              fallback[rng.nextInt(fallback.length)].id);
         }
       }
     }
@@ -342,15 +347,21 @@ class MonteCarloSimulator {
 
     // Role-specific filtering to reduce rejected selections.
     if (roleId == 'whore') {
-      final whore = engine.players.where((p) => p.isAlive && p.isEnabled && p.role.id == 'whore').firstOrNull;
+      final whore = engine.players
+          .where((p) => p.isAlive && p.isEnabled && p.role.id == 'whore')
+          .firstOrNull;
       candidates.removeWhere((p) => whore != null && p.id == whore.id);
-      candidates.removeWhere((p) => p.role.id == 'dealer' || p.alliance.toLowerCase().contains('dealer'));
+      candidates.removeWhere((p) =>
+          p.role.id == 'dealer' || p.alliance.toLowerCase().contains('dealer'));
     }
 
-    return candidates.isNotEmpty ? candidates[rng.nextInt(candidates.length)].id : null;
+    return candidates.isNotEmpty
+        ? candidates[rng.nextInt(candidates.length)].id
+        : null;
   }
 
-  static List<String> _pickTwoTargetIds(GameEngine engine, ScriptStep step, Random rng) {
+  static List<String> _pickTwoTargetIds(
+      GameEngine engine, ScriptStep step, Random rng) {
     final candidates = engine.players
         .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
         .map((p) => p.id)

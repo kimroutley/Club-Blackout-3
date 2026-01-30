@@ -20,9 +20,10 @@ class GameScoreboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final awards = ShenanigansTracker.generateAwards(gameEngine);
-    final winnerColor = gameEngine.winner?.toLowerCase().contains('dealer') == true 
-        ? ClubBlackoutTheme.neonPurple 
-        : ClubBlackoutTheme.neonGreen;
+    final winnerColor =
+        gameEngine.winner?.toLowerCase().contains('dealer') == true
+            ? ClubBlackoutTheme.neonPurple
+            : ClubBlackoutTheme.neonGreen;
     return BulletinDialogShell(
       accent: winnerColor,
       maxWidth: 520,
@@ -79,16 +80,20 @@ class GameScoreboard extends StatelessWidget {
                 ? Center(
                     child: Text(
                       'No shenanigans detected tonight.',
-                      style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+                      style:
+                          TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
                     ),
                   )
                 : ListView.builder(
                     itemCount: awards.length,
                     itemBuilder: (context, index) {
                       final award = awards[index];
-                      final player =
-                          gameEngine.players.where((p) => p.id == award.playerId).firstOrNull ??
-                              gameEngine.guests.where((p) => p.id == award.playerId).firstOrNull;
+                      final player = gameEngine.players
+                              .where((p) => p.id == award.playerId)
+                              .firstOrNull ??
+                          gameEngine.guests
+                              .where((p) => p.id == award.playerId)
+                              .firstOrNull;
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -131,7 +136,8 @@ class GameScoreboard extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       color: award.color,
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: cs.surface, width: 2),
+                                      border: Border.all(
+                                          color: cs.surface, width: 2),
                                     ),
                                     padding: const EdgeInsets.all(4),
                                     child: Icon(
@@ -162,7 +168,8 @@ class GameScoreboard extends StatelessWidget {
                                       Text(
                                         award.value.toString(),
                                         style: TextStyle(
-                                          color: cs.onSurface.withValues(alpha: 0.54),
+                                          color: cs.onSurface
+                                              .withValues(alpha: 0.54),
                                           fontSize: 12,
                                           fontStyle: FontStyle.italic,
                                         ),
@@ -182,7 +189,8 @@ class GameScoreboard extends StatelessWidget {
                                   Text(
                                     award.description,
                                     style: TextStyle(
-                                      color: cs.onSurface.withValues(alpha: 0.6),
+                                      color:
+                                          cs.onSurface.withValues(alpha: 0.6),
                                       fontSize: 12,
                                     ),
                                   ),

@@ -23,7 +23,8 @@ class ScriptStep {
   final String?
       roleId; // If this step relates to a specific role (for filtering/icons)
   final bool isNight;
-  final List<String>? optionLabels; // Custom labels for binaryChoice/toggleOption
+  final List<String>?
+      optionLabels; // Custom labels for binaryChoice/toggleOption
 
   const ScriptStep({
     required this.id,
@@ -51,9 +52,7 @@ class ScriptStep {
 
   factory ScriptStep.fromJson(Map<String, dynamic> json) {
     final rawAction = json['actionType'] as String?;
-    final action = ScriptActionType.values
-        .cast<ScriptActionType?>()
-        .firstWhere(
+    final action = ScriptActionType.values.cast<ScriptActionType?>().firstWhere(
           (e) => e?.name == rawAction,
           orElse: () => ScriptActionType.none,
         );

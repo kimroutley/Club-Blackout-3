@@ -35,10 +35,9 @@ class GameDrawer extends StatelessWidget {
         .labelLarge
         ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5);
 
-    final canContinueGame =
-      onContinueGameTap != null &&
-      gameEngine != null &&
-      gameEngine!.currentPhase != GamePhase.lobby;
+    final canContinueGame = onContinueGameTap != null &&
+        gameEngine != null &&
+        gameEngine!.currentPhase != GamePhase.lobby;
 
     return NavigationDrawerTheme(
       data: NavigationDrawerThemeData(
@@ -46,7 +45,7 @@ class GameDrawer extends StatelessWidget {
         surfaceTintColor: cs.surfaceTint,
         indicatorColor: cs.secondaryContainer.withValues(alpha: 0.75),
         indicatorShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12),
         ),
         elevation: 1,
         labelTextStyle: WidgetStateProperty.resolveWith(
@@ -79,10 +78,8 @@ class GameDrawer extends StatelessWidget {
           onNavigate?.call(index);
         },
         children: [
-          _buildHeader(context, accent),
-
+          _buildHeader(context, accent, useM3: useM3),
           ClubBlackoutTheme.gap16,
-
           const NavigationDrawerDestination(
             label: Text('HOME'),
             icon: Icon(Icons.home_outlined),
@@ -103,7 +100,6 @@ class GameDrawer extends StatelessWidget {
             icon: Icon(Icons.nights_stay_outlined),
             selectedIcon: Icon(Icons.nights_stay_rounded),
           ),
-          
           if (gameEngine != null) ...[
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -113,18 +109,17 @@ class GameDrawer extends StatelessWidget {
               ),
             ),
             Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'GAME CONTROLS',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.5),
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                  ),
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'GAME CONTROLS',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
+              ),
             ),
             const SizedBox(height: 8),
-
             if (canContinueGame)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -138,7 +133,6 @@ class GameDrawer extends StatelessWidget {
                   },
                 ),
               ),
-
             if (onHostDashboardTap != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -233,7 +227,8 @@ class GameDrawer extends StatelessWidget {
                     },
                   );
                   if (confirm != true) return;
-                  gameEngine!.resetToLobby(keepGuests: true, keepAssignedRoles: false);
+                  gameEngine!
+                      .resetToLobby(keepGuests: true, keepAssignedRoles: false);
                   onNavigate?.call(1);
                 },
               ),
@@ -285,13 +280,13 @@ class GameDrawer extends StatelessWidget {
                     },
                   );
                   if (confirm != true) return;
-                  gameEngine!.resetToLobby(keepGuests: false, keepAssignedRoles: false);
+                  gameEngine!.resetToLobby(
+                      keepGuests: false, keepAssignedRoles: false);
                   onNavigate?.call(1);
                 },
               ),
             ),
           ],
-          
           ClubBlackoutTheme.gap8,
           _buildFooter(context),
         ],
@@ -299,7 +294,8 @@ class GameDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, Color accent) {
+  Widget _buildHeader(BuildContext context, Color accent,
+      {required bool useM3}) {
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return Container(
@@ -311,7 +307,8 @@ class GameDrawer extends StatelessWidget {
         right: 24,
       ),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
+        color:
+            useM3 ? scheme.surfaceContainerLow : accent.withValues(alpha: 0.02),
         border: Border(
           bottom: BorderSide(
             color: scheme.outlineVariant.withValues(alpha: 0.3),
@@ -373,7 +370,8 @@ class GameDrawer extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.perm_identity, size: 16, color: accent.withValues(alpha: 0.8)),
+                  Icon(Icons.perm_identity,
+                      size: 16, color: accent.withValues(alpha: 0.8)),
                   ClubBlackoutTheme.hGap12,
                   Text(
                     'Guests Registered: ${gameEngine!.guests.length}',
@@ -430,28 +428,61 @@ class _DrawerTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Card(
-        elevation: 0,
-        color: scheme.surfaceContainer,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: scheme.outlineVariant.withValues(alpha: 0.55),
-          ),
-        ),
-        child: ListTile(
-          onTap: onTap,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          leading: Icon(icon, color: accent.withValues(alpha: 0.9)),
-          title: Text(
-            label,
-            style: TextStyle(
-              color: scheme.onSurface.withValues(alpha: 0.92),
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              letterSpacing: 0.4,
+      child: useM3
+          ? Card(
+              elevation: 0,
+              color: scheme.surfaceContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: scheme.outlineVariant.withValues(alpha: 0.55),
+                ),
+              ),
+              child: ListTile(
+                onTap: onTap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                leading: Icon(icon, color: accent.withValues(alpha: 0.9)),
+                title: Text(
+                  label,
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.92),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            )
+          : Container(
+              decoration: ClubBlackoutTheme.neonFrame(
+                color: accent,
+                opacity: 0.06,
+                borderRadius: ClubBlackoutTheme.radiusSm,
+                borderWidth: 1.0,
+              ),
+              child: ListTile(
+                onTap: onTap,
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(ClubBlackoutTheme.radiusSm),
+                ),
+                leading: Icon(
+                  icon,
+                  color: accent.withValues(alpha: 0.90),
+                  shadows: ClubBlackoutTheme.iconGlow(accent, intensity: 0.35),
+                ),
+                title: Text(
+                  label,
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.80),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    letterSpacing: 1.3,
+                  ),
+                ),
+              ),
             ),
           ),
         ),

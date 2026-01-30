@@ -115,11 +115,12 @@ class GameStorySnapshot {
         .map((e) => e.cast<String, dynamic>())
         .toList(growable: false);
 
-    final reactions = (json['reactionEventHistory'] as List<dynamic>? ?? const [])
-        .whereType<Map>()
-        .map((e) => e.cast<String, dynamic>())
-        .toList(growable: false);
-        
+    final reactions =
+        (json['reactionEventHistory'] as List<dynamic>? ?? const [])
+            .whereType<Map>()
+            .map((e) => e.cast<String, dynamic>())
+            .toList(growable: false);
+
     final nights = (json['nightHistory'] as List<dynamic>? ?? const [])
         .whereType<Map>()
         .map((e) => e.cast<String, dynamic>())
@@ -142,20 +143,17 @@ class GameStorySnapshot {
       players: playersJson
           .map((p) => StoryPlayerSnapshot.fromJson(p))
           .toList(growable: false),
-      gameLog: logJson
-          .map((e) => GameLogEntry.fromJson(e))
-          .toList(growable: false),
-      voteHistory: voteJson
-          .map((e) => VoteCast.fromJson(e))
-          .toList(growable: false),
+      gameLog:
+          logJson.map((e) => GameLogEntry.fromJson(e)).toList(growable: false),
+      voteHistory:
+          voteJson.map((e) => VoteCast.fromJson(e)).toList(growable: false),
       currentDayVotesByVoter: votesByVoter.map(
         (k, v) => MapEntry(k, v is String ? v : null),
       ),
       reactionEventHistory: reactions,
       nightHistory: nights,
-      voteChanges: changesJson
-          .map((e) => VoteCast.fromJson(e))
-          .toList(growable: false),
+      voteChanges:
+          changesJson.map((e) => VoteCast.fromJson(e)).toList(growable: false),
       winner: json['winner'] as String?,
     );
   }

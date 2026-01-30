@@ -55,7 +55,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Phase-aware styling
     final isNight = gameEngine.currentPhase == GamePhase.night;
-    
+    // For 'Day/Lobby', we keep it bright/colorful (Neon theme), but using M3 structures.
+
     // Background
     Widget background;
     if (isNight) {
@@ -68,6 +69,22 @@ class HomeScreen extends StatelessWidget {
         height: double.infinity,
       );
     }
+
+    // Buttons
+    // In Night mode, use standard scheme. In Day mode, use specific Neon accents.
+    final btnStylePrimary = isNight
+        ? null // Default M3
+        : FilledButton.styleFrom(
+            backgroundColor: ClubBlackoutTheme.neonBlue,
+            foregroundColor: Colors.white,
+          );
+
+    final btnStyleSecondary = isNight
+        ? null // Default M3 tonal
+        : FilledButton.styleFrom(
+            backgroundColor: ClubBlackoutTheme.neonOrange,
+            foregroundColor: Colors.white,
+          );
 
     return Stack(
       children: [

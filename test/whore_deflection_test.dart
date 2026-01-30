@@ -82,7 +82,7 @@ void main() {
     expect(dealer.isAlive, isTrue,
         reason: 'Dealer should be alive after deflection');
     expect(target.isAlive, isFalse,
-      reason: 'Target should be dead after being deflected to');
+        reason: 'Target should be dead after being deflected to');
     expect(
       gameEngine.gameLog.any((log) => log.title == 'Vote Deflection'),
       isTrue,
@@ -93,7 +93,7 @@ void main() {
     advanceToNightOne();
     final whore = gameEngine.players.firstWhere((p) => p.role.id == 'whore');
     final target =
-      gameEngine.players.firstWhere((p) => p.role.id == 'wallflower');
+        gameEngine.players.firstWhere((p) => p.role.id == 'wallflower');
 
     // Night phase: Whore deflects to target
     executeStep('whore', [target.id]);
@@ -106,7 +106,7 @@ void main() {
     expect(whore.isAlive, isTrue,
         reason: 'Whore should be alive after deflecting vote');
     expect(target.isAlive, isFalse,
-      reason: 'Target should be dead after being deflected to');
+        reason: 'Target should be dead after being deflected to');
     expect(
       gameEngine.gameLog.any((log) => log.title == 'Vote Deflection'),
       isTrue,
@@ -139,7 +139,8 @@ void main() {
     );
   });
 
-  test('Whore is only asked to pick once (no repeat prompt on later nights)', () {
+  test('Whore is only asked to pick once (no repeat prompt on later nights)',
+      () {
     advanceToNightOne();
 
     expect(
@@ -168,8 +169,7 @@ void main() {
     );
   });
 
-  test(
-      'Whore prompt returns if a new player becomes Whore (Creep inheritance)',
+  test('Whore prompt returns if a new player becomes Whore (Creep inheritance)',
       () async {
     SharedPreferences.setMockInitialValues({});
 

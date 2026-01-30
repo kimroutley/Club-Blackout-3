@@ -77,21 +77,23 @@ class _FadeSlideTabBarViewState extends State<FadeSlideTabBarView> {
     if (_controller == null && widget.children.isNotEmpty) {
       return widget.children[0];
     }
-    
+
     final int direction = _currentIndex > _prevIndex ? 1 : -1;
 
     return GestureDetector(
       onHorizontalDragEnd: (details) {
         if (_controller == null) return;
         final double velocity = details.primaryVelocity ?? 0;
-        if (velocity < -300) { // Swipe Left -> Next
-           if (_controller!.index < _controller!.length - 1) {
-             _controller!.animateTo(_controller!.index + 1);
-           }
-        } else if (velocity > 300) { // Swipe Right -> Prev
-           if (_controller!.index > 0) {
-             _controller!.animateTo(_controller!.index - 1);
-           }
+        if (velocity < -300) {
+          // Swipe Left -> Next
+          if (_controller!.index < _controller!.length - 1) {
+            _controller!.animateTo(_controller!.index + 1);
+          }
+        } else if (velocity > 300) {
+          // Swipe Right -> Prev
+          if (_controller!.index > 0) {
+            _controller!.animateTo(_controller!.index - 1);
+          }
         }
       },
       child: AnimatedSwitcher(
@@ -116,12 +118,13 @@ class _FadeSlideTabBarViewState extends State<FadeSlideTabBarView> {
             // INCOMING: Slide from side + Fade In
             return SlideTransition(
               position: Tween<Offset>(
-                begin: Offset(0.15 * direction, 0), 
+                begin: Offset(0.15 * direction, 0),
                 end: Offset.zero,
               ).animate(animation),
               child: FadeTransition(
                 opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-                  CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.8)),
+                  CurvedAnimation(
+                      parent: animation, curve: const Interval(0.0, 0.8)),
                 ),
                 child: child,
               ),
@@ -129,7 +132,8 @@ class _FadeSlideTabBarViewState extends State<FadeSlideTabBarView> {
           } else {
             // OUTGOING: Fade Out (stationary)
             return FadeTransition(
-              opacity: animation, // animation goes 1.0 -> 0.0 for outgoing (if reverse)
+              opacity:
+                  animation, // animation goes 1.0 -> 0.0 for outgoing (if reverse)
               child: child,
             );
           }
