@@ -1,4 +1,4 @@
-    // ignore_for_file: no_leading_underscores_for_local_identifiers
+// ignore_for_file: no_leading_underscores_for_local_identifiers
 
 import 'package:club_blackout/logic/game_engine.dart';
 import 'package:club_blackout/models/player.dart';
@@ -50,7 +50,8 @@ void main() {
       required String actorRoleId,
       required _Policy policy,
     }) {
-      final preferredRoleId = policy.preferredTargetRoleIdByActorRoleId[actorRoleId];
+      final preferredRoleId =
+          policy.preferredTargetRoleIdByActorRoleId[actorRoleId];
       if (preferredRoleId != null) {
         final preferred = engine.players
             .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
@@ -60,7 +61,9 @@ void main() {
         if (preferred != null) return preferred;
       }
 
-      return engine.players.where((p) => p.isAlive && p.isEnabled && p.role.id != 'host').first;
+      return engine.players
+          .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
+          .first;
     }
 
     Future<GameEngine> _saveAndReload(
@@ -82,7 +85,8 @@ void main() {
       expect(loadedEngine.currentScriptIndex, engine.currentScriptIndex);
 
       // Queue must exist for the current phase.
-      if (loadedEngine.currentPhase == GamePhase.day || loadedEngine.currentPhase == GamePhase.night) {
+      if (loadedEngine.currentPhase == GamePhase.day ||
+          loadedEngine.currentPhase == GamePhase.night) {
         expect(loadedEngine.scriptQueue, isNotEmpty);
       }
 
@@ -96,7 +100,9 @@ void main() {
     }
 
     bool _isAtDaySceneLauncher(GameEngine engine, ScriptStep? step) {
-      return engine.currentPhase == GamePhase.day && step != null && step.actionType == ScriptActionType.showDayScene;
+      return engine.currentPhase == GamePhase.day &&
+          step != null &&
+          step.actionType == ScriptActionType.showDayScene;
     }
 
     Future<GameEngine> _playScript(
@@ -125,8 +131,10 @@ void main() {
           case ScriptActionType.toggleOption:
             if (step.roleId == 'medic') {
               engine.handleScriptOption(step, policy.medicSetupOption);
-            } else if (step.roleId == 'wallflower' && step.id == 'wallflower_act') {
-              engine.handleScriptOption(step, policy.wallflowerWitness ? 'PEEK' : 'SKIP');
+            } else if (step.roleId == 'wallflower' &&
+                step.id == 'wallflower_act') {
+              engine.handleScriptOption(
+                  step, policy.wallflowerWitness ? 'PEEK' : 'SKIP');
             } else {
               engine.handleScriptOption(step, 'SKIP');
             }
@@ -135,8 +143,10 @@ void main() {
 
           case ScriptActionType.binaryChoice:
             if (step.roleId == 'dealer' &&
-                (step.id == 'second_wind_conversion_choice' || step.id == 'second_wind_conversion_vote')) {
-              engine.handleScriptAction(step, [policy.secondWindConvert ? 'CONVERT' : 'KILL']);
+                (step.id == 'second_wind_conversion_choice' ||
+                    step.id == 'second_wind_conversion_vote')) {
+              engine.handleScriptAction(
+                  step, [policy.secondWindConvert ? 'CONVERT' : 'KILL']);
             } else {
               engine.handleScriptAction(step, ['no']);
             }
@@ -144,7 +154,9 @@ void main() {
             break;
 
           case ScriptActionType.selectTwoPlayers:
-            final alive = engine.players.where((p) => p.isAlive && p.isEnabled && p.role.id != 'host').toList();
+            final alive = engine.players
+                .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
+                .toList();
             if (alive.length >= 2) {
               engine.handleScriptAction(step, [alive[0].id, alive[1].id]);
             } else if (alive.isNotEmpty) {
@@ -157,7 +169,8 @@ void main() {
 
           case ScriptActionType.selectPlayer:
             final actorRoleId = step.roleId ?? 'unknown';
-            final target = _pickTarget(engine: engine, actorRoleId: actorRoleId, policy: policy);
+            final target = _pickTarget(
+                engine: engine, actorRoleId: actorRoleId, policy: policy);
             engine.handleScriptAction(step, [target.id]);
             engine.advanceScript();
             break;
@@ -175,7 +188,9 @@ void main() {
         }
 
         // Periodically test persistence mid-script (this catches scriptIndex mismatches).
-        if (safety == 10 || safety == 40 || (step.id.isNotEmpty && reloadAfterStepIds.contains(step.id))) {
+        if (safety == 10 ||
+            safety == 40 ||
+            (step.id.isNotEmpty && reloadAfterStepIds.contains(step.id))) {
           engine = await _saveAndReload(
             engine,
             saveName: '$savePrefix-step-$safety',
@@ -183,8 +198,10 @@ void main() {
         }
 
         // Basic script/host sanity checks.
-        expect(engine.currentScriptIndex, inInclusiveRange(0, engine.scriptQueue.length));
-        if (engine.currentPhase == GamePhase.day || engine.currentPhase == GamePhase.night) {
+        expect(engine.currentScriptIndex,
+            inInclusiveRange(0, engine.scriptQueue.length));
+        if (engine.currentPhase == GamePhase.day ||
+            engine.currentPhase == GamePhase.night) {
           expect(engine.scriptQueue, isNotEmpty);
         }
 
@@ -197,12 +214,15 @@ void main() {
     }
 
     void _voteOutRoleIfAlive(GameEngine engine, String roleId) {
-      final player = engine.players.where((p) => p.isActive && p.role.id == roleId).firstOrNull;
+      final player = engine.players
+          .where((p) => p.isActive && p.role.id == roleId)
+          .firstOrNull;
       if (player == null) return;
       engine.voteOutPlayer(player.id);
     }
 
-    test('full-roster: save/load resume works across key script branches', () async {
+    test('full-roster: save/load resume works across key script branches',
+        () async {
       const policies = <_Policy>[
         _Policy(
           medicSetupOption: 'PROTECT',
@@ -269,7 +289,8 @@ void main() {
           );
 
           // Save/load at the day-scene boundary.
-          engine = await _saveAndReload(engine, saveName: 'policy-$i-day1-boundary');
+          engine =
+              await _saveAndReload(engine, saveName: 'policy-$i-day1-boundary');
 
           // Enter day scene.
           engine.advanceScript();
@@ -278,7 +299,8 @@ void main() {
           // Vote out a role to trigger day-phase eventualities, then save/load.
           engine = await _saveAndReload(engine, saveName: 'policy-$i-pre-vote');
           _voteOutRoleIfAlive(engine, policy.dayVoteOutRoleId);
-          engine = await _saveAndReload(engine, saveName: 'policy-$i-post-vote');
+          engine =
+              await _saveAndReload(engine, saveName: 'policy-$i-post-vote');
 
           // Move to Night 1.
           engine.skipToNextPhase();
@@ -290,7 +312,11 @@ void main() {
             policy: policy,
             savePrefix: 'policy-$i-night1',
             maxSteps: 1600,
-            reloadAfterStepIds: const {'dealer_act', 'medic_act', 'bouncer_act'},
+            reloadAfterStepIds: const {
+              'dealer_act',
+              'medic_act',
+              'bouncer_act'
+            },
           );
 
           // Morning report should exist when we land at day scene.
@@ -301,10 +327,12 @@ void main() {
           engine.advanceScript();
 
           // Final save/load after an entire night resolution.
-          engine = await _saveAndReload(engine, saveName: 'policy-$i-after-night1');
+          engine =
+              await _saveAndReload(engine, saveName: 'policy-$i-after-night1');
 
           // Ensure the game is still in a playable state.
-          expect(engine.players.where((p) => p.isActive).length, greaterThanOrEqualTo(1));
+          expect(engine.players.where((p) => p.isActive).length,
+              greaterThanOrEqualTo(1));
         } catch (e) {
           failures.add('policy#$i: $e');
         }

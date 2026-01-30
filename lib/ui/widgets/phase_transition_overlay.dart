@@ -85,8 +85,8 @@ class _PhaseTransitionOverlayState extends State<PhaseTransitionOverlay>
                     sigmaY: 10 * _fadeAnimation.value,
                   ),
                   child: Container(
-                    color: cs.scrim
-                        .withValues(alpha: 0.7 * _fadeAnimation.value),
+                    color:
+                        cs.scrim.withValues(alpha: 0.7 * _fadeAnimation.value),
                   ),
                 ),
               ),

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../logic/game_engine.dart';
 import '../../models/player.dart';
@@ -27,7 +27,7 @@ class RumourMillScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-               // Initial refresh logic if needed
+              // Initial refresh logic if needed
             },
           ),
         ],
@@ -77,11 +77,15 @@ class RumourMillScreen extends StatelessWidget {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 12),
-      color: isDark ? ClubBlackoutTheme.rumourLavender.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.9),
+      color: isDark
+          ? ClubBlackoutTheme.rumourLavender.withValues(alpha: 0.1)
+          : Colors.white.withValues(alpha: 0.9),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: player.isAlive ? Colors.transparent : Colors.red.withValues(alpha: 0.5),
+          color: player.isAlive
+              ? Colors.transparent
+              : Colors.red.withValues(alpha: 0.5),
           width: 1,
         ),
       ),

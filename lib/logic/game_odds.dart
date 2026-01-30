@@ -48,7 +48,8 @@ class GameOddsSnapshot {
     final party = live.partyAliveCount;
 
     final messyAlive = aliveEnabled.any((p) => p.role.id == 'messy_bitch');
-    final clubManagerAlive = aliveEnabled.any((p) => p.role.id == 'club_manager');
+    final clubManagerAlive =
+        aliveEnabled.any((p) => p.role.id == 'club_manager');
 
     final rumourCoverage = _rumourCoverage(enabled);
 

@@ -123,7 +123,8 @@ void showVictoryAnnouncement(
                     },
                     child: const Text(
                       'Continue',
-                      style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w900, letterSpacing: 1.2),
                     ),
                   ),
                 ],

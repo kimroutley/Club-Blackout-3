@@ -214,8 +214,7 @@ class ScriptBuilder {
           title: 'The Medic - Setup',
           readAloudText:
               'Medic, open your eyes. Choose your ability for the rest of the game.\n\nNow close your eyes.',
-          instructionText:
-              'Select Protect (daily) or Revive (once per game).',
+          instructionText: 'Select Protect (daily) or Revive (once per game).',
           actionType: ScriptActionType.toggleOption,
           roleId: 'medic',
         ),
@@ -224,7 +223,10 @@ class ScriptBuilder {
 
     final creepNeedsSetup = players.any(
       (p) =>
-          p.isActive && !p.soberSentHome && p.role.id == 'creep' && p.needsSetup,
+          p.isActive &&
+          !p.soberSentHome &&
+          p.role.id == 'creep' &&
+          p.needsSetup,
     );
     if (creepNeedsSetup) {
       steps.add(
@@ -353,7 +355,10 @@ class ScriptBuilder {
         if (activeRoofi.isNotEmpty &&
             activeRoofi.every((p) => p.roofiAbilityRevoked)) {
           final bouncerWithStolen = players.any(
-            (p) => p.isActive && p.role.id == 'bouncer' && p.bouncerHasRoofiAbility,
+            (p) =>
+                p.isActive &&
+                p.role.id == 'bouncer' &&
+                p.bouncerHasRoofiAbility,
           );
           if (!bouncerWithStolen) {
             continue;
@@ -382,8 +387,8 @@ class ScriptBuilder {
       } else if (role.id == 'roofi') {
         final activeRoofi =
             players.where((p) => p.isActive && p.role.id == 'roofi').toList();
-        final allRevoked =
-            activeRoofi.isNotEmpty && activeRoofi.every((p) => p.roofiAbilityRevoked);
+        final allRevoked = activeRoofi.isNotEmpty &&
+            activeRoofi.every((p) => p.roofiAbilityRevoked);
         if (allRevoked) {
           steps.addAll(
             _buildBouncerStolenRoofiSteps(
@@ -449,7 +454,7 @@ class ScriptBuilder {
     int dayCount = 0,
   }) {
     // Dealers always wake up even if blocked by Roofi; the kill fails in-engine.
-    
+
     final String creepText = isCreepTarget ? ' (and The Creep)' : '';
 
     final hasWhore = players.any(
@@ -753,7 +758,7 @@ class ScriptBuilder {
       } catch (e) {
         // No clinger found or other error, do nothing
       }
-    /* Predator step removed - they choose at the moment of voting 
+      /* Predator step removed - they choose at the moment of voting
     } else if (role.id == 'predator') {
       steps.add(
         ScriptStep(
@@ -788,8 +793,7 @@ class ScriptBuilder {
           title: 'Mark for Role Swap',
           readAloudText:
               'Drama Queen$creepText, open your eyes. Select two players. If you die tonight, their roles will be swapped.\n\nNow close your eyes.',
-          instructionText:
-              'Select two players to mark them for the swap.',
+          instructionText: 'Select two players to mark them for the swap.',
           actionType: ScriptActionType.selectTwoPlayers,
           roleId: 'drama_queen',
         ),

@@ -24,7 +24,8 @@ class BulletinDialogShell extends StatelessWidget {
     this.maxWidth = 420,
     this.maxHeight,
     this.padding = const EdgeInsets.all(24),
-    this.insetPadding = const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+    this.insetPadding =
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
     this.showCloseButton = false,
   });
 
@@ -88,7 +89,8 @@ class BulletinDialogShell extends StatelessWidget {
                               icon: const Icon(Icons.close_rounded),
                               tooltip: 'Close',
                               style: IconButton.styleFrom(
-                                foregroundColor: cs.onSurface.withValues(alpha: 0.7),
+                                foregroundColor:
+                                    cs.onSurface.withValues(alpha: 0.7),
                               ),
                             ),
                         ],

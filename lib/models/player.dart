@@ -38,7 +38,8 @@ class Player {
   bool secondWindConverted = false; // Second Wind conversion status
   bool secondWindPendingConversion = false; // Waiting for Dealer decision
   bool secondWindRefusedConversion = false; // Dealers refused conversion
-  int? secondWindConversionNight; // Night number when conversion choice is available
+  int?
+      secondWindConversionNight; // Night number when conversion choice is available
   bool joinsNextNight = false; // Added mid-day; becomes active next night
   int? deathDay; // Day count when player died (for medic revive time limit)
   // Roofi/Bouncer mechanics

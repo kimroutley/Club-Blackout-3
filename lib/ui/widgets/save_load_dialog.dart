@@ -365,17 +365,20 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
                         child: ListView.separated(
                           shrinkWrap: true,
                           itemCount: _saves.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final s = _saves[index];
                             final isSelected = s.id == _selectedSaveId;
                             return Card(
                               elevation: 0,
                               color: isSelected
-                                  ? cs.secondaryContainer.withValues(alpha: 0.55)
+                                  ? cs.secondaryContainer
+                                      .withValues(alpha: 0.55)
                                   : cs.surfaceContainer,
                               child: ListTile(
-                                onTap: () => setState(() => _selectedSaveId = s.id),
+                                onTap: () =>
+                                    setState(() => _selectedSaveId = s.id),
                                 leading: Icon(
                                   isSelected
                                       ? Icons.radio_button_checked_rounded
@@ -428,12 +431,14 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
           child: const Text('Close'),
         ),
         TextButton(
-          onPressed: (_loading || _selectedSaveId == null) ? null : _deleteSelected,
+          onPressed:
+              (_loading || _selectedSaveId == null) ? null : _deleteSelected,
           style: TextButton.styleFrom(foregroundColor: cs.error),
           child: const Text('Delete'),
         ),
         FilledButton(
-          onPressed: (_loading || _selectedSaveId == null) ? null : _loadSelected,
+          onPressed:
+              (_loading || _selectedSaveId == null) ? null : _loadSelected,
           child: const Text('Load'),
         ),
       ],

@@ -27,7 +27,8 @@ class LobbyScreen extends StatefulWidget {
   State<LobbyScreen> createState() => _LobbyScreenState();
 }
 
-class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStateMixin {
+class _LobbyScreenState extends State<LobbyScreen>
+    with SingleTickerProviderStateMixin {
   late final TextEditingController _controller;
   late final TextEditingController _hostController;
   late final FocusNode _nameFocus;
@@ -46,7 +47,8 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
   void initState() {
     super.initState();
     _controller = TextEditingController();
-    _hostController = TextEditingController(text: widget.gameEngine.hostName ?? '');
+    _hostController =
+        TextEditingController(text: widget.gameEngine.hostName ?? '');
     _nameFocus = FocusNode();
     _hostFocus = FocusNode();
     _nameFocus.addListener(() {
@@ -71,7 +73,8 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      final renderObject = _guestNameFieldKey.currentContext?.findRenderObject();
+      final renderObject =
+          _guestNameFieldKey.currentContext?.findRenderObject();
       if (renderObject is! RenderBox) return;
 
       final media = MediaQuery.of(context);
@@ -111,8 +114,9 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
 
     final availableDown = screenHeight - keyboard - fieldBottom - 12;
     final availableUp = fieldTop - media.padding.top - 12;
-    final available =
-        _optionsDirection == OptionsViewOpenDirection.up ? availableUp : availableDown;
+    final available = _optionsDirection == OptionsViewOpenDirection.up
+        ? availableUp
+        : availableDown;
 
     // Keep it usable but never huge.
     return math.max(120.0, math.min(desired, available));
@@ -218,7 +222,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
               ?.copyWith(fontWeight: FontWeight.bold),
           unselectedLabelStyle: Theme.of(context).textTheme.titleSmall,
           splashFactory: InkSparkle.splashFactory,
-          dividerColor: Colors.transparent, 
+          dividerColor: Colors.transparent,
         );
 
         return DefaultTabController(
@@ -245,14 +249,14 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
               top: false,
               child: Stack(
                 children: [
-                   // Main Content
+                  // Main Content
                   TabBarView(
                     children: [
                       _buildGuestsTab(context, cs, engine, guests, host),
                       _buildGameSetupTab(context, cs, engine, guests),
                     ],
                   ),
-                  
+
                   // Overlays
                   GameToastListener(engine: engine),
                   _buildNotificationOverlay(context),
@@ -287,7 +291,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
     if (_notificationMessage == null) return const SizedBox.shrink();
     final cs = Theme.of(context).colorScheme;
     final color = _notificationColor ?? cs.primary;
-    
+
     return Card(
       color: cs.surfaceContainerHighest,
       elevation: 2,
@@ -329,7 +333,8 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
       children: [
         if (engine.players.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -415,7 +420,8 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.edit_rounded, size: 20),
+                                    icon: const Icon(Icons.edit_rounded,
+                                        size: 20),
                                     onPressed: () async {
                                       await _renameGuest(context, player);
                                       if (!mounted) return;
@@ -489,7 +495,9 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                             margin: const EdgeInsets.only(bottom: 8),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                              side: BorderSide(
+                                  color:
+                                      cs.outlineVariant.withValues(alpha: 0.5)),
                             ),
                             child: PlayerTile(
                               player: player,
@@ -502,8 +510,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                               wrapInCard: false,
                               trailing: IconButton(
                                 icon: const Icon(Icons.edit_rounded, size: 20),
-                                onPressed: () =>
-                                    _renameGuest(context, player),
+                                onPressed: () => _renameGuest(context, player),
                                 tooltip: 'Rename Guest',
                                 color: cs.onSurfaceVariant,
                               ),
@@ -513,19 +520,16 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                       },
                     ),
         ),
-        
+
         // Input Area
         Container(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           decoration: BoxDecoration(
             color: cs.surfaceContainer,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: const [
               BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 8,
-                  offset: Offset(0, -2)),
+                  color: Colors.black12, blurRadius: 8, offset: Offset(0, -2)),
             ],
           ),
           child: SafeArea(
@@ -557,10 +561,12 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
               labelText: 'Host Name',
               hintText: 'Enter name',
               prefixIcon: const Icon(Icons.person_outline),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               filled: true,
               fillColor: cs.surface,
-               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
             textInputAction: TextInputAction.done,
             onSubmitted: (val) => _setHostName(context, val),
@@ -595,7 +601,8 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
               widget.gameEngine.setHostName(prev ?? '');
               _hostController.text = widget.gameEngine.hostName ?? '';
             } catch (_) {
-              widget.gameEngine.showToast('Undo failed: name is already taken.');
+              widget.gameEngine
+                  .showToast('Undo failed: name is already taken.');
             }
           },
         );
@@ -799,7 +806,8 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                         try {
                           widget.gameEngine.renamePlayer(player.id, prevName);
                           if (player.role.id == 'host') {
-                            _hostController.text = widget.gameEngine.hostName ?? '';
+                            _hostController.text =
+                                widget.gameEngine.hostName ?? '';
                           }
                         } catch (_) {
                           _showNotification(
@@ -888,7 +896,8 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
       final engine = widget.gameEngine;
       final saves = await engine.getSavedGames();
       saves.sort((a, b) => b.savedAt.compareTo(a.savedAt));
-      final existing = saves.where((s) => s.name == _quickTestSaveName).firstOrNull;
+      final existing =
+          saves.where((s) => s.name == _quickTestSaveName).firstOrNull;
 
       if (!recreate && existing != null) {
         ok = await engine.loadGame(existing.id);
@@ -910,13 +919,16 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
     if (!context.mounted) return;
     if (!ok) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not load test game: ${error ?? 'Unknown error'}')),
+        SnackBar(
+            content:
+                Text('Could not load test game: ${error ?? 'Unknown error'}')),
       );
       return;
     }
 
     navigator.pushReplacement(
-      MaterialPageRoute(builder: (_) => GameScreen(gameEngine: widget.gameEngine)),
+      MaterialPageRoute(
+          builder: (_) => GameScreen(gameEngine: widget.gameEngine)),
     );
   }
 
@@ -1005,7 +1017,8 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
                   }
                   return HallOfFameService.instance.allProfiles
                       .map((p) => p.name)
-                      .where((name) => name.toLowerCase()
+                      .where((name) => name
+                          .toLowerCase()
                           .contains(textEditingValue.text.toLowerCase()));
                 },
                 onSelected: (String selection) {
@@ -1156,7 +1169,10 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
       msg = skipped == 1 && lastError != null ? lastError : 'No guests added.';
     }
 
-    _showNotification(msg, color: skipped > 0 ? ClubBlackoutTheme.neonRed : ClubBlackoutTheme.neonPink);
+    _showNotification(msg,
+        color: skipped > 0
+            ? ClubBlackoutTheme.neonRed
+            : ClubBlackoutTheme.neonPink);
   }
 
   List<String> _parseGuestNames(String raw) {
@@ -1200,9 +1216,7 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
       if (s.isEmpty) continue;
 
       // Strip common list prefixes: "- ", "* ", "1)", "1."
-      s = s
-          .replaceFirst(RegExp(r'^(?:[-*]+\s+|\d+[.)]\s*)'), '')
-          .trim();
+      s = s.replaceFirst(RegExp(r'^(?:[-*]+\s+|\d+[.)]\s*)'), '').trim();
       if (s.isEmpty) continue;
 
       out.add(s);
@@ -1211,7 +1225,6 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
     return out;
   }
 
-
   void _showSavedPlayersPicker(BuildContext context) {
     showDialog(
       context: context,
@@ -1219,190 +1232,196 @@ class _LobbyScreenState extends State<LobbyScreen> with SingleTickerProviderStat
         final selected = <String>{};
         final cs = Theme.of(ctx).colorScheme;
 
-        return StatefulBuilder(
-          builder: (ctx, setState) {
-            return ListenableBuilder(
-              listenable: Listenable.merge([
-                HallOfFameService.instance,
-                widget.gameEngine,
-              ]),
-              builder: (ctx, _) {
-                final profiles = HallOfFameService.instance.allProfiles;
-                final profileNameSet = profiles
-                    .map((p) => p.name.trim().toLowerCase())
-                    .where((n) => n.isNotEmpty)
-                    .toSet();
+        return StatefulBuilder(builder: (ctx, setState) {
+          return ListenableBuilder(
+            listenable: Listenable.merge([
+              HallOfFameService.instance,
+              widget.gameEngine,
+            ]),
+            builder: (ctx, _) {
+              final profiles = HallOfFameService.instance.allProfiles;
+              final profileNameSet = profiles
+                  .map((p) => p.name.trim().toLowerCase())
+                  .where((n) => n.isNotEmpty)
+                  .toSet();
 
-                final recentNames = widget.gameEngine.nameHistory
-                    .where((n) => n.trim().isNotEmpty)
-                    .map((n) => n.trim())
-                    .where((n) => !profileNameSet.contains(n.toLowerCase()))
-                    .toList(growable: false)
-                    .reversed
-                    .take(50)
-                    .toList(growable: false);
+              final recentNames = widget.gameEngine.nameHistory
+                  .where((n) => n.trim().isNotEmpty)
+                  .map((n) => n.trim())
+                  .where((n) => !profileNameSet.contains(n.toLowerCase()))
+                  .toList(growable: false)
+                  .reversed
+                  .take(50)
+                  .toList(growable: false);
 
-                return BulletinDialogShell(
-                  accent: ClubBlackoutTheme.neonBlue,
-                  maxWidth: 560,
-                  title: Text(
-                    'INVITE LIST',
-                    style: ClubBlackoutTheme.bulletinHeaderStyle(ClubBlackoutTheme.neonBlue),
-                  ),
-                  content: SizedBox(
-                    width: double.maxFinite,
-                    height: 400,
-                    child: ListView(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
-                          child: Text(
-                            'HALL OF FAME',
-                            style: TextStyle(
-                              color: cs.onSurface.withValues(alpha: 0.7),
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
-                            ),
+              return BulletinDialogShell(
+                accent: ClubBlackoutTheme.neonBlue,
+                maxWidth: 560,
+                title: Text(
+                  'INVITE LIST',
+                  style: ClubBlackoutTheme.bulletinHeaderStyle(
+                      ClubBlackoutTheme.neonBlue),
+                ),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  height: 400,
+                  child: ListView(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 16, right: 16, top: 8, bottom: 8),
+                        child: Text(
+                          'HALL OF FAME',
+                          style: TextStyle(
+                            color: cs.onSurface.withValues(alpha: 0.7),
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
                           ),
                         ),
-                        if (profiles.isEmpty)
-                          Padding(
-                            padding: ClubBlackoutTheme.rowPadding,
-                            child: Text(
-                              'No Hall of Fame entries yet.\nComplete a game to start building stats.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54)),
-                            ),
-                          )
-                        else
-                          ...profiles.map((p) {
-                            final normalizedName = p.name.trim().toLowerCase();
-                            final alreadyIn = widget.gameEngine.players.any(
-                                (x) => x.name.trim().toLowerCase() == normalizedName);
-                            final isSelected = selected.contains(p.name);
-
-                            return CheckboxListTile(
-                              title: Text(
-                                p.name,
-                                style: TextStyle(
-                                  color: alreadyIn
-                                      ? cs.onSurface.withValues(alpha: 0.3)
-                                      : cs.onSurface,
-                                  fontSize: 18,
-                                ),
-                              ),
-                              subtitle: Text(
-                                '${p.totalGames} games • ${(p.winRate * 100).toStringAsFixed(0)}% wins',
-                                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
-                              ),
-                              value: isSelected || alreadyIn,
-                              activeColor: ClubBlackoutTheme.neonBlue,
-                              checkColor: cs.surface,
-                              onChanged: alreadyIn
-                                  ? null
-                                  : (v) {
-                                      setState(() {
-                                        if (v == true) {
-                                          selected.add(p.name);
-                                        } else {
-                                          selected.remove(p.name);
-                                        }
-                                      });
-                                    },
-                            );
-                          }),
+                      ),
+                      if (profiles.isEmpty)
                         Padding(
                           padding: ClubBlackoutTheme.rowPadding,
-                          child: Divider(color: cs.onSurface.withValues(alpha: 0.15)),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
                           child: Text(
-                            'RECENT NAMES',
+                            'No Hall of Fame entries yet.\nComplete a game to start building stats.',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: cs.onSurface.withValues(alpha: 0.7),
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
+                                color: cs.onSurface.withValues(alpha: 0.54)),
+                          ),
+                        )
+                      else
+                        ...profiles.map((p) {
+                          final normalizedName = p.name.trim().toLowerCase();
+                          final alreadyIn = widget.gameEngine.players.any((x) =>
+                              x.name.trim().toLowerCase() == normalizedName);
+                          final isSelected = selected.contains(p.name);
+
+                          return CheckboxListTile(
+                            title: Text(
+                              p.name,
+                              style: TextStyle(
+                                color: alreadyIn
+                                    ? cs.onSurface.withValues(alpha: 0.3)
+                                    : cs.onSurface,
+                                fontSize: 18,
+                              ),
                             ),
+                            subtitle: Text(
+                              '${p.totalGames} games • ${(p.winRate * 100).toStringAsFixed(0)}% wins',
+                              style: TextStyle(
+                                  color: cs.onSurface.withValues(alpha: 0.5)),
+                            ),
+                            value: isSelected || alreadyIn,
+                            activeColor: ClubBlackoutTheme.neonBlue,
+                            checkColor: cs.surface,
+                            onChanged: alreadyIn
+                                ? null
+                                : (v) {
+                                    setState(() {
+                                      if (v == true) {
+                                        selected.add(p.name);
+                                      } else {
+                                        selected.remove(p.name);
+                                      }
+                                    });
+                                  },
+                          );
+                        }),
+                      Padding(
+                        padding: ClubBlackoutTheme.rowPadding,
+                        child: Divider(
+                            color: cs.onSurface.withValues(alpha: 0.15)),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 16, right: 16, bottom: 8),
+                        child: Text(
+                          'RECENT NAMES',
+                          style: TextStyle(
+                            color: cs.onSurface.withValues(alpha: 0.7),
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
                           ),
                         ),
-                        if (recentNames.isEmpty)
-                          Padding(
-                            padding: ClubBlackoutTheme.rowPadding,
-                            child: Text(
-                              'No recent names yet.\nAdd guests to build a quick-pick list.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54)),
-                            ),
-                          )
-                        else
-                          ...recentNames.map((name) {
-                            final normalizedName = name.trim().toLowerCase();
-                            final alreadyIn = widget.gameEngine.players.any(
-                                (x) => x.name.trim().toLowerCase() == normalizedName);
-                            final isSelected = selected.contains(name);
+                      ),
+                      if (recentNames.isEmpty)
+                        Padding(
+                          padding: ClubBlackoutTheme.rowPadding,
+                          child: Text(
+                            'No recent names yet.\nAdd guests to build a quick-pick list.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: cs.onSurface.withValues(alpha: 0.54)),
+                          ),
+                        )
+                      else
+                        ...recentNames.map((name) {
+                          final normalizedName = name.trim().toLowerCase();
+                          final alreadyIn = widget.gameEngine.players.any((x) =>
+                              x.name.trim().toLowerCase() == normalizedName);
+                          final isSelected = selected.contains(name);
 
-                            return CheckboxListTile(
-                              title: Text(
-                                name,
-                                style: TextStyle(
-                                  color: alreadyIn
-                                      ? cs.onSurface.withValues(alpha: 0.3)
-                                      : cs.onSurface,
-                                  fontSize: 18,
-                                ),
+                          return CheckboxListTile(
+                            title: Text(
+                              name,
+                              style: TextStyle(
+                                color: alreadyIn
+                                    ? cs.onSurface.withValues(alpha: 0.3)
+                                    : cs.onSurface,
+                                fontSize: 18,
                               ),
-                              subtitle: Text(
-                                'Recent',
-                                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
-                              ),
-                              value: isSelected || alreadyIn,
-                              activeColor: ClubBlackoutTheme.neonBlue,
-                              checkColor: cs.surface,
-                              onChanged: alreadyIn
-                                  ? null
-                                  : (v) {
-                                      setState(() {
-                                        if (v == true) {
-                                          selected.add(name);
-                                        } else {
-                                          selected.remove(name);
-                                        }
-                                      });
-                                    },
-                            );
-                          }),
-                      ],
-                    ),
+                            ),
+                            subtitle: Text(
+                              'Recent',
+                              style: TextStyle(
+                                  color: cs.onSurface.withValues(alpha: 0.5)),
+                            ),
+                            value: isSelected || alreadyIn,
+                            activeColor: ClubBlackoutTheme.neonBlue,
+                            checkColor: cs.surface,
+                            onChanged: alreadyIn
+                                ? null
+                                : (v) {
+                                    setState(() {
+                                      if (v == true) {
+                                        selected.add(name);
+                                      } else {
+                                        selected.remove(name);
+                                      }
+                                    });
+                                  },
+                          );
+                        }),
+                    ],
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      style: TextButton.styleFrom(
-                        foregroundColor: cs.onSurface.withValues(alpha: 0.7),
-                      ),
-                      child: const Text('CANCEL'),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: TextButton.styleFrom(
+                      foregroundColor: cs.onSurface.withValues(alpha: 0.7),
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      style: ClubBlackoutTheme.neonButtonStyle(
-                        ClubBlackoutTheme.neonBlue,
-                        isPrimary: true,
-                      ),
-                      onPressed: () {
-                        for (final name in selected) {
-                          widget.gameEngine.addPlayer(name);
-                        }
-                        Navigator.pop(ctx);
-                      },
-                      child: Text('ADD CHECKED (${selected.length})'),
+                    child: const Text('CANCEL'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    style: ClubBlackoutTheme.neonButtonStyle(
+                      ClubBlackoutTheme.neonBlue,
+                      isPrimary: true,
                     ),
-                  ],
-                );
-              },
-            );
-          }
-        );
+                    onPressed: () {
+                      for (final name in selected) {
+                        widget.gameEngine.addPlayer(name);
+                      }
+                      Navigator.pop(ctx);
+                    },
+                    child: Text('ADD CHECKED (${selected.length})'),
+                  ),
+                ],
+              );
+            },
+          );
+        });
       },
     );
   }

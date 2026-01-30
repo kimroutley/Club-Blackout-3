@@ -32,7 +32,8 @@ void main() async {
 
   try {
     await GamesNightService.instance.loadFromPrefs();
-    GameLogger.info('Games Night session restored (if present)', context: 'Main');
+    GameLogger.info('Games Night session restored (if present)',
+        context: 'Main');
   } catch (e, stackTrace) {
     GameLogger.error(
       'Games Night restore failed (continuing)',
@@ -47,7 +48,8 @@ void main() async {
     await FlutterDisplayMode.setHighRefreshRate();
     GameLogger.info('High refresh rate requested', context: 'Main');
   } catch (e) {
-    GameLogger.error('Failed to set high refresh rate', context: 'Main', error: e);
+    GameLogger.error('Failed to set high refresh rate',
+        context: 'Main', error: e);
   }
 
   runApp(const ClubBlackoutApp());

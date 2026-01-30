@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../logic/game_engine.dart';
 import '../styles.dart';
 
@@ -66,8 +66,8 @@ class PlayerGuideBody extends StatelessWidget {
           context,
           'Welcome to Club Blackout',
           'Where the music is loud, the drinks are strong, and the survival rate is... debatable. '
-          'You are either a PARTY ANIMAL looking for a good time, or a DEALER looking for your next victim. '
-          'Try not to get thrown out (or worse).',
+              'You are either a PARTY ANIMAL looking for a good time, or a DEALER looking for your next victim. '
+              'Try not to get thrown out (or worse).',
           ClubBlackoutTheme.neonPink,
         ),
         ClubBlackoutTheme.gap12,
@@ -78,17 +78,23 @@ class PlayerGuideBody extends StatelessWidget {
           ClubBlackoutTheme.neonBlue,
           content: Column(
             children: [
-              _buildFlowStep(context, 'Pre-game', 'Lobby screen. Pick a name, grab a selfie, pray for a good role.'),
+              _buildFlowStep(context, 'Pre-game',
+                  'Lobby screen. Pick a name, grab a selfie, pray for a good role.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'NIGHT 0', 'Setup phase. No dying yet. Just awkward introductions.'),
+              _buildFlowStep(context, 'NIGHT 0',
+                  'Setup phase. No dying yet. Just awkward introductions.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'Blackout', 'Night phase. Eyes shut. Killers creep. Chaos ensues.'),
+              _buildFlowStep(context, 'Blackout',
+                  'Night phase. Eyes shut. Killers creep. Chaos ensues.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'Morning after', 'Host spills the tea on who died or got lucky.'),
+              _buildFlowStep(context, 'Morning after',
+                  'Host spills the tea on who died or got lucky.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'Vote', 'Accuse your friends. Lie to your family. Throw someone out.'),
+              _buildFlowStep(context, 'Vote',
+                  'Accuse your friends. Lie to your family. Throw someone out.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'Repeat', 'Until the Dealers are gone or the Party is dead.'),
+              _buildFlowStep(context, 'Repeat',
+                  'Until the Dealers are gone or the Party is dead.'),
             ],
           ),
         ),
@@ -97,7 +103,7 @@ class PlayerGuideBody extends StatelessWidget {
           context,
           'Eyes & ears',
           'When the Host says "Sleep", you sleep. No peeking, no twitching. '
-          'If you cheat, you ruin the vibe, and nobody likes a buzzkill.',
+              'If you cheat, you ruin the vibe, and nobody likes a buzzkill.',
           ClubBlackoutTheme.neonPurple,
         ),
         ClubBlackoutTheme.gap12,
@@ -105,7 +111,7 @@ class PlayerGuideBody extends StatelessWidget {
           context,
           'The throw out',
           'During the day, figure out who the Dealers are. If you vote correctly, they get booted. '
-          'If you vote wrong... well, sorry Dave, but you looked suspicious.',
+              'If you vote wrong... well, sorry Dave, but you looked suspicious.',
           ClubBlackoutTheme.neonOrange,
         ),
         ClubBlackoutTheme.gap12,
@@ -116,11 +122,14 @@ class PlayerGuideBody extends StatelessWidget {
           ClubBlackoutTheme.neonPurple,
           content: Column(
             children: [
-              _buildFlowStep(context, 'Don\'t be that guy', 'Don\'t peek. Don\'t cheat. It\'s a party game, chill.'),
+              _buildFlowStep(context, 'Don\'t be that guy',
+                  'Don\'t peek. Don\'t cheat. It\'s a party game, chill.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'Play the role', 'Attack the character, not the player. Unless it\'s Steve. Steve knows what he did.'),
+              _buildFlowStep(context, 'Play the role',
+                  'Attack the character, not the player. Unless it\'s Steve. Steve knows what he did.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'Dead men tell no tales', 'If you die, shut up. Ghosts can\'t talk, they just haunt.'),
+              _buildFlowStep(context, 'Dead men tell no tales',
+                  'If you die, shut up. Ghosts can\'t talk, they just haunt.'),
             ],
           ),
         ),
@@ -141,8 +150,8 @@ class HostGuideBody extends StatelessWidget {
           context,
           'You are the DJ',
           'You run the Club. You control the chaos. You are the Host. '
-          'Your job is to keep the energy high and the game moving. '
-          'Think "Master of Ceremonies" meets "Grim Reaper".',
+              'Your job is to keep the energy high and the game moving. '
+              'Think "Master of Ceremonies" meets "Grim Reaper".',
           ClubBlackoutTheme.neonBlue,
         ),
         ClubBlackoutTheme.gap12,
@@ -153,13 +162,17 @@ class HostGuideBody extends StatelessWidget {
           ClubBlackoutTheme.neonPink,
           content: Column(
             children: [
-              _buildFlowStep(context, 'Set the tone', 'Use your "spooky narrator voice". Make them nervous.'),
+              _buildFlowStep(context, 'Set the tone',
+                  'Use your "spooky narrator voice". Make them nervous.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'Keep tempo', 'Don\'t let them sleep all night. Wake \'em up, kill \'em off.'),
+              _buildFlowStep(context, 'Keep tempo',
+                  'Don\'t let them sleep all night. Wake \'em up, kill \'em off.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'God mode', 'The app tracks the logic. You bring the drama.'),
+              _buildFlowStep(context, 'God mode',
+                  'The app tracks the logic. You bring the drama.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'Pause button', 'Need a break? Send everyone to sleep. Power trip approved.'),
+              _buildFlowStep(context, 'Pause button',
+                  'Need a break? Send everyone to sleep. Power trip approved.'),
             ],
           ),
         ),
@@ -168,7 +181,7 @@ class HostGuideBody extends StatelessWidget {
           context,
           'Setup night (Night 0)',
           'The soft opening. Special roles (Medic, Clinger) do their thing. '
-          'Nobody dies tonight. It\'s just a vibe check.',
+              'Nobody dies tonight. It\'s just a vibe check.',
           ClubBlackoutTheme.neonGold,
         ),
         ClubBlackoutTheme.gap12,
@@ -176,7 +189,7 @@ class HostGuideBody extends StatelessWidget {
           context,
           'Blackout phase',
           'Follow the app prompts. Call roles by name. If they snore, wake them up. '
-          'If they peek, shame them publicly.',
+              'If they peek, shame them publicly.',
           ClubBlackoutTheme.neonPurple,
         ),
         ClubBlackoutTheme.gap12,
@@ -187,11 +200,14 @@ class HostGuideBody extends StatelessWidget {
           ClubBlackoutTheme.neonOrange,
           content: Column(
             children: [
-              _buildFlowStep(context, 'The reveal', 'Read the Morning Bulletin like it\'s breaking news.'),
+              _buildFlowStep(context, 'The reveal',
+                  'Read the Morning Bulletin like it\'s breaking news.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'The showdown', 'Let them argue. Fuel the fire. Then call the vote.'),
+              _buildFlowStep(context, 'The showdown',
+                  'Let them argue. Fuel the fire. Then call the vote.'),
               ClubBlackoutTheme.gap8,
-              _buildFlowStep(context, 'The flush', 'When someone gets voted out, take their badge. They\'re done.'),
+              _buildFlowStep(context, 'The flush',
+                  'When someone gets voted out, take their badge. They\'re done.'),
             ],
           ),
         ),

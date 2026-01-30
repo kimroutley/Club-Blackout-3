@@ -44,7 +44,8 @@ class NightResolver {
         .toSet();
 
     // Any Dealer sent home blocks all dealer kills in these legacy tests.
-    final dealerSentHome = sentHomeIds.any((id) => byId[id]?.role.id == 'dealer');
+    final dealerSentHome =
+        sentHomeIds.any((id) => byId[id]?.role.id == 'dealer');
 
     final protectedTargets = actions
         .where((a) => a.actionType == 'protect')
@@ -75,7 +76,9 @@ class NightResolver {
         continue;
       }
 
-      if (target != null && target.role.id == 'minor' && target.minorHasBeenIDd == false) {
+      if (target != null &&
+          target.role.id == 'minor' &&
+          target.minorHasBeenIDd == false) {
         messages[action.targetId] = 'Blocked (Minor immunity).';
         continue;
       }
@@ -96,7 +99,8 @@ class NightResolver {
   /// - Dealers do not win at parity.
   /// - Club Manager blocks Dealer auto-victory.
   bool checkDealerVictory(List<Player> players) {
-    final aliveEnabled = players.where((p) => p.isAlive && p.isEnabled).toList();
+    final aliveEnabled =
+        players.where((p) => p.isAlive && p.isEnabled).toList();
     final dealers = aliveEnabled.where((p) => p.role.id == 'dealer').length;
 
     final hasClubManager = aliveEnabled.any((p) => p.role.id == 'club_manager');
@@ -111,7 +115,8 @@ class NightResolver {
   }
 
   bool checkPartyAnimalVictory(List<Player> players) {
-    final aliveEnabled = players.where((p) => p.isAlive && p.isEnabled).toList();
+    final aliveEnabled =
+        players.where((p) => p.isAlive && p.isEnabled).toList();
     final dealers = aliveEnabled.where((p) => p.role.id == 'dealer').length;
     return dealers == 0;
   }
