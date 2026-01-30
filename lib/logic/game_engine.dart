@@ -505,6 +505,10 @@ class GameEngine extends ChangeNotifier {
   /// ineligible voters (e.g., Sober-sent-home), but this protects against any
   /// direct map mutations or stale saved state.
   Map<String, List<String>> get eligibleDayVotesByTarget {
+    // Optimization: Create a map for O(1) player lookup instead of O(N) search per target.
+    // This reduces complexity from O(T*N) to O(N + T).
+    final playerMap = {for (var p in players) p.id: p};
+
     final eligibleVoterIds = players
         .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
         .where((p) => !p.soberSentHome)
@@ -515,7 +519,7 @@ class GameEngine extends ChangeNotifier {
     final filtered = <String, List<String>>{};
     for (final entry in currentDayVotesByTarget.entries) {
       final targetId = entry.key;
-      final target = players.where((p) => p.id == targetId).firstOrNull;
+      final target = playerMap[targetId];
       if (target != null && target.alibiDay == dayCount) {
         // Silver Fox alibi: targets with vote immunity cannot accrue votes today.
         continue;
