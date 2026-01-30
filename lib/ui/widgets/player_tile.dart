@@ -272,8 +272,9 @@ class PlayerTile extends StatelessWidget {
           final targetId = value['targetId'];
           if (targetId is String && targetId == playerId) return true;
           final targetIds = value['targetIds'];
-          if (targetIds is Iterable && targetIds.contains(playerId))
+          if (targetIds is Iterable && targetIds.contains(playerId)) {
             return true;
+          }
 
           // Generic scan.
           for (final v in value.values) {
