@@ -10,9 +10,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // Mock SharedPreferences channel (some engine code paths touch it).
-  const sharedPrefsChannel = MethodChannel('plugins.flutter.io/shared_preferences');
+  const sharedPrefsChannel =
+      MethodChannel('plugins.flutter.io/shared_preferences');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(sharedPrefsChannel, (MethodCall methodCall) async {
+      .setMockMethodCallHandler(sharedPrefsChannel,
+          (MethodCall methodCall) async {
     if (methodCall.method == 'getAll') {
       return <String, dynamic>{};
     }
@@ -52,7 +54,8 @@ void main() {
       engine.players.clear();
       engine.clearDayVotes();
       engine.nightActions.clear();
-      engine.dayCount = 2; // Use an in-day value (see engine dayCount semantics)
+      engine.dayCount =
+          2; // Use an in-day value (see engine dayCount semantics)
     });
 
     test('handleScriptAction assigns alibi for following day', () {

@@ -173,9 +173,9 @@ class VotingInsights {
     mostTargeted.sort((a, b) => b.voteCount.compareTo(a.voteCount));
 
     final votesCastToday = engine.currentDayVotesByVoter.entries
-      .where((e) => e.value != null)
-      .where((e) => !(playersById[e.key]?.soberSentHome ?? false))
-      .length;
+        .where((e) => e.value != null)
+        .where((e) => !(playersById[e.key]?.soberSentHome ?? false))
+        .length;
 
     return VotingInsights(
       day: engine.dayCount,

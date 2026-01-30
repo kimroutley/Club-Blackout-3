@@ -34,7 +34,8 @@ void main() {
 
   Role _requireRole(String id) {
     final role = roleRepository.getRoleById(id);
-    if (role == null) throw StateError('Missing required roleId=$id in roles.json');
+    if (role == null)
+      throw StateError('Missing required roleId=$id in roles.json');
     return role;
   }
 
@@ -50,7 +51,8 @@ void main() {
     required String actorRoleId,
     required _Policy policy,
   }) {
-    final preferredRoleId = policy.preferredTargetRoleIdByActorRoleId[actorRoleId];
+    final preferredRoleId =
+        policy.preferredTargetRoleIdByActorRoleId[actorRoleId];
     if (preferredRoleId != null) {
       final preferred = engine.players
           .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
@@ -60,10 +62,13 @@ void main() {
       if (preferred != null) return preferred;
     }
 
-    return engine.players.where((p) => p.isAlive && p.isEnabled && p.role.id != 'host').first;
+    return engine.players
+        .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
+        .first;
   }
 
-  void _playUntilDayScene(GameEngine engine, {required _Policy policy, int maxSteps = 1200}) {
+  void _playUntilDayScene(GameEngine engine,
+      {required _Policy policy, int maxSteps = 1200}) {
     var safety = 0;
 
     bool isAtDaySceneLauncher(ScriptStep? step) {
@@ -99,7 +104,9 @@ void main() {
           break;
 
         case ScriptActionType.selectTwoPlayers:
-          final alive = engine.players.where((p) => p.isAlive && p.isEnabled && p.role.id != 'host').toList();
+          final alive = engine.players
+              .where((p) => p.isAlive && p.isEnabled && p.role.id != 'host')
+              .toList();
           if (alive.length >= 2) {
             engine.handleScriptAction(step, [alive[0].id, alive[1].id]);
           } else if (alive.isNotEmpty) {
@@ -112,7 +119,8 @@ void main() {
 
         case ScriptActionType.selectPlayer:
           final actorRoleId = step.roleId ?? 'unknown';
-          final target = _pickTarget(engine: engine, actorRoleId: actorRoleId, policy: policy);
+          final target = _pickTarget(
+              engine: engine, actorRoleId: actorRoleId, policy: policy);
           engine.handleScriptAction(step, [target.id]);
           engine.advanceScript();
           break;
@@ -125,7 +133,8 @@ void main() {
       safety++;
     }
 
-    throw StateError('Script simulation exceeded maxSteps=$maxSteps (dayCount=${engine.dayCount}, phase=${engine.currentPhase}).');
+    throw StateError(
+        'Script simulation exceeded maxSteps=$maxSteps (dayCount=${engine.dayCount}, phase=${engine.currentPhase}).');
   }
 
   GameEngine _buildMinimalValidGameIncluding(Role roleUnderTest) {
@@ -160,21 +169,25 @@ void main() {
     }
 
     // Ensure the role under test is present at least once.
-    final alreadyPresent = engine.players.any((p) => p.role.id == roleUnderTest.id);
+    final alreadyPresent =
+        engine.players.any((p) => p.role.id == roleUnderTest.id);
     if (!alreadyPresent) {
       engine.addPlayer('Test Role', role: roleUnderTest);
     }
 
     final validation = RoleValidator.validateGameSetup(engine.players);
     if (!validation.isValid) {
-      throw StateError('Invalid minimal roster for roleId=${roleUnderTest.id}: ${validation.error}');
+      throw StateError(
+          'Invalid minimal roster for roleId=${roleUnderTest.id}: ${validation.error}');
     }
 
     return engine;
   }
 
   test('All roles: can start and play through setup + one night', () async {
-    final roles = roleRepository.roles.where((r) => r.id != 'host' && r.id != 'temp').toList();
+    final roles = roleRepository.roles
+        .where((r) => r.id != 'host' && r.id != 'temp')
+        .toList();
 
     // Policy keeps the run stable (avoid killing the role under test by accident).
     const policy = _Policy(
@@ -203,11 +216,13 @@ void main() {
 
         // Force a clean transition to Night 1, then resolve Night 1 to Day 2.
         if (engine.currentPhase != GamePhase.day) {
-          throw StateError('Expected day phase after setup-night for roleId=${role.id}, got ${engine.currentPhase}.');
+          throw StateError(
+              'Expected day phase after setup-night for roleId=${role.id}, got ${engine.currentPhase}.');
         }
         engine.skipToNextPhase();
         if (engine.currentPhase != GamePhase.night) {
-          throw StateError('Expected night phase after skipping day for roleId=${role.id}, got ${engine.currentPhase}.');
+          throw StateError(
+              'Expected night phase after skipping day for roleId=${role.id}, got ${engine.currentPhase}.');
         }
 
         _playUntilDayScene(engine, policy: policy, maxSteps: 1200);
@@ -219,7 +234,8 @@ void main() {
         if (role.id == 'second_wind') {
           final sw = _firstAliveByRoleId(engine, 'second_wind');
           if (!sw.alliance.toLowerCase().contains('party')) {
-            throw StateError('Second Wind did not start on Party alliance (alliance=${sw.alliance}).');
+            throw StateError(
+                'Second Wind did not start on Party alliance (alliance=${sw.alliance}).');
           }
         }
       } catch (e) {

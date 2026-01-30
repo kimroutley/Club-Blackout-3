@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('GameFabMenu renders regarding roles', (WidgetTester tester) async {
+  testWidgets('GameFabMenu renders regarding roles',
+      (WidgetTester tester) async {
     final roleRepo = RoleRepository();
     final gameEngine = GameEngine(roleRepository: roleRepo);
     gameEngine.players.addAll([

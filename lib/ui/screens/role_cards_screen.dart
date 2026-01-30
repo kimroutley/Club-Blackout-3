@@ -63,12 +63,12 @@ class RoleCardsScreen extends StatelessWidget {
       ],
     );
 
-    final content = (isNight && !embedded) 
-       ? SafeArea(child: list)
-       : ClubBlackoutTheme.centeredConstrained(
-          maxWidth: 920,
-          child: list,
-    );
+    final content = (isNight && !embedded)
+        ? SafeArea(child: list)
+        : ClubBlackoutTheme.centeredConstrained(
+            maxWidth: 920,
+            child: list,
+          );
 
     if (embedded) return content;
     return SafeArea(child: content);
@@ -87,7 +87,8 @@ class RoleCardsScreen extends StatelessWidget {
       children: [
         isNight
             ? Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(
                   title,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -144,9 +145,9 @@ class RoleCardsScreen extends StatelessWidget {
             children: [
               // The Card itself
               RoleCardWidget(role: role, compact: false),
-              
+
               const SizedBox(height: 24),
-              
+
               // Close Button
               Center(
                 child: SizedBox(
@@ -314,7 +315,8 @@ class RoleCardsScreen extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Divider(color: cs.onSurface.withValues(alpha: 0.1), height: 1),
+            child:
+                Divider(color: cs.onSurface.withValues(alpha: 0.1), height: 1),
           ),
           _buildAllianceRow(
             context,
@@ -325,7 +327,8 @@ class RoleCardsScreen extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Divider(color: cs.onSurface.withValues(alpha: 0.1), height: 1),
+            child:
+                Divider(color: cs.onSurface.withValues(alpha: 0.1), height: 1),
           ),
           _buildAllianceRow(
             context,
@@ -531,5 +534,4 @@ class RoleCardsScreen extends StatelessWidget {
       ),
     );
   }
-
 }

@@ -291,7 +291,9 @@ class _HolographicWatermarkState extends State<HolographicWatermark>
 
                         // Almost invisible until motion is detected.
                         // We map motion magnitude to a subtle intensity curve.
-                        final motion = (widget.enableGyro && !isScrolling && _gyroAvailable)
+                        final motion = (widget.enableGyro &&
+                                !isScrolling &&
+                                _gyroAvailable)
                             ? effectiveOffset.distance
                             : 0.0;
                         final t = (motion / 6.0).clamp(0.0, 1.0);
@@ -299,11 +301,12 @@ class _HolographicWatermarkState extends State<HolographicWatermark>
 
                         const double baseOpacity = 0.006;
                         final activeBoost = widget.enableGyro ? 0.14 : 0.0;
-                        final patternOpacity = (baseOpacity + intensity * activeBoost)
-                            .clamp(0.0, 0.22);
+                        final patternOpacity =
+                            (baseOpacity + intensity * activeBoost)
+                                .clamp(0.0, 0.22);
 
-                        final shimmerOpacity = (0.004 + intensity * 0.10)
-                            .clamp(0.0, 0.16);
+                        final shimmerOpacity =
+                            (0.004 + intensity * 0.10).clamp(0.0, 0.16);
 
                         // This builder ONLY rebuilds the transforms,
                         // NOT the text widgets inside _cachedPatternLayer
@@ -322,7 +325,8 @@ class _HolographicWatermarkState extends State<HolographicWatermark>
                             Transform.translate(
                               offset: -effectiveOffset,
                               child: Opacity(
-                                opacity: (patternOpacity * 0.75).clamp(0.0, 0.18),
+                                opacity:
+                                    (patternOpacity * 0.75).clamp(0.0, 0.18),
                                 child: _cachedGhostLayer,
                               ),
                             ),
@@ -347,7 +351,13 @@ class _HolographicWatermarkState extends State<HolographicWatermark>
                                               holoC,
                                               Colors.transparent,
                                             ],
-                                            stops: const [0.0, 0.35, 0.55, 0.75, 1.0],
+                                            stops: const [
+                                              0.0,
+                                              0.35,
+                                              0.55,
+                                              0.75,
+                                              1.0
+                                            ],
                                             transform: GradientRotation(
                                               _shimmerController.value * 6.28,
                                             ),
@@ -376,7 +386,7 @@ class _HolographicWatermarkState extends State<HolographicWatermark>
     // Create a repeating text block
     // Brand pattern repeated.
     final String rowText =
-      '${widget.text}     ${widget.text}     ${widget.text}     ${widget.text}';
+        '${widget.text}     ${widget.text}     ${widget.text}     ${widget.text}';
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,

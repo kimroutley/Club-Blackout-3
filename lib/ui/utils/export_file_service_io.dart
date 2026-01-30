@@ -18,7 +18,8 @@ class ExportFileService {
     return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
   }
 
-  static Future<Directory> _getExportsDir({String subdirName = 'exports'}) async {
+  static Future<Directory> _getExportsDir(
+      {String subdirName = 'exports'}) async {
     final dir = await getApplicationDocumentsDirectory();
     final exportsDir = Directory('${dir.path}/$subdirName');
     if (!await exportsDir.exists()) {
