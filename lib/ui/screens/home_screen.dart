@@ -69,6 +69,22 @@ class HomeScreen extends StatelessWidget {
       );
     }
 
+    // Buttons
+    // In Night mode, use standard scheme. In Day mode, use specific Neon accents.
+    final btnStylePrimary = isNight
+        ? null // Default M3
+        : FilledButton.styleFrom(
+            backgroundColor: ClubBlackoutTheme.neonBlue,
+            foregroundColor: Colors.white,
+          );
+
+    final btnStyleSecondary = isNight
+        ? null // Default M3 tonal
+        : FilledButton.styleFrom(
+            backgroundColor: ClubBlackoutTheme.neonOrange,
+            foregroundColor: Colors.white,
+          );
+
     return Stack(
       children: [
         Positioned.fill(child: background),
